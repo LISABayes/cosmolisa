@@ -31,6 +31,7 @@ class Event(object):
                  zmin,
                  zmax,
                  snr,
+                 z_true,
                  snr_threshold = 8.0,
                  VC = None):
         
@@ -45,6 +46,7 @@ class Event(object):
         self.zmax                   = zmax
         self.snr                    = snr
         self.VC                     = VC
+        self.z_true                 = z_true
         if self.dmin < 0.0: self.dmin = 0.0
 
 def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = None):
@@ -160,13 +162,14 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
             zmax            = np.float64(zmax)
             snr             = np.float64(snr)
             VC              = np.float64(Vc)
+            z_true          = np.float64(z_true)
             event_file.close()
             try:
                 best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
                 redshifts   = np.atleast_1d(zobs)
                 d_redshifts = np.ones(len(redshifts))*pv
                 weights     = np.atleast_1d(weights)
-                events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr, VC = VC))
+                events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,VC = VC))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
                 sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
@@ -193,13 +196,14 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
         zmax            = np.float64(zmax)
         snr             = np.float64(snr)
         VC              = np.float64(Vc)
+        z_true          = np.float64(z_true)
         event_file.close()
 #        try:
         best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
         redshifts = np.atleast_1d(zobs)
         d_redshifts     = np.ones(len(redshifts))*pv
         weights         = np.atleast_1d(weights)
-        analysis_events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr, VC = VC))
+        analysis_events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,VC = VC))
         sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
 #        except:
 #            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))

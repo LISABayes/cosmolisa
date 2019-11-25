@@ -169,7 +169,7 @@ if __name__=="__main__":
     redshift_posteriors = {}
     pool = mp.Pool(mp.cpu_count())
 
-    om_min, om_max = 0.04, 1.0
+    om_min, om_max = 0.04, 0.5
     h_min, h_max   = 0.5, 1.0
     dx   = (h_max-h_min)/Nbins
     dy   = (om_max-om_min)/Nbins
@@ -189,7 +189,7 @@ if __name__=="__main__":
 #        try:
         folder_name = "EVENT_1%03d"%e.ID
         print("processing ",folder_name)
-        posteriors = nest2pos.draw_posterior_many([np.genfromtxt(os.path.join(options.data,folder_name+"/chain_1000_1234.txt"),names=True)],[1000],verbose=False)
+        posteriors = nest2pos.draw_posterior_many([np.genfromtxt(os.path.join(options.data,folder_name+"/chain_5000_1234.txt"),names=True)],[5000],verbose=False)
 
         if options.pickle == False:
             
@@ -216,10 +216,12 @@ if __name__=="__main__":
 
         f = plt.figure(dpi=256)
         ax = f.add_subplot(111)
-        C = ax.contourf(lX, lY, joint_posterior.T, 100, cmap = matplotlib.cm.cool)
+        C = ax.contourf(lX, lY, joint_posterior.T, 100, cmap = matplotlib.cm.seismic)
         plt.colorbar(C)
+        levs = np.sort(FindHeightForLevel(joint_posterior.T,[0.68,0.95]))
+        ax.contour(lX,lY,joint_posterior.T, levs, colors='w', linewidths = 1.5)
         levs = np.sort(FindHeightForLevel(single_posterior.T,[0.68,0.95]))
-        ax.contour(lX,lY,single_posterior.T, levs, colors='k', linewidths = 0.5)
+        ax.contour(lX,lY,single_posterior.T, levs, colors='k', linewidths = 0.5, linestyles = 'dashed')
         ax.scatter(logit(posteriors['h'],h_min,h_max),logit(posteriors['om'],om_min,om_max), c='k', s=0.01, marker='.', alpha = 0.5)
         ax.axvline(logit(0.73,h_min,h_max),color='k',linestyle='dashed',lw=0.5)
         ax.axhline(logit(0.25,om_min,om_max),color='k',linestyle='dashed',lw=0.5)
@@ -266,7 +268,7 @@ if __name__=="__main__":
         fig = plt.figure()
         ax = fig.add_subplot(111)
         levs = np.sort(FindHeightForLevel(joint_posterior.T+logjacobian_factor,[0.68,0.95]))
-        C = ax.contour(X,Y,joint_posterior.T+logjacobian_factor,levs,linewidths=2.0,colors='black')
+        C = ax.contour(X,Y,joint_posterior.T+logjacobian_factor,levs,linewidths=0.75,colors='black')
     #    ax.scatter(posteriors['h'],posteriors['om'],s=1,alpha=0.5)
         ax.grid(alpha=0.5,linestyle='dotted')
         ax.axvline(0.73,color='k',linestyle='dashed',lw=0.5)

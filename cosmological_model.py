@@ -12,6 +12,7 @@ import cosmology as cs
 import readdata
 from scipy.special import logsumexp
 import likelihood as lk
+from functools import reduce
 
 """
 G = the GW is in a galaxy that i see
@@ -43,12 +44,17 @@ class CosmologicalModel(cpnest.model.Model):
         if self.model == "LambdaCDM":
             
             self.names  = ['h','om']
-            self.bounds = [[0.5,1.0],[0.04,1.0]]
+            self.bounds = [[0.5,1.0],[0.04,0.5]]
         
         elif self.model == "LambdaCDMDE":
             
             self.names  = ['h','om','ol','w0','w1']
-            self.bounds = [[0.5,1.0],[0.04,1.0],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
+            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
+        
+        elif self.model == "DE":
+            
+            self.names  = ['w0','w1']
+            self.bounds = [[-2.0,0.0],[-3.0,3.0]]
         
         else:
             
@@ -58,7 +64,7 @@ class CosmologicalModel(cpnest.model.Model):
         for e in self.data:
             self.bounds.append([e.zmin,e.zmax])
             self.names.append('z%d'%e.ID)
-
+            
         self._initialise_galaxy_hosts()
         
         print("==========================================")
@@ -89,6 +95,11 @@ class CosmologicalModel(cpnest.model.Model):
                 w0 = np.random.uniform(self.bounds[3][0],self.bounds[3][1])
                 w1 = np.random.uniform(self.bounds[4][0],self.bounds[4][1])
                 O = cs.CosmologicalParameters(h,om,ol,w0,w1)
+            elif self.model == "DE":
+                z_idx = 5
+                w0 = np.random.uniform(self.bounds[0][0],self.bounds[0][1])
+                w1 = np.random.uniform(self.bounds[1][0],self.bounds[1][1])
+                O = cs.CosmologicalParameters(0.73,0.25,0.75,w0,w1)
             dl = O.LuminosityDistance(self.bounds[z_idx][1])
             if dl > dlmax: dlmax = dl
             O.DestroyCosmologicalParameters()
@@ -106,7 +117,10 @@ class CosmologicalModel(cpnest.model.Model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
             elif self.model == "LambdaCDMDE":
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
+            elif self.model == "DE":
+                self.O = cs.CosmologicalParameters(0.7,0.25,0.75,x['w0'],x['w1'])
 
+            logP += np.sum([np.log(self.O.ComovingVolumeElement(x['z%d'%e.ID])) for e in self.data])
         return logP
     
     def log_likelihood(self,x):
@@ -131,6 +145,7 @@ if __name__=='__main__':
     parser.add_option('-c','--event-class',default=None,type='string',metavar='event_class',help='class of the event(s) [MBH, EMRI, sBH]')
     parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM and LambdaCDMDE')
     parser.add_option('-j','--joint',   default=0, type='int',metavar='joint',help='run a joint analysis for N events, randomly selected. (EMRI only)')
+    parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
     parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')
     parser.add_option('--zhorizon',     default=1.0, type='float',metavar='zhorizon',help='Horizon redshift corresponding to the SNR threshold')
     parser.add_option('--gw_selection', default=0, type='int',metavar='gw_selection',help='use GW selection function')
@@ -153,7 +168,7 @@ if __name__=='__main__':
 #        em_selection = True
 
     if opts.event_class == "EMRI" and opts.joint !=0:
-        np.random.seed(opts.joint)
+        np.random.seed(opts.seed)
         events = readdata.read_event(opts.event_class, opts.data, None)
         N = opts.joint#np.int(np.random.poisson(len(events)*4./10.))
         print("Will run a random catalog selection of {0} events:".format(N))
@@ -214,15 +229,39 @@ if __name__=='__main__':
         from cpnest import nest2pos
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
+    import matplotlib
     import matplotlib.pyplot as plt
     from scipy.stats import norm
     for e in C.data:
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         z = np.linspace(e.zmin,e.zmax, 100)
-        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="0.95")
-        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
         
+        ax2 = ax.twinx()
+        
+        normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+
+        # choose a colormap
+        c_m = matplotlib.cm.cool
+
+        # create a ScalarMappable and initialize a data structure
+        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+        s_m.set_array([])
+        ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+        for i in range(x.shape[0])[::10]:
+            O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
+            distances = np.array([O.LuminosityDistance(zi) for zi in z])
+            ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+#            ax2.plot(z, np.exp(-0.5*(distances-e.dl)*(distances-e.dl)/e.sigma**2), lw = 0.01, color='k', alpha = 0.5)
+
+            O.DestroyCosmologicalParameters()
+        CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+        CB.set_label('h')
+        ax2.set_ylim(0.0,1.0)
+        ax2.set_ylabel('selection function')
+        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+
         for g in e.potential_galaxy_hosts:
             zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
             pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
@@ -230,6 +269,8 @@ if __name__=='__main__':
         ax.set_xlabel('$z_{%d}$'%e.ID)
         ax.set_ylabel('probability density')
         plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.pdf'), bbox_inches='tight')
+        plt.close()
+    
     import corner
     if model == "LambdaCDM":
         samps = np.column_stack((x['h'],x['om']))
@@ -252,4 +293,13 @@ if __name__=='__main__':
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[0.73,0.25,0.75,-1.0,0.0],
                         filename=os.path.join(output,'joint_posterior.pdf'))
-    fig.savefig(os.path.join(output,'joint_posterior.pdf'))
+    if model == "DE":
+        samps = np.column_stack((x['w0'],x['w1']))
+        fig = corner.corner(samps,
+                        labels= [r'$w_0$',
+                                 r'$w_1$'],
+                        quantiles=[0.05, 0.5, 0.95],
+                        show_titles=True, title_kwargs={"fontsize": 12},
+                        use_math_text=True, truths=[-1.0,0.0],
+                        filename=os.path.join(output,'joint_posterior.pdf'))
+    fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
