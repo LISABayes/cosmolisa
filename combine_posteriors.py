@@ -82,7 +82,7 @@ def initialise_dpgmm(dims,posterior_samples):
 
     model.setPrior()
     model.setThreshold(1e-4)
-    model.setConcGamma(1.0,1.0)
+    model.setConcGamma(10.0,0.01)
     return model
 
 def compute_dpgmm(model,max_sticks=16):
@@ -131,6 +131,8 @@ def marginalise(pdf,dx,axis):
 def deceleration_parameter(om):
     return 0.5*om-(1.0-om)
 
+truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1,'w1':0}
+
 if __name__=="__main__":
     parser=OptionParser()
     parser.add_option('-o','--out',action='store',type='string',default=None,help='Output folder', dest='output')
@@ -141,6 +143,7 @@ if __name__=="__main__":
     parser.add_option('-p',action='store',type='int',default=0,help='unpickle precomputed posteriors', dest='pickle')
     parser.add_option('-N',action='store',type='int',default=None,help='Number of bins for the grid sampling', dest='N')
     parser.add_option('-e',action='store',type='int',default=None,help='Number of events to combine', dest='Nevents')
+    parser.add_option('--nlive',action='store',type='int',default=5000,help='Number of live points', dest='nlive')
     (options,args)=parser.parse_args()
 
     out_folder = os.path.join(options.output,str(options.realisation))
@@ -148,15 +151,20 @@ if __name__=="__main__":
     np.random.seed(options.realisation)
 
     events = readdata.read_event(options.source_class, options.data, None)
+
     N = len(events)
 #    if options.source_class == "EMRI":
 #        N = np.int(np.random.poisson(len(events)*4./10.))#len(events)
 #        events = np.random.choice(events,size = N,replace=False)
 
-    omega_true = CosmologicalParameters(0.73, 0.25, 0.75, -1.0, 0.0)
+    omega_true = CosmologicalParameters(truths['h'],
+                                        truths['om'],
+                                        truths['ol'],
+                                        truths['w0'],
+                                        truths['w1'])
 
     Nbins = options.N
-    joint_posterior = np.zeros((Nbins,Nbins),dtype=np.float64)-2.0*np.log(Nbins)
+    joint_posterior = np.zeros((Nbins,Nbins),dtype=np.float64)#-2.0*np.log(Nbins)
     
     cls = []
     cls_om = []
@@ -186,10 +194,13 @@ if __name__=="__main__":
     if options.Nevents is None: options.Nevents = len(events)
     sys.stderr.write("Selected %d events for combination analysis\n"%options.Nevents)
     for k,e in enumerate(events):
-#        try:
+    
         folder_name = "EVENT_1%03d"%e.ID
         print("processing ",folder_name)
-        posteriors = nest2pos.draw_posterior_many([np.genfromtxt(os.path.join(options.data,folder_name+"/chain_5000_1234.txt"),names=True)],[5000],verbose=False)
+        posteriors = nest2pos.draw_posterior_many([np.genfromtxt(os.path.join(options.data,folder_name+"/chain_{}_1234.txt".format(options.nlive)),
+                                                   names=True)],
+                                                   [options.nlive],
+                                                   verbose=False)
 
         if options.pickle == False:
             
@@ -216,66 +227,66 @@ if __name__=="__main__":
 
         f = plt.figure(dpi=256)
         ax = f.add_subplot(111)
-        C = ax.contourf(lX, lY, joint_posterior.T, 100, cmap = matplotlib.cm.seismic)
+        C = ax.contourf(lX, lY, single_posterior.T, 100, cmap = matplotlib.cm.seismic, zorder=1)
         plt.colorbar(C)
         levs = np.sort(FindHeightForLevel(joint_posterior.T,[0.68,0.95]))
-        ax.contour(lX,lY,joint_posterior.T, levs, colors='w', linewidths = 1.5)
+        ax.contour(lX,lY,joint_posterior.T, levs, colors='w', linewidths = 0.5, zorder=2)
         levs = np.sort(FindHeightForLevel(single_posterior.T,[0.68,0.95]))
-        ax.contour(lX,lY,single_posterior.T, levs, colors='k', linewidths = 0.5, linestyles = 'dashed')
-        ax.scatter(logit(posteriors['h'],h_min,h_max),logit(posteriors['om'],om_min,om_max), c='k', s=0.01, marker='.', alpha = 0.5)
+        ax.contour(lX,lY,single_posterior.T, levs, colors='k', linewidths = 0.5, linestyles = 'solid', zorder=3)
+        
+        if False:
+            ax.scatter(logit(posteriors['h'],h_min,h_max),logit(posteriors['om'],om_min,om_max), c='k', s=0.01, marker='.', alpha = 0.5)
+        
         ax.axvline(logit(0.73,h_min,h_max),color='k',linestyle='dashed',lw=0.5)
         ax.axhline(logit(0.25,om_min,om_max),color='k',linestyle='dashed',lw=0.5)
         ax.set_xlabel(r"$\mathrm{logit}(h)$")
         ax.set_ylabel(r"$\mathrm{logit}(\Omega_m)$")
-#        ax.set_xlim(0.5,1.0)
-#        ax.set_ylim(0.04,1.0)
         plt.title(r'Event {0}'.format(k))
         f.savefig(os.path.join(out_folder,"log_post_%004d.png"%k),bbox_inches='tight')
         plt.close()
         
         # plot the marginals
+        normalised_pdf = renormalise(joint_posterior+logjacobian_factor,dx,dy)
         
-#        f = plt.figure(dpi=256)
-#        ax = f.add_subplot(111)
-#        p  = marginalise(np.exp(joint_posterior),dy,1)
-#        ax.plot(x_flat, p, color='k',linestyle='solid',lw=1.5)
-#        p  = marginalise(np.exp(single_posterior),dy,1)
-#        ax.plot(x_flat, p, color='k',linestyle='dashed',lw=0.25)
-#        ax.hist(posteriors['h'], density = True, alpha = 0.5, bins = 50)
-#        ax.axvline(0.73, color='r', linestyle='dotted')
-#        ax.set_xlim(0.5,1.0)
-#        ax.set_xlabel(r"$h$")
-#        ax.set_ylabel(r"$p(h|DI)$")
-#        plt.title(r'Event {0}'.format(k))
-#        f.savefig(os.path.join(out_folder,"post_h_%004d.png"%k),bbox_inches='tight')
-#        plt.close()
-#
-#        f = plt.figure(dpi=256)
-#        ax = f.add_subplot(111)
-#        p  = marginalise(np.exp(joint_posterior),dx,0)
-#        ax.plot(y_flat, p, color='k',linestyle='solid',lw=1.5)
-#        p  = marginalise(np.exp(single_posterior),dx,0)
-#        ax.plot(y_flat, p, color='k',linestyle='dashed',lw=0.25)
-#        ax.hist(posteriors['om'], density = True, alpha = 0.5, bins = 50)
-#        ax.axvline(0.25, color='r', linestyle='dotted')
-#        ax.set_xlim(0.04,0.5)
-#        ax.set_xlabel(r"$\Omega_m$")
-#        ax.set_ylabel(r"$p(\Omega_m|DI)$")
-#        plt.title(r'Event {0}'.format(k))
-#        f.savefig(os.path.join(out_folder,"post_om_%004d.png"%k),bbox_inches='tight')
-#        plt.close()
+        f = plt.figure(dpi=256)
+        ax = f.add_subplot(111)
+        p  = marginalise(normalised_pdf,dy,1)
+        ax.plot(x_flat, p, color='k',linestyle='solid',lw=1.5)
+        p  = marginalise(normalised_pdf,dy,1)
+        ax.plot(x_flat, p, color='k',linestyle='dashed',lw=0.25)
+        ax.hist(posteriors['h'], density = True, alpha = 0.5, bins = 50)
+        ax.axvline(0.73, color='r', linestyle='dotted')
+        ax.set_xlim(0.5,1.0)
+        ax.set_xlabel(r"$h$")
+        ax.set_ylabel(r"$p(h|DI)$")
+        plt.title(r'Event {0}'.format(k))
+        f.savefig(os.path.join(out_folder,"post_h_%004d.png"%k),bbox_inches='tight')
+        plt.close()
+
+        f = plt.figure(dpi=256)
+        ax = f.add_subplot(111)
+        p  = marginalise(normalised_pdf,dx,0)
+        ax.plot(y_flat, p, color='k',linestyle='solid',lw=1.5)
+        p  = marginalise(normalised_pdf,dx,0)
+        ax.plot(y_flat, p, color='k',linestyle='dashed',lw=0.25)
+        ax.hist(posteriors['om'], density = True, alpha = 0.5, bins = 50)
+        ax.axvline(0.25, color='r', linestyle='dotted')
+        ax.set_xlim(0.04,0.5)
+        ax.set_xlabel(r"$\Omega_m$")
+        ax.set_ylabel(r"$p(\Omega_m|DI)$")
+        plt.title(r'Event {0}'.format(k))
+        f.savefig(os.path.join(out_folder,"post_om_%004d.png"%k),bbox_inches='tight')
+        plt.close()
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
         levs = np.sort(FindHeightForLevel(joint_posterior.T+logjacobian_factor,[0.68,0.95]))
         C = ax.contour(X,Y,joint_posterior.T+logjacobian_factor,levs,linewidths=0.75,colors='black')
-    #    ax.scatter(posteriors['h'],posteriors['om'],s=1,alpha=0.5)
         ax.grid(alpha=0.5,linestyle='dotted')
         ax.axvline(0.73,color='k',linestyle='dashed',lw=0.5)
         ax.axhline(0.25,color='k',linestyle='dashed',lw=0.5)
         ax.set_xlabel(r"$H_0/100\,km\,s^{-1}\,Mpc^{-1}$",fontsize=18)
         ax.set_ylabel(r"$\Omega_m$",fontsize=18)
-    #    ax.set_ylim(0.1,1.0)
         plt.savefig(os.path.join(out_folder,"joint_posterior_{0}.pdf".format(k)),bbox_inches='tight')
         plt.close()
         if k==options.Nevents-1: break

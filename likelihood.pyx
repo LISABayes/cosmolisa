@@ -41,8 +41,8 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     local_number, _ = np.histogram(hosts[:,0], bins=redshifts)
     
     # estimate the number of galaxies that have been missed
-    for i in range(10):
-        number_lost += local_number[i]*(1.0-em_selection_function(omega.LuminosityDistance(redshifts[i])))
+#    for i in range(10):
+#        number_lost += local_number[i]*(1.0-em_selection_function(omega.LuminosityDistance(redshifts[i])))
 #        print('i:',i,'n:',number_lost,'ln:',local_number[i])
 #    exit()
 
@@ -52,11 +52,11 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     # compute the probability p(G|O) that the event is located in a detected galaxy
     cdef double logp_detection = log(em_selection_function(dl))
     # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
-    cdef double logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
+#    cdef double logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
 
-    # guestimate the number of unseen galaxies
-    cdef int Nn = np.maximum(0,int(number_lost))
-    cdef int Ntot = Nn+N
+#    # guestimate the number of unseen galaxies
+#    cdef int Nn = np.maximum(0,int(number_lost))
+#    cdef int Ntot = Nn+N
     
     # compute the weak lensing error
     weak_lensing_error = sigma_weak_lensing(event_redshift, dl)
@@ -67,19 +67,19 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
 
         sigma_z = hosts[i,1]*(1+hosts[i,0])
         score_z = (event_redshift-hosts[i,0])/sigma_z
-        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
+        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo#+log(em_selection_function(omega.LuminosityDistance(hosts[i,0])))
         logL = log_add(logL,logL_galaxy)
 
-    # add the probability that the GW was in a seen galaxy, multiply by p(G|O)
-    logL += logp_detection
-
+#    # add the probability that the GW was in a seen galaxy, multiply by p(G|O)
+#    logL += logp_detection
+#
     cdef double logLn = -np.inf
-    # sum over the unobserved galaxies, assuming they all have redshift = zgw
-    # p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
-    if em_selection == 1:
-#        logLn = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo# + log(Nn)
-        # multiply by p(notG|O)
-        logLn = logp_nondetection
+#    # sum over the unobserved galaxies, assuming they all have redshift = zgw
+##     p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
+#    if em_selection == 1:
+##        logLn = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo# + log(Nn)
+#        # multiply by p(notG|O)
+#        logLn = logp_nondetection
         
 #    print('logl = ', logL,'logl n = ',logLn, 'N = ',N,'number_lost',number_lost,'sum of logs = ',log_add(logL,logLn))
 #    exit()

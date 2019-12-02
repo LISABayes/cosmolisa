@@ -54,7 +54,7 @@ class CosmologicalModel(cpnest.model.Model):
         elif self.model == "DE":
             
             self.names  = ['w0','w1']
-            self.bounds = [[-2.0,0.0],[-3.0,3.0]]
+            self.bounds = [[-3.0,0.3],[-1.0,1.0]]
         
         else:
             
@@ -120,7 +120,7 @@ class CosmologicalModel(cpnest.model.Model):
             elif self.model == "DE":
                 self.O = cs.CosmologicalParameters(0.7,0.25,0.75,x['w0'],x['w1'])
 
-            logP += np.sum([np.log(self.O.ComovingVolumeElement(x['z%d'%e.ID])) for e in self.data])
+#            logP += np.sum([np.log(self.O.ComovingVolumeElement(x['z%d'%e.ID])) for e in self.data])
         return logP
     
     def log_likelihood(self,x):
@@ -175,7 +175,7 @@ if __name__=='__main__':
         print("==================================================")
         selected_events  = []
         count = 0
-        if 0:
+        if 1:
             while len(selected_events) < N-count and not(len(events) == 0):
 
                 while True:
@@ -184,7 +184,7 @@ if __name__=='__main__':
                         selected_event = events.pop(idx)
                     else:
                         break
-                    if len(selected_event.potential_galaxy_hosts) < 100:
+                    if len(selected_event.potential_galaxy_hosts) > 50 and len(selected_event.potential_galaxy_hosts) < 1000:
                         selected_events.append(selected_event)
                         count += 1
                         break
@@ -249,7 +249,9 @@ if __name__=='__main__':
         s_m.set_array([])
         ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
         for i in range(x.shape[0])[::10]:
-            O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
+            if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
+            elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+            elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
             distances = np.array([O.LuminosityDistance(zi) for zi in z])
             ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
 #            ax2.plot(z, np.exp(-0.5*(distances-e.dl)*(distances-e.dl)/e.sigma**2), lw = 0.01, color='k', alpha = 0.5)
