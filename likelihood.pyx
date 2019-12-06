@@ -52,7 +52,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     # compute the probability p(G|O) that the event is located in a detected galaxy
     cdef double logp_detection = log(em_selection_function(dl))
     # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
-#    cdef double logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
+    cdef double logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
 
 #    # guestimate the number of unseen galaxies
 #    cdef int Nn = np.maximum(0,int(number_lost))
@@ -71,15 +71,15 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
         logL = log_add(logL,logL_galaxy)
 
 #    # add the probability that the GW was in a seen galaxy, multiply by p(G|O)
-#    logL += logp_detection
+    logL += logp_detection
 #
     cdef double logLn = -np.inf
 #    # sum over the unobserved galaxies, assuming they all have redshift = zgw
 ##     p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
-#    if em_selection == 1:
-##        logLn = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo# + log(Nn)
-#        # multiply by p(notG|O)
-#        logLn = logp_nondetection
+    if em_selection == 1:
+#        logLn = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo# + log(Nn)
+        # multiply by p(notG|O)
+        logLn = logp_nondetection
         
 #    print('logl = ', logL,'logl n = ',logLn, 'N = ',N,'number_lost',number_lost,'sum of logs = ',log_add(logL,logLn))
 #    exit()
