@@ -1816,7 +1816,7 @@ static double (*__pyx_fuse_1__pyx_f_5scipy_7special_14cython_special_hyp2f1)(dou
 static PyTypeObject *__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = 0;
 static CYTHON_INLINE double __pyx_f_10likelihood_log_add(double, double); /*proto*/
 static double __pyx_f_10likelihood_logLikelihood_single_event(PyArrayObject *, double, double, PyObject *, double, int __pyx_skip_dispatch, struct __pyx_opt_args_10likelihood_logLikelihood_single_event *__pyx_optional_args); /*proto*/
-static double __pyx_f_10likelihood_sigma_weak_lensing(double, double); /*proto*/
+static double __pyx_f_10likelihood_sigma_weak_lensing(double, double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function(double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function_number_density(double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function_normalisation(double, double, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_10likelihood_em_selection_function_normalisation *__pyx_optional_args); /*proto*/
@@ -1925,9 +1925,10 @@ static PyObject *__pyx_n_s_z;
 static PyObject *__pyx_n_s_zmax;
 static PyObject *__pyx_n_s_zmin;
 static PyObject *__pyx_pf_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax); /* proto */
-static PyObject *__pyx_pf_10likelihood_2em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
-static PyObject *__pyx_pf_10likelihood_4em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
-static PyObject *__pyx_pf_10likelihood_6em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N); /* proto */
+static PyObject *__pyx_pf_10likelihood_2sigma_weak_lensing(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_z, double __pyx_v_dl); /* proto */
+static PyObject *__pyx_pf_10likelihood_4em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
+static PyObject *__pyx_pf_10likelihood_6em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
+static PyObject *__pyx_pf_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static PyObject *__pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap(PyObject *__pyx_self, double __pyx_v_z, PyObject *__pyx_v_omega, double __pyx_v_dl); /* proto */
@@ -2234,7 +2235,7 @@ static double __pyx_f_10likelihood_logLikelihood_single_event(PyArrayObject *__p
  * 
  *     # sum over the observed galaxies
  */
-  __pyx_v_weak_lensing_error = __pyx_f_10likelihood_sigma_weak_lensing(__pyx_v_event_redshift, __pyx_v_dl);
+  __pyx_v_weak_lensing_error = __pyx_f_10likelihood_sigma_weak_lensing(__pyx_v_event_redshift, __pyx_v_dl, 0);
 
   /* "likelihood.pyx":56
  *     # sum over the observed galaxies
@@ -2379,7 +2380,7 @@ static double __pyx_f_10likelihood_logLikelihood_single_event(PyArrayObject *__p
  *     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)             # <<<<<<<<<<<<<<
  * 
- * cdef double sigma_weak_lensing(double z, double dl):
+ * cpdef double sigma_weak_lensing(double z, double dl):
  */
   __pyx_r = ((((((-0.5 * (__pyx_v_dl - __pyx_v_meandl)) * (__pyx_v_dl - __pyx_v_meandl)) / __pyx_v_SigmaSquared) - __pyx_v_logTwoPiByTwo) - __pyx_v_logSigmaByTwo) + __pyx_f_10likelihood_log_add(__pyx_v_logL, __pyx_v_logLn));
   goto __pyx_L0;
@@ -2617,12 +2618,13 @@ static PyObject *__pyx_pf_10likelihood_logLikelihood_single_event(CYTHON_UNUSED 
 /* "likelihood.pyx":77
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)
  * 
- * cdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
+ * cpdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
  *     """
  *     Weak lensing error. From <REF>
  */
 
-static double __pyx_f_10likelihood_sigma_weak_lensing(double __pyx_v_z, double __pyx_v_dl) {
+static PyObject *__pyx_pw_10likelihood_3sigma_weak_lensing(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static double __pyx_f_10likelihood_sigma_weak_lensing(double __pyx_v_z, double __pyx_v_dl, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("sigma_weak_lensing", 0);
@@ -2640,13 +2642,98 @@ static double __pyx_f_10likelihood_sigma_weak_lensing(double __pyx_v_z, double _
   /* "likelihood.pyx":77
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)
  * 
- * cdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
+ * cpdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
  *     """
  *     Weak lensing error. From <REF>
  */
 
   /* function exit code */
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_10likelihood_3sigma_weak_lensing(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_10likelihood_2sigma_weak_lensing[] = "\n    Weak lensing error. From <REF>\n    Parameters:\n    ===============\n    z: :obj:'numpy.double': redshift\n    dl: :obj:'numpy.double': luminosity distance\n    ";
+static PyObject *__pyx_pw_10likelihood_3sigma_weak_lensing(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  double __pyx_v_z;
+  double __pyx_v_dl;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("sigma_weak_lensing (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_z,&__pyx_n_s_dl,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_z)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dl)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, 1); __PYX_ERR(0, 77, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "sigma_weak_lensing") < 0)) __PYX_ERR(0, 77, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L3_error)
+    __pyx_v_dl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 77, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("likelihood.sigma_weak_lensing", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_10likelihood_2sigma_weak_lensing(__pyx_self, __pyx_v_z, __pyx_v_dl);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10likelihood_2sigma_weak_lensing(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_z, double __pyx_v_dl) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("sigma_weak_lensing", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_10likelihood_sigma_weak_lensing(__pyx_v_z, __pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("likelihood.sigma_weak_lensing", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
@@ -2659,7 +2746,7 @@ static double __pyx_f_10likelihood_sigma_weak_lensing(double __pyx_v_z, double _
  * 
  */
 
-static PyObject *__pyx_pw_10likelihood_3em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
+static PyObject *__pyx_pw_10likelihood_5em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function(double __pyx_v_dl, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -2690,8 +2777,8 @@ static double __pyx_f_10likelihood_em_selection_function(double __pyx_v_dl, CYTH
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_10likelihood_3em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
-static PyObject *__pyx_pw_10likelihood_3em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl) {
+static PyObject *__pyx_pw_10likelihood_5em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
+static PyObject *__pyx_pw_10likelihood_5em_selection_function(PyObject *__pyx_self, PyObject *__pyx_arg_dl) {
   double __pyx_v_dl;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
@@ -2705,14 +2792,14 @@ static PyObject *__pyx_pw_10likelihood_3em_selection_function(PyObject *__pyx_se
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_10likelihood_2em_selection_function(__pyx_self, ((double)__pyx_v_dl));
+  __pyx_r = __pyx_pf_10likelihood_4em_selection_function(__pyx_self, ((double)__pyx_v_dl));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10likelihood_2em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl) {
+static PyObject *__pyx_pf_10likelihood_4em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2743,7 +2830,7 @@ static PyObject *__pyx_pf_10likelihood_2em_selection_function(CYTHON_UNUSED PyOb
  * 
  */
 
-static PyObject *__pyx_pw_10likelihood_5em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
+static PyObject *__pyx_pw_10likelihood_7em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function_number_density(double __pyx_v_dl, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -2774,8 +2861,8 @@ static double __pyx_f_10likelihood_em_selection_function_number_density(double _
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_10likelihood_5em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
-static PyObject *__pyx_pw_10likelihood_5em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl) {
+static PyObject *__pyx_pw_10likelihood_7em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl); /*proto*/
+static PyObject *__pyx_pw_10likelihood_7em_selection_function_number_density(PyObject *__pyx_self, PyObject *__pyx_arg_dl) {
   double __pyx_v_dl;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
@@ -2789,14 +2876,14 @@ static PyObject *__pyx_pw_10likelihood_5em_selection_function_number_density(PyO
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_10likelihood_4em_selection_function_number_density(__pyx_self, ((double)__pyx_v_dl));
+  __pyx_r = __pyx_pf_10likelihood_6em_selection_function_number_density(__pyx_self, ((double)__pyx_v_dl));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10likelihood_4em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl) {
+static PyObject *__pyx_pf_10likelihood_6em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2827,7 +2914,7 @@ static PyObject *__pyx_pf_10likelihood_4em_selection_function_number_density(CYT
  *     cdef double z = zmin, dz = (zmax-zmin)/100.
  */
 
-static PyObject *__pyx_pw_10likelihood_7em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_10likelihood_9em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
 static double __pyx_f_10likelihood_em_selection_function_normalisation(double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_10likelihood_em_selection_function_normalisation *__pyx_optional_args) {
   int __pyx_v_N = ((int)1);
   CYTHON_UNUSED int __pyx_v_i;
@@ -3014,8 +3101,8 @@ static double __pyx_f_10likelihood_em_selection_function_normalisation(double __
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_10likelihood_7em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_10likelihood_7em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_10likelihood_9em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_10likelihood_9em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   double __pyx_v_zmin;
   double __pyx_v_zmax;
   PyObject *__pyx_v_omega = 0;
@@ -3096,14 +3183,14 @@ static PyObject *__pyx_pw_10likelihood_7em_selection_function_normalisation(PyOb
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_10likelihood_6em_selection_function_normalisation(__pyx_self, __pyx_v_zmin, __pyx_v_zmax, __pyx_v_omega, __pyx_v_N);
+  __pyx_r = __pyx_pf_10likelihood_8em_selection_function_normalisation(__pyx_self, __pyx_v_zmin, __pyx_v_zmax, __pyx_v_omega, __pyx_v_N);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10likelihood_6em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N) {
+static PyObject *__pyx_pf_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
@@ -6000,9 +6087,10 @@ static PyTypeObject __pyx_scope_struct____Pyx_CFunc_double____double____object__
 
 static PyMethodDef __pyx_methods[] = {
   {"logLikelihood_single_event", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10likelihood_1logLikelihood_single_event, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10likelihood_logLikelihood_single_event},
-  {"em_selection_function", (PyCFunction)__pyx_pw_10likelihood_3em_selection_function, METH_O, 0},
-  {"em_selection_function_number_density", (PyCFunction)__pyx_pw_10likelihood_5em_selection_function_number_density, METH_O, 0},
-  {"em_selection_function_normalisation", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10likelihood_7em_selection_function_normalisation, METH_VARARGS|METH_KEYWORDS, 0},
+  {"sigma_weak_lensing", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10likelihood_3sigma_weak_lensing, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10likelihood_2sigma_weak_lensing},
+  {"em_selection_function", (PyCFunction)__pyx_pw_10likelihood_5em_selection_function, METH_O, 0},
+  {"em_selection_function_number_density", (PyCFunction)__pyx_pw_10likelihood_7em_selection_function_number_density, METH_O, 0},
+  {"em_selection_function_normalisation", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10likelihood_9em_selection_function_normalisation, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 

@@ -40,6 +40,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.em_selection   = kwargs['em_selection']
         self.z_threshold    = kwargs['z_threshold']
         self.snr_threshold  = kwargs['snr_threshold']
+        self.event_class    = kwargs['event_class']
         self.O              = None
         
         if self.model == "LambdaCDM":
@@ -123,8 +124,11 @@ class CosmologicalModel(cpnest.model.Model):
             elif self.model == "DE":
                 z_idx = 5
                 self.O = cs.CosmologicalParameters(0.7,0.25,0.75,x['w0'],x['w1'])
-            log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx][1]))
-            logP += np.sum([np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm for e in self.data])
+            
+            if self.event_class == "EMRI" or self.event_class == "sBH":
+                log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx][1]))
+                logP += np.sum([np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm for e in self.data])
+                
         return logP
 
     def log_likelihood(self,x):
@@ -158,11 +162,12 @@ if __name__=='__main__':
     parser.add_option('--nlive',        default=1000, type='int',metavar='nlive',help='number of live points')
     parser.add_option('--poolsize',     default=100, type='int',metavar='poolsize',help='poolsize for the samplers')
     parser.add_option('--maxmcmc',      default=1000, type='int',metavar='maxmcmc',help='maximum number of mcmc steps')
+    parser.add_option('--postprocess',  default=0, type='int',metavar='postprocess',help='run only the postprocessing')
     (opts,args)=parser.parse_args()
     
     gw_selection = opts.gw_selection
     em_selection = opts.em_selection
-    
+
     if opts.event_class == "MBH":
         # if running on SMBH override the selection functions
         gw_selection = 0
@@ -290,9 +295,10 @@ if __name__=='__main__':
                           gw_selection = gw_selection,
                           em_selection = em_selection,
                           snr_threshold= opts.snr_threshold,
-                          z_threshold  = opts.zhorizon)
+                          z_threshold  = opts.zhorizon,
+                          event_class  = opts.event_class)
     
-    if 1:
+    if opts.postprocess == 0:
         work=cpnest.CPNest(C,
                            verbose      = 2,
                            poolsize     = opts.poolsize,
@@ -359,7 +365,7 @@ if __name__=='__main__':
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
         dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
-        deltadl = [2*e.sigma/1e3 for e in C.data]
+        deltadl = [np.sqrt((e.sigma/1e3)**2+(lk.sigma_weak_lensing(e.potential_galaxy_hosts[0].redshift,e.dl)/1e3)**2) for e in C.data]
         z = [np.median(x['z%d'%e.ID]) for e in C.data]
         deltaz = [2*np.std(x['z%d'%e.ID]) for e in C.data]
         

@@ -74,7 +74,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)
     
-cdef double sigma_weak_lensing(double z, double dl):
+cpdef double sigma_weak_lensing(double z, double dl):
     """
     Weak lensing error. From <REF>
     Parameters:
