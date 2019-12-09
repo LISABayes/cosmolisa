@@ -358,6 +358,7 @@ if __name__=='__main__':
     if opts.event_class == "MBH":
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
+        dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
         deltadl = [2*e.sigma/1e3 for e in C.data]
         z = [np.median(x['z%d'%e.ID]) for e in C.data]
         deltaz = [2*np.std(x['z%d'%e.ID]) for e in C.data]
@@ -403,10 +404,10 @@ if __name__=='__main__':
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.errorbar(z,dl,xerr=deltaz,yerr=deltadl,markersize=1,linewidth=1,color='k',fmt='o')
-        ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='white', zorder = 22)
+        ax.errorbar(z,dl,xerr=deltaz,yerr=deltadl,markersize=1,linewidth=2,color='k',fmt='o')
+        ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='red', zorder = 22)
         ax.plot(redshift,model50,color='k')
-        ax.errorbar(ztrue, dl, yerr=deltadl, markersize=2,linewidth=1,color='r',fmt='o')
+        ax.errorbar(ztrue, dl, yerr=deltadl, xerr=dztrue, markersize=2,linewidth=1,color='r',fmt='o')
         ax.fill_between(redshift,model2p5,model97p5,facecolor='turquoise')
         ax.fill_between(redshift,model16,model84,facecolor='cyan')
         ax.set_xlabel(r"z")

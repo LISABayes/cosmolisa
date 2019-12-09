@@ -72,8 +72,8 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                 redshifts               = np.atleast_1d(redshifts)
                 d_redshifts             = np.atleast_1d(d_redshifts)
                 weights                 = np.ones(len(redshifts))
-                zmin                    = np.maximum(redshifts - 10.0*d_redshifts, 0.0)
-                zmax                    = redshifts + 10.0*d_redshifts
+                zmin                    = np.maximum(redshifts - 5.0*d_redshifts, 0.0)
+                zmax                    = redshifts + 5.0*d_redshifts
                 events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,-1,-1))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
