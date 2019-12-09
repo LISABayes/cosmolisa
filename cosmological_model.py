@@ -124,13 +124,13 @@ class CosmologicalModel(cpnest.model.Model):
                 z_idx = 5
                 self.O = cs.CosmologicalParameters(0.7,0.25,0.75,x['w0'],x['w1'])
             log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx][1]))
-            logP += np.sum([np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID])) for e in self.data])
+            logP += np.sum([np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm for e in self.data])
         return logP
 
     def log_likelihood(self,x):
         
         # compute the p(GW|G\Omega)p(G|\Omega)+p(GW|~G\Omega)p(~G|\Omega)
-        logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma, e.VC, self.O, x['z%d'%e.ID],
+        logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma, self.O, x['z%d'%e.ID],
                                 em_selection = self.em_selection, zmin = self.bounds[-1][0], zmax = self.bounds[-1][1]) for e in self.data])
 
         self.O.DestroyCosmologicalParameters()
@@ -152,7 +152,7 @@ if __name__=='__main__':
     parser.add_option('-j','--joint',   default=0, type='int',metavar='joint',help='run a joint analysis for N events, randomly selected. (EMRI only)')
     parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
     parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')
-    parser.add_option('--zhorizon',     default=1.0, type='float',metavar='zhorizon',help='Horizon redshift corresponding to the SNR threshold')
+    parser.add_option('--zhorizon',     default=1000.0, type='float',metavar='zhorizon',help='Horizon redshift corresponding to the SNR threshold')
     parser.add_option('--gw_selection', default=0, type='int',metavar='gw_selection',help='use GW selection function')
     parser.add_option('--em_selection', default=0, type='int',metavar='em_selection',help='use EM selection function')
     parser.add_option('--nlive',        default=1000, type='int',metavar='nlive',help='number of live points')
@@ -163,7 +163,7 @@ if __name__=='__main__':
     gw_selection = opts.gw_selection
     em_selection = opts.em_selection
     
-    if opts.event_class == "SMBH":
+    if opts.event_class == "MBH":
         # if running on SMBH override the selection functions
         gw_selection = 0
         em_selection = 0
@@ -189,8 +189,7 @@ if __name__=='__main__':
                         selected_event = events.pop(idx)
                     else:
                         break
-#                    if len(selected_event.potential_galaxy_hosts) < 50:# and len(selected_event.potential_galaxy_hosts) < 1000:
-                    if selected_event.z_true < 0.3:# and len(selected_event.potential_galaxy_hosts) < 1000:
+                    if selected_event.z_true < opts.zhorizon:
                         selected_events.append(selected_event)
                         count += 1
                         break
@@ -314,45 +313,109 @@ if __name__=='__main__':
     import matplotlib
     import matplotlib.pyplot as plt
     from scipy.stats import norm
-    for e in C.data:
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        z = np.linspace(e.zmin,e.zmax, 100)
-        
-        ax2 = ax.twinx()
-        
-        normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-
-        # choose a colormap
-        c_m = matplotlib.cm.cool
-
-        # create a ScalarMappable and initialize a data structure
-        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-        s_m.set_array([])
-        ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
-        for i in range(x.shape[0])[::10]:
-            if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
-            elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-            elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-            distances = np.array([O.LuminosityDistance(zi) for zi in z])
-            ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
-            O.DestroyCosmologicalParameters()
+    
+    if opts.event_class == "EMRI":
+        for e in C.data:
+            fig = plt.figure()
+            ax  = fig.add_subplot(111)
+            z = np.linspace(e.zmin,e.zmax, 100)
             
-        CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-        CB.set_label('h')
-        ax2.set_ylim(0.0,1.0)
-        ax2.set_ylabel('selection function')
-        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
-        ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+            ax2 = ax.twinx()
+            
+            normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
 
-        for g in e.potential_galaxy_hosts:
-            zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
-            pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
-            ax.plot(zg, pg, lw=0.5,color='k')
-        ax.set_xlabel('$z_{%d}$'%e.ID)
-        ax.set_ylabel('probability density')
-        plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.pdf'), bbox_inches='tight')
+            # choose a colormap
+            c_m = matplotlib.cm.cool
+
+            # create a ScalarMappable and initialize a data structure
+            s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+            s_m.set_array([])
+            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+            for i in range(x.shape[0])[::10]:
+                if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
+                elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                distances = np.array([O.LuminosityDistance(zi) for zi in z])
+                ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+                O.DestroyCosmologicalParameters()
+                
+            CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+            CB.set_label('h')
+            ax2.set_ylim(0.0,1.0)
+            ax2.set_ylabel('selection function')
+            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+
+            for g in e.potential_galaxy_hosts:
+                zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
+                pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
+                ax.plot(zg, pg, lw=0.5,color='k')
+            ax.set_xlabel('$z_{%d}$'%e.ID)
+            ax.set_ylabel('probability density')
+            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.pdf'), bbox_inches='tight')
+            plt.close()
+    
+    if opts.event_class == "MBH":
+        dl = [e.dl/1e3 for e in C.data]
+        ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
+        deltadl = [2*e.sigma/1e3 for e in C.data]
+        z = [np.median(x['z%d'%e.ID]) for e in C.data]
+        deltaz = [2*np.std(x['z%d'%e.ID]) for e in C.data]
+        
+        # injected cosmology
+        omega_true = cs.CosmologicalParameters(0.73,0.25,0.75,-1,0)
+        redshift = np.logspace(-3,1.0,100)
+        
+        # loop over the posterior samples to get all models to then average
+        # for the plot
+        
+        models = []
+        
+        for k in range(x.shape[0]):
+            if opts.model == "LambdaCDM":
+                omega = cs.CosmologicalParameters(x['h'][k],
+                                               x['om'][k],
+                                               1.0-x['om'][k],
+                                               -1,
+                                               0.0)
+
+            elif opts.model == "LambdaCDMDE":
+                omega = cs.CosmologicalParameters(x['h'][k],
+                                               x['om'][k],
+                                               x['ol'][k],
+                                               x['w0'][k],
+                                               x['w1'][k])
+            elif opts.model == "DE":
+                omega = cs.CosmologicalParameters(0.73,
+                                               0.25,
+                                               0.75,
+                                               x['w0'][k],
+                                               x['w1'][k])
+            else:
+                print(opts.model,"is unknown")
+                exit()
+            models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
+            omega.DestroyCosmologicalParameters()
+        
+        models = np.array(models)
+        model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.7,16.0,50.0,84.0,97.5],axis = 0)
+        
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.errorbar(z,dl,xerr=deltaz,yerr=deltadl,markersize=1,linewidth=1,color='k',fmt='o')
+        ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='white', zorder = 22)
+        ax.plot(redshift,model50,color='k')
+        ax.errorbar(ztrue, dl, yerr=deltadl, markersize=2,linewidth=1,color='r',fmt='o')
+        ax.fill_between(redshift,model2p5,model97p5,facecolor='turquoise')
+        ax.fill_between(redshift,model16,model84,facecolor='cyan')
+        ax.set_xlabel(r"z")
+        ax.set_ylabel(r"$D_L$/Gpc")
+#        ax.set_xlim(np.min(redshift),0.8)
+#        ax.set_ylim(0.0,4.0)
+        fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
+    
     
     import corner
     if model == "LambdaCDM":

@@ -14,7 +14,7 @@ cdef inline double linear_density(double x, double a, double b): return a+log(x)
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, double Vc, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -35,29 +35,19 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     cdef double score_z, sigma_z
     cdef double logL = -np.inf
     cdef double weak_lensing_error
-    cdef double number_lost = 0.0
-    cdef ndarray[double, ndim = 1] redshifts = np.linspace(zmin,zmax,11)
-    cdef ndarray local_number
-    local_number, _ = np.histogram(hosts[:,0], bins=redshifts)
-    
-    # estimate the number of galaxies that have been missed
-#    for i in range(10):
-#        number_lost += local_number[i]*(1.0-em_selection_function(omega.LuminosityDistance(redshifts[i])))
-#        print('i:',i,'n:',number_lost,'ln:',local_number[i])
-#    exit()
 
     # predict dl from the cosmology and the redshift
     dl = omega.LuminosityDistance(event_redshift)
     
-    # compute the probability p(G|O) that the event is located in a detected galaxy
-    cdef double logp_detection = log(em_selection_function(dl))
-    # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
-    cdef double logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
-
-#    # guestimate the number of unseen galaxies
-#    cdef int Nn = np.maximum(0,int(number_lost))
-#    cdef int Ntot = Nn+N
+    cdef double logp_detection = 0.0
+    cdef double logp_nondetection = 0.0
     
+    if em_selection == 1:
+        # compute the probability p(G|O) that the event is located in a detected galaxy
+        # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
+        logp_detection      = log(em_selection_function(dl))
+        logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])
+
     # compute the weak lensing error
     weak_lensing_error = sigma_weak_lensing(event_redshift, dl)
     
@@ -67,22 +57,19 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
 
         sigma_z = hosts[i,1]*(1+hosts[i,0])
         score_z = (event_redshift-hosts[i,0])/sigma_z
-        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo#+log(em_selection_function(omega.LuminosityDistance(hosts[i,0])))
+        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
         logL = log_add(logL,logL_galaxy)
 
-#    # add the probability that the GW was in a seen galaxy, multiply by p(G|O)
-    logL += logp_detection
-#
+    # add the probability that the GW was in a seen galaxy, multiply by p(G|O)
+    if em_selection == 1: logL += logp_detection
+    
     cdef double logLn = -np.inf
-#    # sum over the unobserved galaxies, assuming they all have redshift = zgw
-##     p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
+    # sum over the unobserved galaxies, assuming they all have redshift = zgw
+    # p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
     if em_selection == 1:
-#        logLn = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo# + log(Nn)
         # multiply by p(notG|O)
         logLn = logp_nondetection
         
-#    print('logl = ', logL,'logl n = ',logLn, 'N = ',N,'number_lost',number_lost,'sum of logs = ',log_add(logL,logLn))
-#    exit()
     cdef double SigmaSquared = sigma**2+weak_lensing_error**2
     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)
