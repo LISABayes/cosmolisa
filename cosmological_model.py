@@ -123,7 +123,7 @@ class CosmologicalModel(cpnest.model.Model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             elif self.model == "DE":
                 z_idx = 5
-                self.O = cs.CosmologicalParameters(0.7,0.25,0.75,x['w0'],x['w1'])
+                self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
             
             if self.event_class == "EMRI" or self.event_class == "sBH":
                 log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx][1]))
@@ -152,7 +152,7 @@ if __name__=='__main__':
     parser.add_option('-d','--data',    default=None,type='string',metavar='data',help='galaxy data location')
     parser.add_option('-e','--event',   default=None,type='int',metavar='event',help='event number')
     parser.add_option('-c','--event-class',default=None,type='string',metavar='event_class',help='class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM and LambdaCDMDE')
+    parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, DE and LambdaCDMDE')
     parser.add_option('-j','--joint',   default=0, type='int',metavar='joint',help='run a joint analysis for N events, randomly selected. (EMRI only)')
     parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
     parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')

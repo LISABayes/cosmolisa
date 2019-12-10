@@ -132,10 +132,11 @@ if __name__=="__main__":
     parser=OptionParser()
     parser.add_option('-o','--out',action='store',type='string',default=None,help='Output folder', dest='output')
     parser.add_option('-d',action='store',type='string',default=None,help='data folder', dest='data')
-    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE)', dest='model')
+    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE, DE)', dest='model')
     parser.add_option('-N',action='store',type='int',default=None,help='Number of bins for the grid sampling', dest='N')
     (options,args)=parser.parse_args()
 
+    model = opts.model
     out_folder = options.output
     os.system("mkdir -p %s"%out_folder)
 
@@ -166,17 +167,17 @@ if __name__=="__main__":
         samples = np.genfromtxt(os.path.join(options.data,c+"/chain_5000_1234.txt"),names=True)
         posteriors = nest2pos.draw_posterior_many([samples], [5000], verbose=False)
         if i==0:
-            h = posteriors['h']
-            om = posteriors['om']
+            h = posteriors['h'][::5]
+            om = posteriors['om'][::5]
         else:
-            h = np.concatenate((h,posteriors['h']))
-            om = np.concatenate((om,posteriors['om']))
+            h = np.concatenate((h,posteriors['h'][::5]))
+            om = np.concatenate((om,posteriors['om'][::5]))
         print('elements {0} {1}'.format(len(h),len(posteriors['h'])))
 #        if i == 0: break
     model = initialise_dpgmm(2,np.column_stack((h,om)))
     logdensity = compute_dpgmm(model,max_sticks=8)
     single_posterior = evaluate_grid(logdensity,x_flat,y_flat)
-    pickle.dump(single_posterior,open(os.path.join(options.output,"average_posterior.p"),"wb"))
+    pickle.dump(single_posterior,open(os.path.join(options.output,"average_posterior_{0}.p".format(model)),"wb"))
     init_plotting()
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -189,5 +190,5 @@ if __name__=="__main__":
     ax.axhline(0.25,color='k',linestyle='dashed',lw=0.5)
     ax.set_xlabel(r"$H_0/100\,km\,s^{-1}\,Mpc^{-1}$",fontsize=18)
     ax.set_ylabel(r"$\Omega_m$",fontsize=18)
-    plt.savefig(os.path.join(options.output,"average_posterior.pdf"),bbox_inches='tight')
+    plt.savefig(os.path.join(options.output,"average_posterior_{0}.pdf".format(model)),bbox_inches='tight')
     plt.close()
