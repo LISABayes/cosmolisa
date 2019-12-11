@@ -36,7 +36,6 @@ class CosmologicalModel(cpnest.model.Model):
         self.data           = data
         self.N              = len(self.data)
         self.model          = model
-        self.gw_selection   = kwargs['gw_selection']
         self.em_selection   = kwargs['em_selection']
         self.z_threshold    = kwargs['z_threshold']
         self.snr_threshold  = kwargs['snr_threshold']
@@ -74,7 +73,6 @@ class CosmologicalModel(cpnest.model.Model):
         print("Cosmological model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_selection))
-        print("GW correction {0}".format(self.gw_selection))
         print("==========================================")
 
     def _initialise_galaxy_hosts(self):
@@ -98,7 +96,7 @@ class CosmologicalModel(cpnest.model.Model):
                 w1 = np.random.uniform(self.bounds[4][0],self.bounds[4][1])
                 O = cs.CosmologicalParameters(h,om,ol,w0,w1)
             elif self.model == "DE":
-                z_idx = 5
+                z_idx = 2
                 w0 = np.random.uniform(self.bounds[0][0],self.bounds[0][1])
                 w1 = np.random.uniform(self.bounds[1][0],self.bounds[1][1])
                 O = cs.CosmologicalParameters(0.73,0.25,0.75,w0,w1)
@@ -122,12 +120,13 @@ class CosmologicalModel(cpnest.model.Model):
                 z_idx = 5
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             elif self.model == "DE":
-                z_idx = 5
+                z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
             
             if self.event_class == "EMRI" or self.event_class == "sBH":
-                log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx][1]))
-                logP += np.sum([np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm for e in self.data])
+                for j,e in enumerate(self.data):
+                    log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx+j][1]))
+                    logP += np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm
                 
         return logP
 
@@ -157,7 +156,6 @@ if __name__=='__main__':
     parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
     parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')
     parser.add_option('--zhorizon',     default=1000.0, type='float',metavar='zhorizon',help='Horizon redshift corresponding to the SNR threshold')
-    parser.add_option('--gw_selection', default=0, type='int',metavar='gw_selection',help='use GW selection function')
     parser.add_option('--em_selection', default=0, type='int',metavar='em_selection',help='use EM selection function')
     parser.add_option('--nlive',        default=1000, type='int',metavar='nlive',help='number of live points')
     parser.add_option('--poolsize',     default=100, type='int',metavar='poolsize',help='poolsize for the samplers')
@@ -165,17 +163,11 @@ if __name__=='__main__':
     parser.add_option('--postprocess',  default=0, type='int',metavar='postprocess',help='run only the postprocessing')
     (opts,args)=parser.parse_args()
     
-    gw_selection = opts.gw_selection
     em_selection = opts.em_selection
 
     if opts.event_class == "MBH":
         # if running on SMBH override the selection functions
-        gw_selection = 0
         em_selection = 0
-#    if opts.event_class == "EMRI" or opts.event_class == "sBH":
-#        gw_selection = True
-#    if opts.event_class == "EMRI" or opts.event_class == "sBH":
-#        em_selection = True
 
     if opts.event_class == "EMRI" and opts.joint !=0:
         np.random.seed(opts.seed)
@@ -292,7 +284,6 @@ if __name__=='__main__':
     
     C = CosmologicalModel(model,
                           events,
-                          gw_selection = gw_selection,
                           em_selection = em_selection,
                           snr_threshold= opts.snr_threshold,
                           z_threshold  = opts.zhorizon,
@@ -328,8 +319,8 @@ if __name__=='__main__':
             
             ax2 = ax.twinx()
             
-            normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-
+            if model == "DE": normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+            else: normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
             # choose a colormap
             c_m = matplotlib.cm.cool
 
@@ -342,11 +333,13 @@ if __name__=='__main__':
                 elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
                 elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
                 distances = np.array([O.LuminosityDistance(zi) for zi in z])
-                ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+                if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+                else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
                 O.DestroyCosmologicalParameters()
                 
             CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-            CB.set_label('h')
+            if model == "DE": CB.set_label('h')
+            else: CB.set_label('w_0')
             ax2.set_ylim(0.0,1.0)
             ax2.set_ylabel('selection function')
             ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
