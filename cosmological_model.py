@@ -338,8 +338,8 @@ if __name__=='__main__':
                 O.DestroyCosmologicalParameters()
                 
             CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-            if model == "DE": CB.set_label('h')
-            else: CB.set_label('w_0')
+            if model == "DE": CB.set_label('w_0')
+            else: CB.set_label('h')
             ax2.set_ylim(0.0,1.0)
             ax2.set_ylabel('selection function')
             ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
