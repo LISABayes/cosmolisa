@@ -51,7 +51,12 @@ class CosmologicalModel(cpnest.model.Model):
             
             self.names  = ['h','om','ol','w0','w1']
             self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
-        
+            
+        elif self.model == "CLambdaCDM":
+            
+            self.names  = ['h','om','ol']
+            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0]]
+            
         elif self.model == "DE":
             
             self.names  = ['w0','w1']
@@ -77,34 +82,6 @@ class CosmologicalModel(cpnest.model.Model):
 
     def _initialise_galaxy_hosts(self):
         self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight) for g in e.potential_galaxy_hosts]) for e in self.data}
-
-    def find_max_distance(self):
-        dlmax = -1.0
-        for _ in range(1000):
-            if self.model == "LambdaCDM":
-                z_idx = 2
-                h  = np.random.uniform(self.bounds[0][0],self.bounds[0][1])
-                om = np.random.uniform(self.bounds[1][0],self.bounds[1][1])
-                ol = 1.0-om
-                O = cs.CosmologicalParameters(h,om,ol,-1.0,0.0)
-            elif self.model == "LambdaCDMDE":
-                z_idx = 5
-                h  = np.random.uniform(self.bounds[0][0],self.bounds[0][1])
-                om = np.random.uniform(self.bounds[1][0],self.bounds[1][1])
-                ol = np.random.uniform(self.bounds[2][0],self.bounds[2][1])
-                w0 = np.random.uniform(self.bounds[3][0],self.bounds[3][1])
-                w1 = np.random.uniform(self.bounds[4][0],self.bounds[4][1])
-                O = cs.CosmologicalParameters(h,om,ol,w0,w1)
-            elif self.model == "DE":
-                z_idx = 2
-                w0 = np.random.uniform(self.bounds[0][0],self.bounds[0][1])
-                w1 = np.random.uniform(self.bounds[1][0],self.bounds[1][1])
-                O = cs.CosmologicalParameters(0.73,0.25,0.75,w0,w1)
-            dl = O.LuminosityDistance(self.bounds[z_idx][1])
-            if dl > dlmax: dlmax = dl
-            O.DestroyCosmologicalParameters()
-            
-        return dlmax
         
     def log_prior(self,x):
         logP = super(CosmologicalModel,self).log_prior(x)
@@ -119,6 +96,11 @@ class CosmologicalModel(cpnest.model.Model):
             elif self.model == "LambdaCDMDE":
                 z_idx = 5
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
+                
+            elif self.model == "CLambdaCDM":
+                z_idx = 3
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
+            
             elif self.model == "DE":
                 z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
@@ -151,7 +133,7 @@ if __name__=='__main__':
     parser.add_option('-d','--data',    default=None,type='string',metavar='data',help='galaxy data location')
     parser.add_option('-e','--event',   default=None,type='int',metavar='event',help='event number')
     parser.add_option('-c','--event-class',default=None,type='string',metavar='event_class',help='class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, DE and LambdaCDMDE')
+    parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, DE and LambdaCDMDE')
     parser.add_option('-j','--joint',   default=0, type='int',metavar='joint',help='run a joint analysis for N events, randomly selected. (EMRI only)')
     parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
     parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')
@@ -331,6 +313,7 @@ if __name__=='__main__':
             for i in range(x.shape[0])[::10]:
                 if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
                 elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],-1.0,0.0)
                 elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
                 distances = np.array([O.LuminosityDistance(zi) for zi in z])
                 if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
@@ -378,7 +361,12 @@ if __name__=='__main__':
                                                1.0-x['om'][k],
                                                -1,
                                                0.0)
-
+            elif opts.model == "CLambdaCDM":
+                omega = cs.CosmologicalParameters(x['h'][k],
+                                               x['om'][k],
+                                               x['ol'][k],
+                                               -1,
+                                               0.0)
             elif opts.model == "LambdaCDMDE":
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
@@ -427,6 +415,19 @@ if __name__=='__main__':
                show_titles=True, title_kwargs={"fontsize": 12},
                use_math_text=True, truths=[0.73,0.25],
                filename=os.path.join(output,'joint_posterior.pdf'))
+    
+    if model == "CLambdaCDM":
+        samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
+        fig = corner.corner(samps,
+               labels= [r'$h$',
+                        r'$\Omega_m$',
+                        r'$\Omega_\Lambda$',
+                        r'$\Omega_k$'],
+               quantiles=[0.05, 0.5, 0.95],
+               show_titles=True, title_kwargs={"fontsize": 12},
+               use_math_text=True, truths=[0.73,0.25,0.75,0.0],
+               filename=os.path.join(output,'joint_posterior.pdf'))
+               
     if model == "LambdaCDMDE":
         samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
         fig = corner.corner(samps,
