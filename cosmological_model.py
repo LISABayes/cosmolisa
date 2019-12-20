@@ -105,10 +105,10 @@ class CosmologicalModel(cpnest.model.Model):
                 z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
             
-            if self.event_class == "EMRI" or self.event_class == "sBH":
-                for j,e in enumerate(self.data):
-                    log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx+j][1]))
-                    logP += np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))-log_norm
+#            if self.event_class == "EMRI" or self.event_class == "sBH":
+#                for j,e in enumerate(self.data):
+#                    #log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx+j][1]))
+#                    logP += np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))#-log_norm
                 
         return logP
 
@@ -116,7 +116,7 @@ class CosmologicalModel(cpnest.model.Model):
         
         # compute the p(GW|G\Omega)p(G|\Omega)+p(GW|~G\Omega)p(~G|\Omega)
         logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma, self.O, x['z%d'%e.ID],
-                                em_selection = self.em_selection, zmin = self.bounds[-1][0], zmax = self.bounds[-1][1]) for e in self.data])
+                                em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.bounds[2+j][1]) for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 

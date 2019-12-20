@@ -69,10 +69,12 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     if em_selection == 1:
         # multiply by p(notG|O)
         logLn = logp_nondetection
-        
+    
     cdef double SigmaSquared = sigma**2+weak_lensing_error**2
     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
-    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)
+    cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
+    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
+    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)+logP
     
 cpdef double sigma_weak_lensing(double z, double dl):
     """
