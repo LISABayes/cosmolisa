@@ -132,49 +132,56 @@ if __name__=="__main__":
     parser=OptionParser()
     parser.add_option('-o','--out',action='store',type='string',default=None,help='Output folder', dest='output')
     parser.add_option('-d',action='store',type='string',default=None,help='data folder', dest='data')
-    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE, DE)', dest='model')
+    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE, DE)', dest='model', metavar='model')
     parser.add_option('-N',action='store',type='int',default=None,help='Number of bins for the grid sampling', dest='N')
     (options,args)=parser.parse_args()
 
-    model = opts.model
     out_folder = options.output
     os.system("mkdir -p %s"%out_folder)
 
     catalogs = [c for c in os.listdir(options.data) if 'cat' in c]
 
     omega_true = CosmologicalParameters(0.73, 0.25, 0.75, -1.0, 0.0)
+    omega_injected = (0.73, 0.25, 0.75, -1.0, 0.0)
 
     Nbins = options.N
-    cls = []
-    cls_om = []
-    h_joint_cls = []
-    om_joint_cls = []
-    h_cdfs = []
-    h_pdfs = []
-    om_cdfs = []
-    all_posteriors = []
-    redshift_posteriors = {}
     pool = mp.Pool(mp.cpu_count())
-    x_flat = np.linspace(0.5,1.0,Nbins)
-    y_flat = np.linspace(0.04,0.5,Nbins)
-    dx = np.diff(x_flat)[0]
-    dy = np.diff(y_flat)[0]
-    X,Y = np.meshgrid(x_flat,y_flat)
+
+    if options.model == "LambdaCDM":
+        x_flat = np.linspace(0.5,1.0,Nbins)
+        y_flat = np.linspace(0.04,0.5,Nbins)
+        dx = np.diff(x_flat)[0]
+        dy = np.diff(y_flat)[0]
+        X,Y = np.meshgrid(x_flat,y_flat)
+    elif options.model == "DE":
+        x_flat = np.linspace(-3.0,0.3,Nbins)
+        y_flat = np.linspace(-1.0,1.0,Nbins)
+        dx = np.diff(x_flat)[0]
+        dy = np.diff(y_flat)[0]
+        X,Y = np.meshgrid(x_flat,y_flat)
 
     from cpnest import nest2pos
     for i,c in enumerate(catalogs):
-        print("processing ",c)
+        print("\nprocessing",c)
         samples = np.genfromtxt(os.path.join(options.data,c+"/chain_5000_1234.txt"),names=True)
         posteriors = nest2pos.draw_posterior_many([samples], [5000], verbose=False)
-        if i==0:
-            h = posteriors['h'][::5]
-            om = posteriors['om'][::5]
-        else:
-            h = np.concatenate((h,posteriors['h'][::5]))
-            om = np.concatenate((om,posteriors['om'][::5]))
-        print('elements {0} {1}'.format(len(h),len(posteriors['h'])))
-#        if i == 0: break
-    model = initialise_dpgmm(2,np.column_stack((h,om)))
+        if options.model == "LambdaCDM":
+            if i==0:
+                p1 = posteriors['h'][::5]
+                p2 = posteriors['om'][::5]
+            else:
+                p1 = np.concatenate((p1,posteriors['h'][::5]))
+                p2 = np.concatenate((p2,posteriors['om'][::5]))
+            print('elements {0} {1}'.format(len(p1),len(posteriors['h'])))
+        elif options.model == "DE":
+            if i==0:
+                p1 = posteriors['w0'][::5]
+                p2 = posteriors['w1'][::5]
+            else:
+                p1 = np.concatenate((p1,posteriors['w0'][::5]))
+                p2 = np.concatenate((p2,posteriors['w1'][::5]))
+            print('elements {0} {1}'.format(len(p1),len(posteriors['w0'])))
+    model = initialise_dpgmm(2,np.column_stack((p1,p2)))
     logdensity = compute_dpgmm(model,max_sticks=8)
     single_posterior = evaluate_grid(logdensity,x_flat,y_flat)
     pickle.dump(single_posterior,open(os.path.join(options.output,"average_posterior_{0}.p".format(model)),"wb"))
@@ -186,9 +193,15 @@ if __name__=="__main__":
     C = ax.contour(X,Y,single_posterior.T,levs,linewidths=0.75,colors='white', zorder = 22, linestyles = 'dashed')
     C = ax.contour(X,Y,single_posterior.T,levs,linewidths=1.0,colors='black')
     ax.grid(alpha=0.5,linestyle='dotted')
-    ax.axvline(0.73,color='k',linestyle='dashed',lw=0.5)
-    ax.axhline(0.25,color='k',linestyle='dashed',lw=0.5)
-    ax.set_xlabel(r"$H_0/100\,km\,s^{-1}\,Mpc^{-1}$",fontsize=18)
-    ax.set_ylabel(r"$\Omega_m$",fontsize=18)
-    plt.savefig(os.path.join(options.output,"average_posterior_{0}.pdf".format(model)),bbox_inches='tight')
+    if options.model == "LambdaCDM":
+        ax.axvline(omega_injected[0],color='k',linestyle='dashed',lw=0.5)
+        ax.axhline(omega_injected[1],color='k',linestyle='dashed',lw=0.5)
+        ax.set_xlabel(r"$H_0/100\,km\,s^{-1}\,Mpc^{-1}$",fontsize=18)
+        ax.set_ylabel(r"$\Omega_m$",fontsize=18)
+    elif options.model == "DE":
+        ax.axvline(omega_injected[3],color='k',linestyle='dashed',lw=0.5)
+        ax.axhline(omega_injected[4],color='k',linestyle='dashed',lw=0.5)
+        ax.set_xlabel(r"$w_0$",fontsize=18)
+        ax.set_ylabel(r"$w_1$",fontsize=18)
+    plt.savefig(os.path.join(options.output,"average_posterior_{0}.pdf".format(options.model)),bbox_inches='tight')
     plt.close()
