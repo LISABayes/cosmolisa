@@ -132,7 +132,7 @@ if __name__=="__main__":
     parser=OptionParser()
     parser.add_option('-o','--out',action='store',type='string',default=None,help='Output folder', dest='output')
     parser.add_option('-d',action='store',type='string',default=None,help='data folder', dest='data')
-    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE, DE)', dest='model', metavar='model')
+    parser.add_option('-m',action='store',type='string',default='LambdaCDM',help='model (LambdaCDM, LambdaCDMDE, DE, CLambdaCDM)', dest='model', metavar='model')
     parser.add_option('-N',action='store',type='int',default=None,help='Number of bins for the grid sampling', dest='N')
     (options,args)=parser.parse_args()
 

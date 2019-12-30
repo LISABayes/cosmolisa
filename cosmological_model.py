@@ -73,12 +73,12 @@ class CosmologicalModel(cpnest.model.Model):
             
         self._initialise_galaxy_hosts()
         
-        print("==========================================")
+        print("==================================================")
         print("cpnest model initialised with:")
         print("Cosmological model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_selection))
-        print("==========================================")
+        print("==================================================")
 
     def _initialise_galaxy_hosts(self):
         self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight) for g in e.potential_galaxy_hosts]) for e in self.data}
@@ -155,12 +155,10 @@ if __name__=='__main__':
         np.random.seed(opts.seed)
         events = readdata.read_event(opts.event_class, opts.data, None)
         N = opts.joint#np.int(np.random.poisson(len(events)*4./10.))
-        print("Will run a random catalog selection of {0} events:".format(N))
         print("==================================================")
         selected_events  = []
-        count = 0
         if 1:
-            while len(selected_events) < N-count and not(len(events) == 0):
+            while len(selected_events) < N and not(len(events) == 0):
 
                 while True:
                     if len(events) > 0:
@@ -170,11 +168,14 @@ if __name__=='__main__':
                         break
                     if selected_event.z_true < opts.zhorizon:
                         selected_events.append(selected_event)
-                        count += 1
                         break
             
             events = np.copy(selected_events)
+            print("After z-selection, will run a joint analysis on {0} out of {1} selected events:".format(len(selected_events),N))
+            print("==================================================")
         else: events = np.random.choice(events, size = N, replace = False)
+        print("Will select a random catalog selection of {0} events for joint analysis:".format(N))
+        print("==================================================")
         for e in events:
             print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
         print("==================================================")
