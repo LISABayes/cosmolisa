@@ -1,33 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from optparse import OptionParser
+from scipy.special import logsumexp
+from functools import reduce
+from scipy.stats import norm
 import unittest
-import numpy as np
 import lal
 import cpnest.model
 import sys
 import os
-from optparse import OptionParser
+import readdata
+import matplotlib
+import corner
 import itertools as it
 import cosmology as cs
-import readdata
-from scipy.special import logsumexp
+import numpy as np
 import likelihood as lk
-from functools import reduce
+import matplotlib.pyplot as plt
+
 
 """
-G = the GW is in a galaxy that i see
-N = the GW is in a galaxy that i do not see
+G = the GW is in a galaxy that I see
+N = the GW is in a galaxy that I do not see
 D = a GW
-I = i see only GW with SNR > 20
+I = I see only GW with SNR > 20
 
 p(H|D(G+N)I) \propto p(H|I)p(D(G+N)|HI)
 p(D(G+N)|HI) = p(DG+DN|HI) = p(DG|HI)+p(DN|HI) = p(D|GHI)p(G|HI)+p(D|NHI)p(N|HI) = p(D|HI)(p(G|HI)+p(N|HI))
 """
+
 class CosmologicalModel(cpnest.model.Model):
 
-    names=[]#'h','om','ol','w0','w1']
-    bounds=[]#[0.5,1.0],[0.04,1.0],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
+    names  = [] #'h','om','ol','w0','w1']
+    bounds = [] #[0.5,1.0],[0.04,1.0],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
     
     def __init__(self, model, data, *args, **kwargs):
 
@@ -64,7 +70,7 @@ class CosmologicalModel(cpnest.model.Model):
         
         else:
             
-            print("Cosmological model %s not supported. exiting..\n"%self.model)
+            print("Cosmological model %s not supported. Exiting...\n"%self.model)
             exit()
         
         for e in self.data:
@@ -82,7 +88,7 @@ class CosmologicalModel(cpnest.model.Model):
 
     def _initialise_galaxy_hosts(self):
         self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight) for g in e.potential_galaxy_hosts]) for e in self.data}
-        
+
     def log_prior(self,x):
         logP = super(CosmologicalModel,self).log_prior(x)
         
@@ -91,17 +97,22 @@ class CosmologicalModel(cpnest.model.Model):
             apply a uniform in comoving volume density redshift prior
             """
             if self.model == "LambdaCDM":
+
                 z_idx = 2
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
-            elif self.model == "LambdaCDMDE":
-                z_idx = 5
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
-                
+
             elif self.model == "CLambdaCDM":
+
                 z_idx = 3
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
+
+            elif self.model == "LambdaCDMDE":
+
+                z_idx = 5
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             
             elif self.model == "DE":
+
                 z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
             
@@ -127,22 +138,22 @@ usage=""" %prog (options)"""
 
 if __name__=='__main__':
 
-    parser=OptionParser(usage)
-    parser.add_option('-o','--out-dir', default=None,type='string',metavar='DIR',help='Directory for output')
-    parser.add_option('-t','--threads', default=None,type='int',metavar='threads',help='Number of threads (default = 1/core)')
-    parser.add_option('-d','--data',    default=None,type='string',metavar='data',help='galaxy data location')
-    parser.add_option('-e','--event',   default=None,type='int',metavar='event',help='event number')
-    parser.add_option('-c','--event-class',default=None,type='string',metavar='event_class',help='class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-m','--model',   default='LambdaCDM',type='string',metavar='model',help='cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, DE and LambdaCDMDE')
-    parser.add_option('-j','--joint',   default=0, type='int',metavar='joint',help='run a joint analysis for N events, randomly selected. (EMRI only)')
-    parser.add_option('-s','--seed',   default=0, type='int', metavar='seed',help='rando seed initialisation')
-    parser.add_option('--snr_threshold',    default=0, type='float',metavar='snr_threshold',help='SNR detection threshold')
-    parser.add_option('--zhorizon',     default=1000.0, type='float',metavar='zhorizon',help='Horizon redshift corresponding to the SNR threshold')
-    parser.add_option('--em_selection', default=0, type='int',metavar='em_selection',help='use EM selection function')
-    parser.add_option('--nlive',        default=1000, type='int',metavar='nlive',help='number of live points')
-    parser.add_option('--poolsize',     default=100, type='int',metavar='poolsize',help='poolsize for the samplers')
-    parser.add_option('--maxmcmc',      default=1000, type='int',metavar='maxmcmc',help='maximum number of mcmc steps')
-    parser.add_option('--postprocess',  default=0, type='int',metavar='postprocess',help='run only the postprocessing')
+    parser = OptionParser(usage)
+    parser.add_option('-d', '--data', default=None, type='string', metavar='data', help='Galaxy data location')
+    parser.add_option('-o', '--out-dir', default=None, type='string', metavar='DIR', help='Directory for output')
+    parser.add_option('-c', '--event-class', default=None, type='string', metavar='event_class', help='Class of the event(s) [MBH, EMRI, sBH]')
+    parser.add_option('-e', '--event', default=None, type='int', metavar='event', help='Event number')
+    parser.add_option('-m', '--model', default='LambdaCDM', type='string', metavar='model', help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('-j', '--joint', default=0, type='int', metavar='joint', help='Run a joint analysis for N events, randomly selected (EMRI only).')
+    parser.add_option('-z', '--zhorizon', default=1000.0, type='float', metavar='zhorizon', help='Horizon redshift corresponding to the SNR threshold')
+    parser.add_option('--snr_threshold', default=0.0, type='float', metavar='snr_threshold', help='SNR detection threshold')
+    parser.add_option('--em_selection', default=0, type='int', metavar='em_selection', help='Use EM selection function')
+    parser.add_option('-t', '--threads',    default=None, type='int', metavar='threads', help='Number of threads (default = 1/core)')
+    parser.add_option('-s', '--seed',       default=0, type='int', metavar='seed', help='Random seed initialisation')
+    parser.add_option('--nlive',            default=1000, type='int', metavar='nlive', help='Number of live points')
+    parser.add_option('--poolsize',         default=100, type='int', metavar='poolsize', help='Poolsize for the samplers')
+    parser.add_option('--maxmcmc',          default=1000, type='int', metavar='maxmcmc', help='Maximum number of mcmc steps')
+    parser.add_option('--postprocess',      default=0, type='int', metavar='postprocess', help='Run only the postprocessing')
     (opts,args)=parser.parse_args()
     
     em_selection = opts.em_selection
@@ -153,10 +164,13 @@ if __name__=='__main__':
 
     if opts.event_class == "EMRI" and opts.joint !=0:
         np.random.seed(opts.seed)
+        N      = opts.joint #np.int(np.random.poisson(len(events)*4./10.))
         events = readdata.read_event(opts.event_class, opts.data, None)
         N = opts.joint#np.int(np.random.poisson(len(events)*4./10.))
         print("==================================================")
-        selected_events  = []
+        print("Will select a random catalog selection of (max) {0} events for joint analysis:".format(N))
+        print("==================================================")
+        selected_events = []
         if 1:
             while len(selected_events) < N and not(len(events) == 0):
 
@@ -171,11 +185,12 @@ if __name__=='__main__':
                         break
             
             events = np.copy(selected_events)
-            print("After z-selection, will run a joint analysis on {0} out of {1} selected events:".format(len(selected_events),N))
+            print("After z-selection, will run a joint analysis on {0} out of {1} random selected events:".format(len(selected_events),N))
             print("==================================================")
-        else: events = np.random.choice(events, size = N, replace = False)
-        print("Will select a random catalog selection of {0} events for joint analysis:".format(N))
-        print("==================================================")
+        else:
+            events = np.random.choice(events, size = N, replace = False)
+            print("No z-selection. Will run a joint analysis on {0} random selected events:".format(N))
+            print("==================================================")
         for e in events:
             print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
         print("==================================================")
@@ -267,10 +282,10 @@ if __name__=='__main__':
     
     C = CosmologicalModel(model,
                           events,
-                          em_selection = em_selection,
-                          snr_threshold= opts.snr_threshold,
-                          z_threshold  = opts.zhorizon,
-                          event_class  = opts.event_class)
+                          em_selection  = em_selection,
+                          snr_threshold = opts.snr_threshold,
+                          z_threshold   = opts.zhorizon,
+                          event_class   = opts.event_class)
     
     if opts.postprocess == 0:
         work=cpnest.CPNest(C,
@@ -289,21 +304,17 @@ if __name__=='__main__':
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
         from cpnest import nest2pos
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
-
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from scipy.stats import norm
     
     if opts.event_class == "EMRI":
         for e in C.data:
             fig = plt.figure()
             ax  = fig.add_subplot(111)
-            z = np.linspace(e.zmin,e.zmax, 100)
+            z   = np.linspace(e.zmin,e.zmax, 100)
             
             ax2 = ax.twinx()
             
             if model == "DE": normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-            else: normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+            else:             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
             # choose a colormap
             c_m = matplotlib.cm.cool
 
@@ -312,9 +323,9 @@ if __name__=='__main__':
             s_m.set_array([])
             ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
             for i in range(x.shape[0])[::10]:
-                if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],-1.0,0.0)
+                if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
                 elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-                elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],-1.0,0.0)
                 elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
                 distances = np.array([O.LuminosityDistance(zi) for zi in z])
                 if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
@@ -360,13 +371,13 @@ if __name__=='__main__':
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                1.0-x['om'][k],
-                                               -1,
+                                               -1.0,
                                                0.0)
             elif opts.model == "CLambdaCDM":
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
-                                               -1,
+                                               -1.0,
                                                0.0)
             elif opts.model == "LambdaCDMDE":
                 omega = cs.CosmologicalParameters(x['h'][k],
@@ -406,7 +417,6 @@ if __name__=='__main__':
         plt.close()
     
     
-    import corner
     if model == "LambdaCDM":
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,
@@ -441,6 +451,7 @@ if __name__=='__main__':
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[0.73,0.25,0.75,-1.0,0.0],
                         filename=os.path.join(output,'joint_posterior.pdf'))
+
     if model == "DE":
         samps = np.column_stack((x['w0'],x['w1']))
         fig = corner.corner(samps,
@@ -450,4 +461,5 @@ if __name__=='__main__':
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[-1.0,0.0],
                         filename=os.path.join(output,'joint_posterior.pdf'))
+
     fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
