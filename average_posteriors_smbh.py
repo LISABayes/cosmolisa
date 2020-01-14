@@ -154,7 +154,7 @@ if __name__=="__main__":
         dy = np.diff(y_flat)[0]
         X,Y = np.meshgrid(x_flat,y_flat)
     elif options.model == "DE":
-        x_flat = np.linspace(-3.0,0.3,Nbins)
+        x_flat = np.linspace(-3.0,-0.3,Nbins)
         y_flat = np.linspace(-1.0,1.0,Nbins)
         dx = np.diff(x_flat)[0]
         dy = np.diff(y_flat)[0]
