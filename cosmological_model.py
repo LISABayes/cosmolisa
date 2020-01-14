@@ -66,7 +66,7 @@ class CosmologicalModel(cpnest.model.Model):
         elif self.model == "DE":
             
             self.names  = ['w0','w1']
-            self.bounds = [[-3.0,0.3],[-1.0,1.0]]
+            self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
         
         else:
             
