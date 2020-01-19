@@ -139,21 +139,22 @@ usage=""" %prog (options)"""
 if __name__=='__main__':
 
     parser = OptionParser(usage)
-    parser.add_option('-d', '--data', default=None, type='string', metavar='data', help='Galaxy data location')
-    parser.add_option('-o', '--out-dir', default=None, type='string', metavar='DIR', help='Directory for output')
+    parser.add_option('-d', '--data',        default=None, type='string', metavar='data', help='Galaxy data location')
+    parser.add_option('-o', '--out-dir',     default=None, type='string', metavar='DIR', help='Directory for output')
     parser.add_option('-c', '--event-class', default=None, type='string', metavar='event_class', help='Class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-e', '--event', default=None, type='int', metavar='event', help='Event number')
-    parser.add_option('-m', '--model', default='LambdaCDM', type='string', metavar='model', help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
-    parser.add_option('-j', '--joint', default=0, type='int', metavar='joint', help='Run a joint analysis for N events, randomly selected (EMRI only).')
-    parser.add_option('-z', '--zhorizon', default=1000.0, type='float', metavar='zhorizon', help='Horizon redshift corresponding to the SNR threshold')
-    parser.add_option('--snr_threshold', default=0.0, type='float', metavar='snr_threshold', help='SNR detection threshold')
-    parser.add_option('--em_selection', default=0, type='int', metavar='em_selection', help='Use EM selection function')
-    parser.add_option('-t', '--threads',    default=None, type='int', metavar='threads', help='Number of threads (default = 1/core)')
-    parser.add_option('-s', '--seed',       default=0, type='int', metavar='seed', help='Random seed initialisation')
-    parser.add_option('--nlive',            default=1000, type='int', metavar='nlive', help='Number of live points')
-    parser.add_option('--poolsize',         default=100, type='int', metavar='poolsize', help='Poolsize for the samplers')
-    parser.add_option('--maxmcmc',          default=1000, type='int', metavar='maxmcmc', help='Maximum number of mcmc steps')
-    parser.add_option('--postprocess',      default=0, type='int', metavar='postprocess', help='Run only the postprocessing')
+    parser.add_option('-e', '--event',       default=None, type='int', metavar='event', help='Event number')
+    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model', help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('-j', '--joint',       default=0, type='int', metavar='joint', help='Run a joint analysis for N events, randomly selected (EMRI only).')
+    parser.add_option('-z', '--zhorizon',    default=1000.0, type='float', metavar='zhorizon', help='Horizon redshift corresponding to the SNR threshold')
+    parser.add_option('--snr_threshold',     default=0.0, type='float', metavar='snr_threshold', help='SNR detection threshold')
+    parser.add_option('--em_selection',      default=0, type='int', metavar='em_selection', help='Use EM selection function')
+    parser.add_option('--reduced_catalog',   default=0, type='int', metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
+    parser.add_option('-t', '--threads',     default=None, type='int', metavar='threads', help='Number of threads (default = 1/core)')
+    parser.add_option('-s', '--seed',        default=0, type='int', metavar='seed', help='Random seed initialisation')
+    parser.add_option('--nlive',             default=1000, type='int', metavar='nlive', help='Number of live points')
+    parser.add_option('--poolsize',          default=100, type='int', metavar='poolsize', help='Poolsize for the samplers')
+    parser.add_option('--maxmcmc',           default=1000, type='int', metavar='maxmcmc', help='Maximum number of mcmc steps')
+    parser.add_option('--postprocess',       default=0, type='int', metavar='postprocess', help='Run only the postprocessing')
     (opts,args)=parser.parse_args()
     
     em_selection = opts.em_selection
@@ -163,17 +164,23 @@ if __name__=='__main__':
         em_selection = 0
 
     if opts.event_class == "EMRI" and opts.joint !=0:
-        np.random.seed(opts.seed)
-        N      = opts.joint #np.int(np.random.poisson(len(events)*4./10.))
+#        np.random.seed(opts.seed)
         events = readdata.read_event(opts.event_class, opts.data, None)
-        N = opts.joint#np.int(np.random.poisson(len(events)*4./10.))
+        if len(events) == 0:
+            print("The passed catalog is empty.\n")
+            exit()
+        if opts.reduced_catalog != 0:
+            N = np.int(np.random.poisson(len(events)*4./10.))
+        else:
+            N = opts.joint
+        if N > len(events):
+            N = len(events)
         print("==================================================")
-        print("Will select a random catalog selection of (max) {0} events for joint analysis:".format(N))
+        print("Will select a random catalog of (max) {0} events for joint analysis:".format(N))
         print("==================================================")
         selected_events = []
-        if 1:
+        if opts.reduced_catalog == 0:
             while len(selected_events) < N and not(len(events) == 0):
-
                 while True:
                     if len(events) > 0:
                         idx = np.random.randint(len(events))
@@ -181,19 +188,35 @@ if __name__=='__main__':
                     else:
                         break
                     if selected_event.z_true < opts.zhorizon:
+                        print("Drawn event: {0} - True redshift: z={1:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true))
                         selected_events.append(selected_event)
                         break
-            
-            events = np.copy(selected_events)
-            print("After z-selection, will run a joint analysis on {0} out of {1} random selected events:".format(len(selected_events),N))
+            print("==================================================")
+            print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(opts.zhorizon, len(selected_events),N))
+        else:
+            k = 0
+            while k < N and not(len(events) == 0):
+                idx = np.random.randint(len(events))
+                selected_event = events.pop(idx)
+                print("Drawn event: {0} - True redshift: z={1:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true))
+                if selected_event.z_true < opts.zhorizon:
+                    selected_events.append(selected_event)
+                else: pass
+                k += 1
+#        else:
+#            events = np.random.choice(events, size = N, replace = False)
+#            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(opts.zhorizon, N))
+        print("==================================================")
+        events = np.copy(selected_events)
+        if not(len(events) == 0):
+            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
+            print("==================================================")
+            for e in events:
+                print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
             print("==================================================")
         else:
-            events = np.random.choice(events, size = N, replace = False)
-            print("No z-selection. Will run a joint analysis on {0} random selected events:".format(N))
-            print("==================================================")
-        for e in events:
-            print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
-        print("==================================================")
+            print("None of the drawn events has z<{0}. Exiting.\n".format(opts.zhorizon))
+            exit()
     else:
         events = readdata.read_event(opts.event_class, opts.data, opts.event)
 
