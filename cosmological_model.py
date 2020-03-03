@@ -139,22 +139,22 @@ usage=""" %prog (options)"""
 if __name__=='__main__':
 
     parser = OptionParser(usage)
-    parser.add_option('-d', '--data',        default=None, type='string', metavar='data', help='Galaxy data location')
-    parser.add_option('-o', '--out-dir',     default=None, type='string', metavar='DIR', help='Directory for output')
-    parser.add_option('-c', '--event-class', default=None, type='string', metavar='event_class', help='Class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-e', '--event',       default=None, type='int', metavar='event', help='Event number')
-    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model', help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
-    parser.add_option('-j', '--joint',       default=0, type='int', metavar='joint', help='Run a joint analysis for N events, randomly selected (EMRI only).')
-    parser.add_option('-z', '--zhorizon',    default=1000.0, type='float', metavar='zhorizon', help='Horizon redshift corresponding to the SNR threshold')
-    parser.add_option('--snr_threshold',     default=0.0, type='float', metavar='snr_threshold', help='SNR detection threshold')
-    parser.add_option('--em_selection',      default=0, type='int', metavar='em_selection', help='Use EM selection function')
-    parser.add_option('--reduced_catalog',   default=0, type='int', metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
-    parser.add_option('-t', '--threads',     default=None, type='int', metavar='threads', help='Number of threads (default = 1/core)')
-    parser.add_option('-s', '--seed',        default=0, type='int', metavar='seed', help='Random seed initialisation')
-    parser.add_option('--nlive',             default=1000, type='int', metavar='nlive', help='Number of live points')
-    parser.add_option('--poolsize',          default=100, type='int', metavar='poolsize', help='Poolsize for the samplers')
-    parser.add_option('--maxmcmc',           default=1000, type='int', metavar='maxmcmc', help='Maximum number of mcmc steps')
-    parser.add_option('--postprocess',       default=0, type='int', metavar='postprocess', help='Run only the postprocessing')
+    parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',            help='Galaxy data location')
+    parser.add_option('-o', '--out-dir',     default=None,        type='string', metavar='DIR',             help='Directory for output')
+    parser.add_option('-c', '--event-class', default=None,        type='string', metavar='event_class',     help='Class of the event(s) [MBH, EMRI, sBH]')
+    parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',           help='Event number')
+    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',           help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',           help='Run a joint analysis for N events, randomly selected (EMRI only).')
+    parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',        help='Horizon redshift corresponding to the SNR threshold')
+    parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',   help='SNR detection threshold')
+    parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',    help='Use EM selection function')
+    parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
+    parser.add_option('-t', '--threads',     default=None,        type='int',    metavar='threads',         help='Number of threads (default = 1/core)')
+    parser.add_option('-s', '--seed',        default=0,           type='int',    metavar='seed',            help='Random seed initialisation')
+    parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',           help='Number of live points')
+    parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
+    parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
+    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing')
     (opts,args)=parser.parse_args()
     
     em_selection = opts.em_selection
@@ -203,19 +203,19 @@ if __name__=='__main__':
                     selected_events.append(selected_event)
                 else: pass
                 k += 1
+            print("==================================================")
+            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
 #        else:
 #            events = np.random.choice(events, size = N, replace = False)
 #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(opts.zhorizon, N))
         print("==================================================")
         events = np.copy(selected_events)
         if not(len(events) == 0):
-            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
-            print("==================================================")
             for e in events:
                 print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
             print("==================================================")
         else:
-            print("None of the drawn events has z<{0}. Exiting.\n".format(opts.zhorizon))
+            print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
             exit()
     else:
         events = readdata.read_event(opts.event_class, opts.data, opts.event)
@@ -309,7 +309,9 @@ if __name__=='__main__':
                           snr_threshold = opts.snr_threshold,
                           z_threshold   = opts.zhorizon,
                           event_class   = opts.event_class)
-    
+
+    #FIX ME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
+
     if opts.postprocess == 0:
         work=cpnest.CPNest(C,
                            verbose      = 2,
@@ -469,7 +471,7 @@ if __name__=='__main__':
                                  r'$\Omega_m$',
                                  r'$\Omega_\Lambda$',
                                  r'$w_0$',
-                                 r'$w_1$'],
+                                 r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[0.73,0.25,0.75,-1.0,0.0],
@@ -479,7 +481,7 @@ if __name__=='__main__':
         samps = np.column_stack((x['w0'],x['w1']))
         fig = corner.corner(samps,
                         labels= [r'$w_0$',
-                                 r'$w_1$'],
+                                 r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[-1.0,0.0],
