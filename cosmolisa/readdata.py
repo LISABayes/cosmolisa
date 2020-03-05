@@ -9,11 +9,12 @@ class Galaxy(object):
     and weight determined by its angular position
     relative to the LISA posterior
     """
-    def __init__(self, redshift, dredshift, weight):
+    def __init__(self, redshift, dredshift, weight, dl):
         
         self.redshift   = redshift
         self.dredshift  = dredshift
         self.weight     = weight
+        self.dl         = dl
 
 class Event(object):
     """
@@ -32,10 +33,11 @@ class Event(object):
                  zmax,
                  snr,
                  z_true,
+                 dl_host,
                  snr_threshold = 8.0,
                  VC = None):
         
-        self.potential_galaxy_hosts = [Galaxy(r,dr,w) for r,dr,w in zip(redshifts,dredshifts,weights)]
+        self.potential_galaxy_hosts = [Galaxy(r,dr,w,dl) for r,dr,w,dl in zip(redshifts,dredshifts,weights,dl_host)]
         self.n_hosts                = len(self.potential_galaxy_hosts)
         self.ID                     = ID
         self.dl                     = dl
@@ -169,7 +171,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
                 redshifts   = np.atleast_1d(zobs)
                 d_redshifts = np.ones(len(redshifts))*pv
                 weights     = np.atleast_1d(weights)
-                events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,VC = VC))
+                events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
                 sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
@@ -203,7 +205,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
         redshifts = np.atleast_1d(zobs)
         d_redshifts     = np.ones(len(redshifts))*pv
         weights         = np.atleast_1d(weights)
-        analysis_events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,VC = VC))
+        analysis_events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
         sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
 #        except:
 #            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))

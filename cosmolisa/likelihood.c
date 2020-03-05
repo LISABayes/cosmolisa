@@ -20,7 +20,7 @@
         ],
         "name": "cosmolisa.likelihood",
         "sources": [
-            "likelihood.pyx"
+            "cosmolisa/likelihood.pyx"
         ]
     },
     "module_name": "cosmolisa.likelihood"
@@ -855,7 +855,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "likelihood.pyx",
+  "cosmolisa/likelihood.pyx",
   "__init__.pxd",
   "stringsource",
   "type.pxd",
