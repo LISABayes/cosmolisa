@@ -171,6 +171,8 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
                 redshifts   = np.atleast_1d(zobs)
                 d_redshifts = np.ones(len(redshifts))*pv
                 weights     = np.atleast_1d(weights)
+                if not isinstance(dl_host, type(redshifts)):
+                    dl_host = np.atleast_1d(dl_host)
                 events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
