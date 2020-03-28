@@ -448,9 +448,14 @@ if __name__=='__main__':
                labels= [r'$h$',
                         r'$\Omega_m$'],
                quantiles=[0.05, 0.5, 0.95],
-               show_titles=True, title_kwargs={"fontsize": 12},
+               show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                use_math_text=True, truths=[0.73,0.25],
                filename=os.path.join(output,'joint_posterior.pdf'))
+#        axes = fig.get_axes()
+#        axes[0].set_xlim(0.69, 0.77)
+#        axes[2].set_xlim(0.69, 0.77)
+#        axes[3].set_xlim(0.04, 0.5)
+#        axes[2].set_ylim(0.04, 0.5)
     
     if model == "CLambdaCDM":
         samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
@@ -483,8 +488,13 @@ if __name__=='__main__':
                         labels= [r'$w_0$',
                                  r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_kwargs={"fontsize": 12},
+                        show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                         use_math_text=True, truths=[-1.0,0.0],
                         filename=os.path.join(output,'joint_posterior.pdf'))
+#        axes = fig.get_axes()
+#        axes[0].set_xlim(-1.22, -0.53)
+#        axes[2].set_xlim(-1.22, -0.53)
+#        axes[3].set_xlim(-1.0, 1.0)
+#        axes[2].set_ylim(-1.0, 1.0)
 
     fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')

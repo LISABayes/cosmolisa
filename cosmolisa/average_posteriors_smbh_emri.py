@@ -191,7 +191,7 @@ if __name__=="__main__":
     logdensity = compute_dpgmm(model,max_sticks=8)
     single_posterior = evaluate_grid(logdensity,x_flat,y_flat)
     pickle.dump(single_posterior,open(os.path.join(options.output,"average_posterior_{0}.p".format(model)),"wb"))
-    init_plotting()
+#    init_plotting()
     fig = plt.figure()
     if options.corner == True:
         if options.model == "LambdaCDM":
@@ -200,18 +200,28 @@ if __name__=="__main__":
                    labels= [r'$h$',
                             r'$\Omega_m$'],
                    quantiles=[0.05, 0.5, 0.95],
-                   show_titles=True, title_kwargs={"fontsize": 12},
+                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[0.73,0.25],
                    filename=os.path.join(out_folder,'joint_posterior.pdf'))
+#            axes = fig.get_axes()
+#            axes[0].set_xlim(0.69, 0.77)
+#            axes[2].set_xlim(0.69, 0.77)
+#            axes[3].set_xlim(0.04, 0.5)
+#            axes[2].set_ylim(0.04, 0.5)
         elif options.model == "DE":
             samps = np.column_stack((p1,p2))
             fig = corner.corner(samps,
                    labels= [r'$w_0$',
                             r'$w_a$'],
                    quantiles=[0.05, 0.5, 0.95],
-                   show_titles=True, title_kwargs={"fontsize": 12},
+                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[-1.0,0.0],
                    filename=os.path.join(out_folder,'joint_posterior.pdf'))
+#            axes = fig.get_axes()
+#            axes[0].set_xlim(-1.22, -0.53)
+#            axes[2].set_xlim(-1.22, -0.53)
+#            axes[3].set_xlim(-1.0, 1.0)
+#            axes[2].set_ylim(-1.0, 1.0)
         plt.savefig(os.path.join(options.output,"average_posterior_corner_{0}.pdf".format(options.model)),bbox_inches='tight')
         fig = plt.figure()
     ax = fig.add_subplot(111)
