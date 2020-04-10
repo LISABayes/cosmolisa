@@ -16,7 +16,7 @@ import _pickle as pickle
 from optparse import OptionParser
 
 def init_plotting():
-    plt.rcParams['figure.figsize'] = (2*3.4, 2*3.4)
+    plt.rcParams['figure.figsize'] = (4*3.4, 2*3.4)
     plt.rcParams['font.size'] = 11
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['font.sans-serif'] = ['Bitstream Vera Sans']
@@ -92,7 +92,7 @@ if __name__=="__main__":
     try:
         posteriors = np.genfromtxt(os.path.join(opts.posteriors,'posterior.dat'),names=True)
     except:
-        sys.stderr.write("{0} not found. generating posteriors, from the chain ...\n".format(os.path.join(opts.posteriors,'posterior.dat')))
+        sys.stderr.write("{0} not found. Generating posteriors from the chain ...\n".format(os.path.join(opts.posteriors,'posterior.dat')))
         from cpnest import nest2pos
         x = np.genfromtxt(os.path.join(opts.posteriors,'chain_5000_1234.txt'),names=True)
         posteriors = nest2pos.draw_posterior_many([x], [5000], verbose=False)
@@ -168,7 +168,7 @@ if __name__=="__main__":
     
     for z,d,w in zip(redshift_galaxies, distance_galaxies, weight_galaxies):
 ##        print(z,d,w)
-        ax.scatter(z,d,c=w,s=2,alpha=0.5,zorder=0)
+        ax.scatter(z,d,c=w,s=2,alpha=0.35,zorder=0, edgecolors='face')
 #    plt.show()
 #    exit()
     
@@ -176,28 +176,29 @@ if __name__=="__main__":
         sys.stderr.write("processing event {0} of {1}\r".format(i+1,len(redshift_posteriors)))
         X, Y, Z = twod_kde(np.array(z)[::100],np.array(d)[::100])
         levels = FindHeightForLevel(np.log(Z), [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
-        C = ax.contourf(X, Y, np.log(Z), levels, alpha = 0.5, cmap=matplotlib.cm.hot)
-        C2 = ax.contour(C, levels, alpha = 0.5, colors = 'k', linewidths=(0.5,))
+        C = ax.contourf(X, Y, np.log(Z), levels, alpha = 0.4, cmap=matplotlib.cm.hot)
+        C2 = ax.contour(C, levels, alpha = 0.25, colors = 'k', linewidths=(0.2,))
     sys.stderr.write("\n")
     cbar = fig.colorbar(C)
-    cbar.ax.set_ylabel(r'credible level')
+    cbar.ax.set_ylabel(r'credible level', fontsize=15)
     # Add the contour line levels to the colorbar
     cbar.add_lines(C2)
-    cbar.ax.set_yticklabels([0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1])
+    cbar.ax.set_yticklabels([0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1], fontsize=13)
 
 #    # raw redshift and distance of GW for galaxies mean
 #    ax.errorbar(zmeasured,dlmeasured,xerr=dzmeasured,yerr=ddlmeasured,
 #                markersize=2,linewidth=0.5,color='r',fmt='o',zorder=0)
     # true cosmology
-    ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='r')
-    ax.plot(redshift,model50,color='k')
+    ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='r', linewidth=.7)
+    ax.plot(redshift,model50,color='k', linewidth=.7)
     # true redshift and distance of GW
 #    ax.errorbar(ztrue, dl, yerr=deltadl, markersize=4,linewidth=1,color='r',fmt='o')
-    ax.fill_between(redshift,model2p5,model97p5,facecolor='turquoise')
-    ax.fill_between(redshift,model16,model84,facecolor='cyan')
-    ax.set_xlabel(r"z")
-    ax.set_ylabel(r"$D_L$/Gpc")
+    ax.fill_between(redshift,model2p5,model97p5,facecolor='lightgray')
+    ax.fill_between(redshift,model16,model84,facecolor='lightseagreen')
+    ax.set_xlabel(r"z", fontsize=15)
+    ax.set_ylabel(r"$d_L$/Gpc", fontsize=15)
     ax.set_xlim(np.min(redshift)*0.95,0.7)
-    ax.set_ylim(0.0,3.5)
+    ax.set_ylim(0.0,2.5)
+    ax.tick_params(labelsize=13)
     fig.savefig(os.path.join(opts.outdir,'regression.pdf'),bbox_inches='tight')
 #    plt.close(fig)
