@@ -1154,7 +1154,7 @@ struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisatio
 /* "cosmolisa/likelihood.pyx":17
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, double sigma_gw_theta, double sigma_gw_phi, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
@@ -1815,7 +1815,7 @@ static double (*__pyx_fuse_1__pyx_f_5scipy_7special_14cython_special_hyp2f1)(dou
 /* Module declarations from 'cosmolisa.likelihood' */
 static PyTypeObject *__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = 0;
 static CYTHON_INLINE double __pyx_f_9cosmolisa_10likelihood_log_add(double, double); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *, double, double, PyObject *, double, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *, double, double, double, double, PyObject *, double, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(double, double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_em_selection_function(double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_number_density(double, int __pyx_skip_dispatch); /*proto*/
@@ -1861,10 +1861,12 @@ static const char __pyx_k_ImportError[] = "ImportError";
 static const char __pyx_k_cfunc_to_py[] = "cfunc.to_py";
 static const char __pyx_k_RuntimeError[] = "RuntimeError";
 static const char __pyx_k_em_selection[] = "em_selection";
+static const char __pyx_k_sigma_gw_phi[] = "sigma_gw_phi";
 static const char __pyx_k_stringsource[] = "stringsource";
 static const char __pyx_k_scipy_special[] = "scipy.special";
 static const char __pyx_k_event_redshift[] = "event_redshift";
 static const char __pyx_k_scipy_optimize[] = "scipy.optimize";
+static const char __pyx_k_sigma_gw_theta[] = "sigma_gw_theta";
 static const char __pyx_k_scipy_integrate[] = "scipy.integrate";
 static const char __pyx_k_LuminosityDistance[] = "LuminosityDistance";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
@@ -1921,6 +1923,8 @@ static PyObject *__pyx_n_s_scipy_integrate;
 static PyObject *__pyx_n_s_scipy_optimize;
 static PyObject *__pyx_n_s_scipy_special;
 static PyObject *__pyx_n_s_sigma;
+static PyObject *__pyx_n_s_sigma_gw_phi;
+static PyObject *__pyx_n_s_sigma_gw_theta;
 static PyObject *__pyx_kp_s_stringsource;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
@@ -1928,7 +1932,7 @@ static PyObject *__pyx_n_s_wrap;
 static PyObject *__pyx_n_s_z;
 static PyObject *__pyx_n_s_zmax;
 static PyObject *__pyx_n_s_zmin;
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax); /* proto */
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, double __pyx_v_sigma_gw_theta, double __pyx_v_sigma_gw_phi, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_2sigma_weak_lensing(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_z, double __pyx_v_dl); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_4em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_6em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
@@ -2004,13 +2008,13 @@ static CYTHON_INLINE double __pyx_f_9cosmolisa_10likelihood_linear_density(doubl
 /* "cosmolisa/likelihood.pyx":17
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, double sigma_gw_theta, double sigma_gw_phi, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
 
 static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args) {
+static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, double __pyx_v_sigma_gw_theta, double __pyx_v_sigma_gw_phi, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args) {
   int __pyx_v_em_selection = ((int)0);
   double __pyx_v_zmax = ((double)1.0);
   unsigned int __pyx_v_i;
@@ -2179,7 +2183,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  *         # compute the probability p(G|O) that the event is located in a detected galaxy
  *         # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
  *         logp_detection      = log(em_selection_function(dl))             # <<<<<<<<<<<<<<
- *         logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])
+ *         logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])-log(2.0*np.pi*sigma_gw_phi*sigma_gw_theta)
  * 
  */
     __pyx_v_logp_detection = log(__pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_v_dl, 0));
@@ -2187,7 +2191,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
     /* "cosmolisa/likelihood.pyx":49
  *         # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
  *         logp_detection      = log(em_selection_function(dl))
- *         logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])             # <<<<<<<<<<<<<<
+ *         logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])-log(2.0*np.pi*sigma_gw_phi*sigma_gw_theta)             # <<<<<<<<<<<<<<
  * 
  *     # compute the weak lensing error
  */
@@ -2225,8 +2229,36 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_pi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_4 = PyNumber_Multiply(__pyx_float_2_0, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = PyFloat_FromDouble(__pyx_v_sigma_gw_phi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_1 = PyNumber_Multiply(__pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = PyFloat_FromDouble(__pyx_v_sigma_gw_theta); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = PyNumber_Multiply(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_4 = PyFloat_FromDouble(log(__pyx_t_3)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = PyNumber_Subtract(__pyx_t_5, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_v_logp_nondetection = __pyx_t_3;
 
     /* "cosmolisa/likelihood.pyx":45
@@ -2327,16 +2359,16 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  *     # sum over the unobserved galaxies, assuming they all have redshift = zgw
  *     # p(d|O,zgw,notG)p(zgw|O,notG) = exp(-0.5*((d-d(zgw,O))/sig_d)^2)*\sum_g (1/Nn)*exp(-0.5*(zgw-zgw)^2/sig_zgw^2)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 66, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_inf); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 66, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_inf); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = PyNumber_Negative(__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 66, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = PyNumber_Negative(__pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_logLn = __pyx_t_3;
 
   /* "cosmolisa/likelihood.pyx":69
@@ -2394,8 +2426,8 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_IntegrateComovingVolumeDensity); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 75, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
     __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_4);
@@ -2406,14 +2438,14 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
       __Pyx_DECREF_SET(__pyx_t_4, function);
     }
   }
-  __pyx_t_5 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_2);
+  __pyx_t_2 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_5);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 75, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_log_norm = log(__pyx_t_3);
 
   /* "cosmolisa/likelihood.pyx":76
@@ -2425,8 +2457,8 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_UniformComovingVolumeDensity); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 76, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_event_redshift); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 76, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_event_redshift); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 76, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
     __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_4);
@@ -2437,14 +2469,14 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
       __Pyx_DECREF_SET(__pyx_t_4, function);
     }
   }
-  __pyx_t_5 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_2);
+  __pyx_t_2 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_5);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 76, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 76, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 76, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 76, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_logP = (log(__pyx_t_3) - __pyx_v_log_norm);
 
   /* "cosmolisa/likelihood.pyx":77
@@ -2460,7 +2492,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   /* "cosmolisa/likelihood.pyx":17
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, double sigma_gw_theta, double sigma_gw_phi, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
@@ -2494,6 +2526,8 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
   PyArrayObject *__pyx_v_hosts = 0;
   double __pyx_v_meandl;
   double __pyx_v_sigma;
+  double __pyx_v_sigma_gw_theta;
+  double __pyx_v_sigma_gw_phi;
   PyObject *__pyx_v_omega = 0;
   double __pyx_v_event_redshift;
   int __pyx_v_em_selection;
@@ -2503,12 +2537,16 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("logLikelihood_single_event (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_hosts,&__pyx_n_s_meandl,&__pyx_n_s_sigma,&__pyx_n_s_omega,&__pyx_n_s_event_redshift,&__pyx_n_s_em_selection,&__pyx_n_s_zmin,&__pyx_n_s_zmax,0};
-    PyObject* values[8] = {0,0,0,0,0,0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_hosts,&__pyx_n_s_meandl,&__pyx_n_s_sigma,&__pyx_n_s_sigma_gw_theta,&__pyx_n_s_sigma_gw_phi,&__pyx_n_s_omega,&__pyx_n_s_event_redshift,&__pyx_n_s_em_selection,&__pyx_n_s_zmin,&__pyx_n_s_zmax,0};
+    PyObject* values[10] = {0,0,0,0,0,0,0,0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
+        case 10: values[9] = PyTuple_GET_ITEM(__pyx_args, 9);
+        CYTHON_FALLTHROUGH;
+        case  9: values[8] = PyTuple_GET_ITEM(__pyx_args, 8);
+        CYTHON_FALLTHROUGH;
         case  8: values[7] = PyTuple_GET_ITEM(__pyx_args, 7);
         CYTHON_FALLTHROUGH;
         case  7: values[6] = PyTuple_GET_ITEM(__pyx_args, 6);
@@ -2537,43 +2575,55 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_meandl)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 1); __PYX_ERR(0, 17, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 1); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sigma)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 2); __PYX_ERR(0, 17, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 2); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
-        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_omega)) != 0)) kw_args--;
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sigma_gw_theta)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 3); __PYX_ERR(0, 17, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 3); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
-        if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_event_redshift)) != 0)) kw_args--;
+        if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sigma_gw_phi)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 4); __PYX_ERR(0, 17, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 4); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
-        if (kw_args > 0) {
-          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_em_selection);
-          if (value) { values[5] = value; kw_args--; }
+        if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_omega)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 5); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
-        if (kw_args > 0) {
-          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmin);
-          if (value) { values[6] = value; kw_args--; }
+        if (likely((values[6] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_event_redshift)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, 6); __PYX_ERR(0, 17, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (kw_args > 0) {
-          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmax);
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_em_selection);
           if (value) { values[7] = value; kw_args--; }
+        }
+        CYTHON_FALLTHROUGH;
+        case  8:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmin);
+          if (value) { values[8] = value; kw_args--; }
+        }
+        CYTHON_FALLTHROUGH;
+        case  9:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmax);
+          if (value) { values[9] = value; kw_args--; }
         }
       }
       if (unlikely(kw_args > 0)) {
@@ -2581,13 +2631,15 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case 10: values[9] = PyTuple_GET_ITEM(__pyx_args, 9);
+        CYTHON_FALLTHROUGH;
+        case  9: values[8] = PyTuple_GET_ITEM(__pyx_args, 8);
+        CYTHON_FALLTHROUGH;
         case  8: values[7] = PyTuple_GET_ITEM(__pyx_args, 7);
         CYTHON_FALLTHROUGH;
         case  7: values[6] = PyTuple_GET_ITEM(__pyx_args, 6);
-        CYTHON_FALLTHROUGH;
-        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
-        CYTHON_FALLTHROUGH;
-        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
         values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
         values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
@@ -2599,34 +2651,36 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
     __pyx_v_hosts = ((PyArrayObject *)values[0]);
     __pyx_v_meandl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_meandl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
     __pyx_v_sigma = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_sigma == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
-    __pyx_v_omega = values[3];
-    __pyx_v_event_redshift = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_event_redshift == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
-    if (values[5]) {
-      __pyx_v_em_selection = __Pyx_PyInt_As_int(values[5]); if (unlikely((__pyx_v_em_selection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    __pyx_v_sigma_gw_theta = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_sigma_gw_theta == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    __pyx_v_sigma_gw_phi = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_sigma_gw_phi == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    __pyx_v_omega = values[5];
+    __pyx_v_event_redshift = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_event_redshift == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    if (values[7]) {
+      __pyx_v_em_selection = __Pyx_PyInt_As_int(values[7]); if (unlikely((__pyx_v_em_selection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
     } else {
       __pyx_v_em_selection = ((int)0);
     }
-    if (values[6]) {
-      __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    if (values[8]) {
+      __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
     } else {
       __pyx_v_zmin = ((double)0.0);
     }
-    if (values[7]) {
-      __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
+    if (values[9]) {
+      __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 17, __pyx_L3_error)
     } else {
       __pyx_v_zmax = ((double)1.0);
     }
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 17, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 7, 10, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 17, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.likelihood.logLikelihood_single_event", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_hosts), __pyx_ptype_5numpy_ndarray, 1, "hosts", 0))) __PYX_ERR(0, 17, __pyx_L1_error)
-  __pyx_r = __pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_self, __pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_omega, __pyx_v_event_redshift, __pyx_v_em_selection, __pyx_v_zmin, __pyx_v_zmax);
+  __pyx_r = __pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_self, __pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_sigma_gw_theta, __pyx_v_sigma_gw_phi, __pyx_v_omega, __pyx_v_event_redshift, __pyx_v_em_selection, __pyx_v_zmin, __pyx_v_zmax);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2637,7 +2691,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax) {
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, double __pyx_v_sigma_gw_theta, double __pyx_v_sigma_gw_phi, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_hosts;
   __Pyx_Buffer __pyx_pybuffer_hosts;
   PyObject *__pyx_r = NULL;
@@ -2660,7 +2714,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYT
   __pyx_t_2.em_selection = __pyx_v_em_selection;
   __pyx_t_2.zmin = __pyx_v_zmin;
   __pyx_t_2.zmax = __pyx_v_zmax;
-  __pyx_t_1 = __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_omega, __pyx_v_event_redshift, 0, &__pyx_t_2); 
+  __pyx_t_1 = __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_sigma_gw_theta, __pyx_v_sigma_gw_phi, __pyx_v_omega, __pyx_v_event_redshift, 0, &__pyx_t_2); 
   __pyx_t_3 = PyFloat_FromDouble(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
@@ -6249,6 +6303,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_scipy_optimize, __pyx_k_scipy_optimize, sizeof(__pyx_k_scipy_optimize), 0, 0, 1, 1},
   {&__pyx_n_s_scipy_special, __pyx_k_scipy_special, sizeof(__pyx_k_scipy_special), 0, 0, 1, 1},
   {&__pyx_n_s_sigma, __pyx_k_sigma, sizeof(__pyx_k_sigma), 0, 0, 1, 1},
+  {&__pyx_n_s_sigma_gw_phi, __pyx_k_sigma_gw_phi, sizeof(__pyx_k_sigma_gw_phi), 0, 0, 1, 1},
+  {&__pyx_n_s_sigma_gw_theta, __pyx_k_sigma_gw_theta, sizeof(__pyx_k_sigma_gw_theta), 0, 0, 1, 1},
   {&__pyx_kp_s_stringsource, __pyx_k_stringsource, sizeof(__pyx_k_stringsource), 0, 0, 1, 0},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_k_unknown_dtype_code_in_numpy_pxd, sizeof(__pyx_k_unknown_dtype_code_in_numpy_pxd), 0, 1, 0, 0},
