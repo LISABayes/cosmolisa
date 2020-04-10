@@ -14,7 +14,7 @@ cdef inline double linear_density(double x, double a, double b): return a+log(x)
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, double sigma_gw_theta, double sigma_gw_phi, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -46,7 +46,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
         # compute the probability p(G|O) that the event is located in a detected galaxy
         # compute the probability p(notG|O) that the event is located in a non-detected galaxy as 1-p(G|O)
         logp_detection      = log(em_selection_function(dl))
-        logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])
+        logp_nondetection   = logsumexp([0.0,logp_detection], b = [1,-1])-log(2.0*np.pi*sigma_gw_phi*sigma_gw_theta)
 
     # compute the weak lensing error
     weak_lensing_error = sigma_weak_lensing(event_redshift, dl)
