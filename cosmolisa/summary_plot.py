@@ -33,7 +33,8 @@ def init_plotting():
    plt.gca().yaxis.set_ticks_position('left')
 
 
-param_map = {'h':'h', 'om':r'$\Omega_m$', 'w0':r'$w_0$', 'w1':r'$w_a$'}
+param_map = {'h':r'$h$', 'om':r'$\Omega_m$', 'w0':r'$w_0$', 'w1':r'$w_a$'}
+param_truths = {'h': 0.73, 'om': 0.25, 'w0': -1.0, 'w1': 0.0}
 
 if __name__ == "__main__":
     
@@ -47,21 +48,26 @@ if __name__ == "__main__":
     parser.add_option('-o', '--output',      default=None, type='string', metavar='DIR', help='directory for output')
     (opts,args)=parser.parse_args()
     
+# To produce the CR file, use compute_CR.py
+    
     init_plotting()
     ll,l,medians,h,hh = np.loadtxt(opts.regions, unpack = True)
     credible68  = np.array([(medians[i]-l[i], h[i]-medians[i]) for i in range(len(medians))])
     credible90  = np.array([(medians[i]-ll[i], hh[i]-medians[i]) for i in range(len(medians))])
-    labels      = np.genfromtxt(opts.labels,dtype='str')
+#    labels      = np.genfromtxt(opts.labels,dtype='str')
+    labels = [r'M5$_4$', r'M5$_{10}$', r'M1$_4$', r'M1$_{10}$', r'M6$_4$', r'M6$_{10}$']
     N           = np.loadtxt(opts.galaxies)
     xaxis       = range(len(N))
     
     print(credible90)
     fig = plt.figure(1)
     ax  = fig.add_subplot(111)
-    ax.errorbar(xaxis, medians, yerr=credible68.T, fmt='o', color='red', ecolor='red', elinewidth=1.5, capsize=2, ms = 4,zorder=1)
-    ax.errorbar(xaxis, medians, yerr=credible90.T, fmt='o', color='black', ecolor='black', elinewidth=1, capsize=2, ms = 4, zorder=0)
+    ax.errorbar(xaxis, medians, yerr=credible68.T, fmt='o', color='red', ecolor='red', elinewidth=1.3, capsize=2, ms = 2.7, zorder=1)
+    ax.errorbar(xaxis, medians, yerr=credible90.T, fmt='o', color='black', ecolor='black', elinewidth=1, capsize=2, ms = 2, zorder=0)
+    ax.axhline(param_truths[opts.parameter], linestyle='dashed', linewidth=1.2, zorder = 0)
     for i,n in enumerate(N):
-        plt.text( xaxis[i], medians[i]+credible90[i,1], r'N = {0}'.format(int(n)), rotation=45, fontsize=8)
-    plt.xticks(xaxis, labels, rotation=45)
-    ax.set_ylabel(param_map[opts.parameter])
+        plt.text( xaxis[i], medians[i]+credible90[i,1], r'N = {0}'.format(int(n)), rotation=45, fontsize=11)
+    plt.yticks(fontsize=13)
+    plt.xticks(xaxis, labels, rotation=45, fontsize=15)
+    ax.set_ylabel(param_map[opts.parameter], fontsize=15)
     plt.savefig(os.path.join(opts.output,opts.parameter+'_summary.pdf'),bbox_inches='tight')
