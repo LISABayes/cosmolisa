@@ -13,6 +13,7 @@ import os
 import readdata
 import matplotlib
 import corner
+import subprocess
 import itertools as it
 import cosmology as cs
 import numpy as np
@@ -251,6 +252,11 @@ if __name__=='__main__':
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
         x = work.posterior_samples.ravel()
+
+        # Save git info
+        with open("{}/git_info.txt".format(opts.out_dir), "w+") as fileout:
+            subprocess.call(["git", "diff"], stdout=fileout);
+
     else:
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
         from cpnest import nest2pos
