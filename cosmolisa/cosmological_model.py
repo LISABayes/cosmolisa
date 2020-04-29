@@ -21,13 +21,21 @@ import matplotlib.pyplot as plt
 
 
 """
-G = the GW is in a galaxy that I see
-N = the GW is in a galaxy that I do not see
-D = a GW
-I = I see only GW with SNR > 20
+Default formulation with em_selection = 0
+    Di   = a GW
+    O    = omega (cosmological parameters)
 
-p(H|D(G+N)I) \propto p(H|I)p(D(G+N)|HI)
-p(D(G+N)|HI) = p(DG+DN|HI) = p(DG|HI)+p(DN|HI) = p(D|GHI)p(G|HI)+p(D|NHI)p(N|HI) = p(D|HI)(p(G|HI)+p(N|HI))
+    p(Di|O H I) = int dL dz_gw p(z_gw|O H I)*p(dL|z_gw O H I)*p(Di|dL z_gw O H I)
+
+Alternative formulation with em_selection = 1
+    G    = the GW is in a galaxy that I see
+    barG = the GW is in a galaxy that I do not see
+    Di   = a GW
+    O    = omega (cosmological parameters)
+    I    = I see only GW with SNR > 20
+
+    p(Di|dL z_gw O H I) = p(Di(G+barG))|dL z_gw O H I) = p(Di G|dL z_gw O H I) + p(Di barG|dL z_gw O H I)
+    p(Di|O H I) = int dL dz_gw p(z_gw|O H I)*p(dL|z_gw O H I)*p(Di|dL z_gw O H I)
 """
 
 class CosmologicalModel(cpnest.model.Model):
@@ -115,17 +123,12 @@ class CosmologicalModel(cpnest.model.Model):
 
                 z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
-            
-#            if self.event_class == "EMRI" or self.event_class == "sBH":
-#                for j,e in enumerate(self.data):
-#                    #log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[z_idx+j][1]))
-#                    logP += np.log(self.O.UniformComovingVolumeDensity(x['z%d'%e.ID]))#-log_norm
-                
+
         return logP
 
     def log_likelihood(self,x):
         
-        # compute the p(GW|G\Omega)p(G|\Omega)+p(GW|~G\Omega)p(~G|\Omega)
+        # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
         logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma,
                        self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.bounds[2+j][1]) for j,e in enumerate(self.data)])
 
@@ -154,7 +157,7 @@ if __name__=='__main__':
     parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',           help='Number of live points')
     parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
-    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing')
+    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing. It works only with reduced_catalog=0')
     (opts,args)=parser.parse_args()
     
     em_selection = opts.em_selection
@@ -220,82 +223,6 @@ if __name__=='__main__':
     else:
         events = readdata.read_event(opts.event_class, opts.data, opts.event)
 
-#    redshifts = [e.z_true for e in events]
-#    galaxy_redshifts = [g.redshift for e in events for g in e.potential_galaxy_hosts]
-#
-#    import matplotlib
-#    import matplotlib.pyplot as plt
-#    fig = plt.figure(figsize=(10,8))
-#    z = np.linspace(0.0,0.63,100)
-#    normalisation = matplotlib.colors.Normalize(vmin=0.5, vmax=1.0)
-#    normalisation2 = matplotlib.colors.Normalize(vmin=0.04, vmax=1.0)
-#    # choose a colormap
-#    c_m = matplotlib.cm.cool
-#
-#    # create a ScalarMappable and initialize a data structure
-#    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-#    s_m.set_array([])
-#
-#    # choose a colormap
-#    c_m2 = matplotlib.cm.rainbow
-#
-#    # create a ScalarMappable and initialize a data structure
-#    s_m2 = matplotlib.cm.ScalarMappable(cmap=c_m2, norm=normalisation2)
-#    s_m2.set_array([])
-#
-#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, facecolor="yellow", cumulative=True)
-#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", cumulative=True)
-##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, facecolor="green", cumulative=True)
-##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", linestyle='dashed', cumulative=True)
-#    for _ in range(1000):
-#        h = np.random.uniform(0.5,1.0)
-#        om = np.random.uniform(0.04,1.0)
-#        ol = 1.0-om
-##        h = 0.73
-##        om = 0.25
-##        ol = 1.0-om
-#        O = cs.CosmologicalParameters(h,om,ol,-1.0,0.0)
-##        distances = np.array([O.LuminosityDistance(zi) for zi in z])
-##        plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.25, color=s_m.to_rgba(h), alpha = 0.75, linestyle='dashed')
-#        pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
-##        pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
-#        plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.15, color=s_m2.to_rgba(om), alpha = 0.5)
-#        O.DestroyCosmologicalParameters()
-#
-##        p = lal.CreateCosmologicalParametersAndRate()
-##        p.omega.h = h
-##        p.omega.om = om
-##        p.omega.ol = ol
-##        p.omega.w0 = -1.0
-##
-##        p.rate.r0 = 1e-12
-##        p.rate.W  = np.random.uniform(0.0,10.0)
-##        p.rate.Q  = np.random.normal(0.63,0.01)
-##        p.rate.R  = np.random.normal(1.0,0.1)
-##        pz = np.array([lal.RateWeightedUniformComovingVolumeDensity(zi, p) for zi in z])/lal.IntegrateRateWeightedComovingVolumeDensity(p,z.max())
-##        plt.plot(z, np.cumsum(pz)/pz.sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
-##        lal.DestroyCosmologicalParametersAndRate(p)
-##        plt.plot(z, pz/(pz*np.diff(z)[0]).sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
-#
-#
-#
-#    O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
-#    pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
-#    pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
-#    distances = np.array([O.LuminosityDistance(zi) for zi in z])
-#    plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.5, color='k', linestyle='dashed')
-#    O.DestroyCosmologicalParameters()
-#    plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.5, color='k')
-##    plt.plot(z,pz/(pz*np.diff(z)[0]).sum(), lw = 0.5, color='k')
-#    CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-#    CB.set_label(r'$h$')
-#    CB = plt.colorbar(s_m2, orientation='horizontal', pad=0.15)
-#    CB.set_label(r'$\Omega_m$')
-#    plt.xlabel('redshift')
-##    plt.xlim(0.,0.3)
-#    plt.show()
-#    exit()
-
     model = opts.model
 
     if opts.out_dir is None:
@@ -310,8 +237,7 @@ if __name__=='__main__':
                           z_threshold   = opts.zhorizon,
                           event_class   = opts.event_class)
 
-    #FIX ME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
-
+    #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
     if opts.postprocess == 0:
         work=cpnest.CPNest(C,
                            verbose      = 2,
@@ -329,39 +255,39 @@ if __name__=='__main__':
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
         from cpnest import nest2pos
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
-    
+
+    # Make plots
     if opts.event_class == "EMRI":
         for e in C.data:
             fig = plt.figure()
             ax  = fig.add_subplot(111)
             z   = np.linspace(e.zmin,e.zmax, 100)
-            
-            ax2 = ax.twinx()
-            
-            if model == "DE": normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-            else:             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-            # choose a colormap
-            c_m = matplotlib.cm.cool
 
-            # create a ScalarMappable and initialize a data structure
-            s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-            s_m.set_array([])
-            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
-            for i in range(x.shape[0])[::10]:
-                if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-                elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-                elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-                elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-                distances = np.array([O.LuminosityDistance(zi) for zi in z])
-                if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
-                else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
-                O.DestroyCosmologicalParameters()
+            if em_selection:
+                ax2 = ax.twinx()
                 
-            CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-            if model == "DE": CB.set_label('w_0')
-            else: CB.set_label('h')
-            ax2.set_ylim(0.0,1.0)
-            ax2.set_ylabel('selection function')
+                if model == "DE": normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+                else:             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+                # choose a colormap
+                c_m = matplotlib.cm.cool
+                # create a ScalarMappable and initialize a data structure
+                s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+                s_m.set_array([])
+                for i in range(x.shape[0])[::10]:
+                    if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                    elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+                    elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                    elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                    distances = np.array([O.LuminosityDistance(zi) for zi in z])
+                    if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+                    else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+                    O.DestroyCosmologicalParameters()
+                CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+                if model == "DE": CB.set_label('w_0')
+                else: CB.set_label('h')
+                ax2.set_ylim(0.0,1.0)
+                ax2.set_ylabel('selection function')
+            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
             ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
             ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
 
@@ -371,7 +297,7 @@ if __name__=='__main__':
                 ax.plot(zg, pg, lw=0.5,color='k')
             ax.set_xlabel('$z_{%d}$'%e.ID)
             ax.set_ylabel('probability density')
-            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.pdf'), bbox_inches='tight')
+            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
             plt.close()
     
     if opts.event_class == "MBH":
@@ -498,3 +424,84 @@ if __name__=='__main__':
 #        axes[2].set_ylim(-1.0, 1.0)
 
     fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
+
+
+############################################################
+############################################################
+# UNUSED CODE
+
+#    redshifts = [e.z_true for e in events]
+#    galaxy_redshifts = [g.redshift for e in events for g in e.potential_galaxy_hosts]
+#
+#    import matplotlib
+#    import matplotlib.pyplot as plt
+#    fig = plt.figure(figsize=(10,8))
+#    z = np.linspace(0.0,0.63,100)
+#    normalisation = matplotlib.colors.Normalize(vmin=0.5, vmax=1.0)
+#    normalisation2 = matplotlib.colors.Normalize(vmin=0.04, vmax=1.0)
+#    # choose a colormap
+#    c_m = matplotlib.cm.cool
+#
+#    # create a ScalarMappable and initialize a data structure
+#    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+#    s_m.set_array([])
+#
+#    # choose a colormap
+#    c_m2 = matplotlib.cm.rainbow
+#
+#    # create a ScalarMappable and initialize a data structure
+#    s_m2 = matplotlib.cm.ScalarMappable(cmap=c_m2, norm=normalisation2)
+#    s_m2.set_array([])
+#
+#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, facecolor="yellow", cumulative=True)
+#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", cumulative=True)
+##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, facecolor="green", cumulative=True)
+##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", linestyle='dashed', cumulative=True)
+#    for _ in range(1000):
+#        h = np.random.uniform(0.5,1.0)
+#        om = np.random.uniform(0.04,1.0)
+#        ol = 1.0-om
+##        h = 0.73
+##        om = 0.25
+##        ol = 1.0-om
+#        O = cs.CosmologicalParameters(h,om,ol,-1.0,0.0)
+##        distances = np.array([O.LuminosityDistance(zi) for zi in z])
+##        plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.25, color=s_m.to_rgba(h), alpha = 0.75, linestyle='dashed')
+#        pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
+##        pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
+#        plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.15, color=s_m2.to_rgba(om), alpha = 0.5)
+#        O.DestroyCosmologicalParameters()
+#
+##        p = lal.CreateCosmologicalParametersAndRate()
+##        p.omega.h = h
+##        p.omega.om = om
+##        p.omega.ol = ol
+##        p.omega.w0 = -1.0
+##
+##        p.rate.r0 = 1e-12
+##        p.rate.W  = np.random.uniform(0.0,10.0)
+##        p.rate.Q  = np.random.normal(0.63,0.01)
+##        p.rate.R  = np.random.normal(1.0,0.1)
+##        pz = np.array([lal.RateWeightedUniformComovingVolumeDensity(zi, p) for zi in z])/lal.IntegrateRateWeightedComovingVolumeDensity(p,z.max())
+##        plt.plot(z, np.cumsum(pz)/pz.sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
+##        lal.DestroyCosmologicalParametersAndRate(p)
+##        plt.plot(z, pz/(pz*np.diff(z)[0]).sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
+#
+#
+#
+#    O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
+#    pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
+#    pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
+#    distances = np.array([O.LuminosityDistance(zi) for zi in z])
+#    plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.5, color='k', linestyle='dashed')
+#    O.DestroyCosmologicalParameters()
+#    plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.5, color='k')
+##    plt.plot(z,pz/(pz*np.diff(z)[0]).sum(), lw = 0.5, color='k')
+#    CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+#    CB.set_label(r'$h$')
+#    CB = plt.colorbar(s_m2, orientation='horizontal', pad=0.15)
+#    CB.set_label(r'$\Omega_m$')
+#    plt.xlabel('redshift')
+##    plt.xlim(0.,0.3)
+#    plt.show()
+#    exit()
