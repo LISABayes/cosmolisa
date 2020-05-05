@@ -4,16 +4,15 @@ cimport numpy as np
 from numpy cimport ndarray
 from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh
 cimport cython
-from scipy.integrate import quad
 from scipy.special.cython_special cimport erfc, hyp2f1
 from scipy.special import logsumexp
 from scipy.optimize import newton
 
 cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
-cdef inline double linear_density(double x, double a, double b): return a+log(x)*b
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
@@ -50,13 +49,13 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     weak_lensing_error        = sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared  = sigma**2+weak_lensing_error**2
     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
-
+    cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
     for i in range(N):
-        sigma_z     = hosts[i,1]*(1+hosts[i,0])
-        score_z     = (event_redshift-hosts[i,0])/sigma_z
-        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
+        sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])
+        score_z     = (event_redshift-hosts_view[i,0])/sigma_z
+        logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo
         logL        = log_add(logL,logL_galaxy)
 
     if em_selection == 1:

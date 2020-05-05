@@ -28,19 +28,21 @@ ext_modules=[
                        sources=["cosmolisa/cosmology.pyx"],
                        libraries=["m","lal"], # Unix-like specific
                        library_dirs = [lal_libs],
+                       extra_compile_args=["-O3","-ffast-math"],
                        include_dirs=[numpy.get_include(),lal_includes]
                        ),
              Extension("cosmolisa.likelihood",
                        sources=["cosmolisa/likelihood.pyx"],
                        libraries=["m","lal"], # Unix-like specific
                        library_dirs = [lal_libs],
+                       extra_compile_args=["-O3","-ffast-math"],
                        include_dirs=[numpy.get_include(),lal_includes]
                        )
              ]
 
 setup(
       name = "cosmolisa",
-      ext_modules = cythonize(ext_modules),
+      ext_modules = cythonize(ext_modules, language_level = "3"),
       include_dirs=[numpy.get_include(),lal_includes],
       description='cosmolisa: a cpnest model for cosmological inference with LISA',
       author='Walter Del Pozzo, Danny Laghi',
