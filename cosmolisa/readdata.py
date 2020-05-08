@@ -213,7 +213,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
         redshifts = np.atleast_1d(zobs)
         d_redshifts     = np.ones(len(redshifts))*pv
         weights         = np.atleast_1d(weights)
-        analysis_events.append(Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
+        analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
         sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
 #        except:
 #            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))

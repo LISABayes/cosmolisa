@@ -3,6 +3,7 @@ import scipy.stats
 import lal
 import os
 import sys
+import cosmolisa.cosmology as cs
 
 def redshift_rejection_sampling(min, max, p, pmax, norm):
     """
@@ -27,7 +28,31 @@ def redshift_rejection_sampling(min, max, p, pmax, norm):
         prob = lal.RateWeightedUniformComovingVolumeDensity(z,p)/norm
         if (test < prob): break
     return z
+
+def galaxy_redshift_rejection_sampling(min, max, O, pmax, norm):
+    """
+    Samples the cosmologically correct redshift
+    distribution
     
+    Parameters
+    ===========
+    min ::`obj`: `float`
+    max ::`obj`: `float`
+    omega ::`obj`: `lal.CosmologicalParameter`
+    pmax ::`obj`: `float`
+    norm ::`obj`: `float`
+    
+    Returns
+    ===========
+    z ::`obj`: `float`
+    """
+    while True:
+        test = pmax * np.random.uniform(0,1)
+        z = np.random.uniform(min,max)
+        prob = O.ComovingVolumeElement(z)/norm
+        if (test < prob): break
+    return z
+
 class EMRIDistribution(object):
     def __init__(self,
                  redshift_min = 0.0,
@@ -38,16 +63,16 @@ class EMRIDistribution(object):
                  dec_max = np.pi/2.0,
                  *args, **kwargs):
         
-        self.D0      = 1419.20
-        self.delta_D0= 0.01
-        self.V0      = 0.1290e4
-        self.SNR0    = 100.0
-        self.ra_min  = ra_min
-        self.ra_max  = ra_max
-        self.dec_min = dec_min
-        self.dec_max = dec_max
-        self.z_min   = redshift_min
-        self.z_max   = redshift_max
+        self.D0       = 169.2
+        self.delta_D0 = 0.001
+        self.V0       = 0.08607
+        self.SNR0     = 1221.6
+        self.ra_min   = ra_min
+        self.ra_max   = ra_max
+        self.dec_min  = dec_min
+        self.dec_max  = dec_max
+        self.z_min    = redshift_min
+        self.z_max    = redshift_max
         
         for key, value in kwargs.items():
             if not hasattr(self, key):
@@ -76,6 +101,7 @@ class EMRIDistribution(object):
         except: self.R            = 0.0
         self.rate                 = lal.CreateCosmologicalRateParameters(self.r0, self.W, self.Q, self.R)
         
+        self.fiducial_O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
         # create a rate and cosmology parameter foir the calculations
         self.p = lal.CreateCosmologicalParametersAndRate()
         # set it up to the values we want
@@ -104,6 +130,9 @@ class EMRIDistribution(object):
         self.sindec_min = np.sin(self.dec_min)
         self.sindec_max = np.sin(self.dec_max)
         self.sindec_pdf = scipy.stats.uniform(loc = self.sindec_min, scale = self.sindec_max-self.sindec_min)
+        
+        self.galaxy_pmax = None
+        self.galaxy_norm = None
         
     def get_sample(self, *args, **kwargs):
         ra    = self.ra_pdf.rvs()
@@ -138,19 +167,18 @@ class EMRIDistribution(object):
     
     def credible_volume(self, SNR):
         # see https://arxiv.org/pdf/1801.08009.pdf
-        return self.V0 * (self.SNR0/SNR)**(-6)
+        return self.V0 * (self.SNR0/SNR)**(6)
 
     def credible_distance_error(self, SNR):
         # see https://arxiv.org/pdf/1801.08009.pdf
-        return self.delta_D0 * (SNR/self.SNR0)**(-1)
+        return self.delta_D0 * self.SNR0/SNR
 
     def find_redshift_limits(self,
                              h_w  = (0.5,1.0),
-                             om_w = (0.04, 1.0),
+                             om_w = (0.04,0.5),
                              w0_w = (-1,-1),
                              w1_w = (0,0)):
         from cosmolisa.likelihood import find_redshift
-        import cosmolisa.cosmology as cs
         
         def limits(O, Dmin, Dmax):
             return find_redshift(O,Dmin), find_redshift(O,Dmax)
@@ -158,7 +186,7 @@ class EMRIDistribution(object):
         redshift_min = np.zeros(self.catalog.shape[0])
         redshift_max = np.zeros(self.catalog.shape[0])
         redshift_fiducial = np.zeros(self.catalog.shape[0])
-        fiducial_O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
+        
         for k in range(self.catalog.shape[0]):
             sys.stderr.write("finding redshift limits for event {0} out of {1}\r".format(k+1,self.catalog.shape[0]))
             z_min = np.zeros(100)
@@ -173,10 +201,42 @@ class EMRIDistribution(object):
                 z_min[i], z_max[i] = limits(O, self.catalog[k,1]*(np.maximum(0.0,1.0-3*self.catalog[k,5])), self.catalog[k,1]*(1.0+3*self.catalog[k,5]))
             redshift_min[k] = z_min.min()
             redshift_max[k] = z_max.max()
-            redshift_fiducial[k] = find_redshift(fiducial_O, self.catalog[k,1])
+            redshift_fiducial[k] = find_redshift(self.fiducial_O, self.catalog[k,1])
         sys.stderr.write("\n")
         self.catalog = np.column_stack((self.catalog,redshift_fiducial,redshift_min,redshift_max))
         return self.catalog
+    
+    def generate_galaxies(self, i):
+        self.n0 = 1.0 # Mpc^{-1}
+        if self.galaxy_norm is None:
+            self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
+        if self.galaxy_pmax is None:
+            zt    = np.linspace(0,self.z_max,1000)
+            self.galaxy_pmax  = np.max([self.fiducial_O.ComovingVolumeElement(zi)/self.galaxy_norm for zi in zt])
+        Vc = self.catalog[i,6]
+        D  = self.catalog[i,1]
+        dD = D*self.catalog[i,5]
+        A  = Vc/(dD*D**2)
+        N_gal = np.random.poisson(A/(4.0*np.pi)*Vc*self.n0)
+#        print("D = ",D,"dD = ",dD,"Vc = ",Vc, "A = ",A, "N = ", N_gal)
+        if N_gal > 10000:
+            return 0,0,0
+        z_cosmo = [galaxy_redshift_rejection_sampling(self.catalog[i,8], self.catalog[i,9], self.fiducial_O, self.galaxy_pmax, self.galaxy_norm) for _ in range(N_gal-1)]
+        z_cosmo.append(self.catalog[i,0])
+        z_cosmo = np.array(z_cosmo)
+        z_obs   = z_cosmo + np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
+#        logM    = np.random.uniform(10, 13, size = z_cosmo.shape[0])
+        dz      = np.ones(N_gal)*0.0015
+        W       = np.random.uniform(0.0, 1.0, size = z_cosmo.shape[0])
+        W      /= W.sum()
+        return z_cosmo, z_obs, W
+#        import matplotlib.pyplot as plt
+#        plt.hist(z_cosmo, bins=np.linspace(self.catalog[i,8], self.catalog[i,9],100), density=True, alpha=0.5,facecolor='red')
+#        plt.hist(z_obs, bins=np.linspace(self.catalog[i,8], self.catalog[i,9],100), density=True, alpha=0.5,facecolor='blue')
+#        plt.axvline(self.catalog[i,0],ls='dashed')
+#        plt.axvline(self.catalog[i,8],color='r')
+#        plt.axvline(self.catalog[i,9],color='r')
+#        plt.show()
         
     def save_catalog_ids(self, folder):
         """
@@ -196,10 +256,70 @@ class EMRIDistribution(object):
         """
         os.system("mkdir -p {0}".format(folder))
         for i in range(self.catalog.shape[0]):
-            os.system("mkdir -p {0}".format(os.path.join(folder,"EVENT_1{))
-            np.savetxt(os.path.join(
+            f = os.path.join(folder,"EVENT_1{:03d}".format(i+1))
+            os.system("mkdir -p {0}".format(f))
+            np.savetxt(os.path.join(f,"ID.dat"),np.column_stack((i+1,
+                                                                self.catalog[i,1],
+                                                                self.catalog[i,5],
+                                                                self.catalog[i,6],
+                                                                0.0,
+                                                                0.0,
+                                                                0.0,
+                                                                self.catalog[i,0],
+                                                                self.catalog[i,8],
+                                                                self.catalog[i,9],
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                self.catalog[i,4],
+                                                                self.catalog[i,4])),
+                                                                fmt = '%d %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f',
+                                                                delimiter =' ')
+            z_cosmo,z_obs, W = self.generate_galaxies(i)
+            """
+            The file ERRORBOX.dat has all the info you need to run the inference code. Each row is a possible host within the errorbox. Columns are:
+            1-best luminosity distance measured by LISA
+            2-redshift of the host candidate (without peculiar velocity)
+            3-redshift of the host candidate (with peculiar velocity)
+            4-log_10 of the host candidate mass in solar masses
+            5-probability of the host according to the multivariate gaussian including the prior on cosmology (all rows add to 1)
+            6-theta of the host candidate
+            7-best theta measured by LISA
+            8-difference between the above two in units of LISA theta error
+            9-phi of the host candidate
+            10-best phi measured by LISA
+            11-difference between the above two in units of LISA phi error
+            12-luminosity distance of the host candidate (in the Millennium cosmology)
+            13-best Dl measured by LISA
+            14-difference between the above two in units of LISA Dl error
+            """
+            if np.all(z_cosmo) != 0 and np.all(z_obs) !=0 and np.all(W) !=0:
+                N = len(z_cosmo)
+                np.savetxt(os.path.join(f,"ERRORBOX.dat"),np.column_stack((self.catalog[i,1]*np.ones(N),
+                                                                           z_cosmo,
+                                                                           z_obs,
+                                                                           np.zeros(N),
+                                                                           W,
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N),
+                                                                           np.zeros(N))))
+            else:
+                print("Too many hosts, EVENT_1{:03d} is unusable".format(i+1))
         return
+        
+        
+        
 if __name__=="__main__":
+    np.random.seed(1)
     h  = 0.7
     om = 0.25
     ol = 0.75
@@ -207,10 +327,12 @@ if __name__=="__main__":
     W  = 0.0
     R  = 0.0
     Q  = 0.0
-    C = EMRIDistribution(redshift_max  = 6.0, r0 = r0, W = W, R = R, Q = Q)
+    # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
+    C = EMRIDistribution(redshift_max  = 1.0, r0 = r0, W = W, R = R, Q = Q)
+    C.get_catalog(T = 10, SNR_threshold = 20)
+    C.save_catalog_ids("test")
     z  = np.linspace(C.z_min,C.z_max,1000)
     import matplotlib.pyplot as plt
-    plt.hist(C.get_bare_catalog(T = 10)[:,0],bins=100,density=True,alpha=0.5)
-    plt.hist(C.get_catalog(T = 10, SNR_threshold = 20)[:,0],bins=100,density=True,alpha=0.5)
-    plt.plot(z, [C.dist(zi) for zi in z])
+    plt.hist(C.catalog[:,0],bins=100,density=True,alpha=0.5)
+    plt.plot(z,[C.dist(zi) for zi in z])
     plt.show()
