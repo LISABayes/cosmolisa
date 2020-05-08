@@ -7,13 +7,16 @@ cimport cython
 from scipy.special.cython_special cimport erfc, hyp2f1
 from scipy.special import logsumexp
 from scipy.optimize import newton
+from .cosmology cimport CosmologicalParameters
 
 cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
 
-@cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+@cython.nonecheck(False)
+@cython.cdivision(True)
+
+cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -46,9 +49,9 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double me
     dl = omega.LuminosityDistance(event_redshift)
 
     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
-    weak_lensing_error        = sigma_weak_lensing(event_redshift, dl)
-    cdef double SigmaSquared  = sigma**2+weak_lensing_error**2
-    cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
+    weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
+    cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
+    cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
@@ -96,7 +99,7 @@ cpdef double em_selection_function(double dl):
 cpdef double em_selection_function_number_density(double dl):
     return (1.0)/(1.0+(dl/3700.0)**7)**1.35
 
-cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):
+cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):
     cdef double tmp
     cdef int i      = 0
     cdef double z   = zmin, dz = (zmax-zmin)/100.
@@ -108,8 +111,8 @@ cpdef double em_selection_function_normalisation(double zmin, double zmax, objec
         z  += dz
     return res+log(dz)
 
-cdef double find_redshift(object omega, double dl):
+cpdef double find_redshift(CosmologicalParameters omega, double dl):
     return newton(objective,1.0,args=(omega,dl))
 
-cdef double objective(double z, object omega, double dl):
+cdef double objective(double z, CosmologicalParameters omega, double dl):
     return dl - omega.LuminosityDistance(z)

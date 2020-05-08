@@ -29,21 +29,21 @@ ext_modules=[
                        libraries=["m","lal"], # Unix-like specific
                        library_dirs = [lal_libs],
                        extra_compile_args=["-O3","-ffast-math"],
-                       include_dirs=[numpy.get_include(),lal_includes]
+                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                        ),
              Extension("cosmolisa.likelihood",
                        sources=["cosmolisa/likelihood.pyx"],
                        libraries=["m","lal"], # Unix-like specific
                        library_dirs = [lal_libs],
                        extra_compile_args=["-O3","-ffast-math"],
-                       include_dirs=[numpy.get_include(),lal_includes]
+                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                        )
              ]
 
 setup(
       name = "cosmolisa",
       ext_modules = cythonize(ext_modules, language_level = "3"),
-      include_dirs=[numpy.get_include(),lal_includes],
+      include_dirs=[numpy.get_include(),lal_includes,"cosmolisa/cosmolisa"],
       description='cosmolisa: a cpnest model for cosmological inference with LISA',
       author='Walter Del Pozzo, Danny Laghi',
       author_email='walter.delpozzo@ligo.org, danny.laghi@ligo.org',
@@ -64,6 +64,6 @@ setup(
       keywords='lisa gravitational waves cosmology bayesian inference',
       packages=['cosmolisa'],
       install_requires=['numpy', 'scipy', 'corner', 'cython'],
-      package_data={"": ['*.c', '*.pyx', '*.pxd']},
+      package_data={"": ['*.pyx', '*.pxd']},
       )
 

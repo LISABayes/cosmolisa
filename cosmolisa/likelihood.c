@@ -5,11 +5,17 @@
     "distutils": {
         "depends": [
             "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include/numpy/arrayobject.h",
-            "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include/numpy/ufuncobject.h"
+            "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include/numpy/ufuncobject.h",
+            "/Users/wdp/opt/master/include/lal/LALCosmologyCalculator.h"
+        ],
+        "extra_compile_args": [
+            "-O3",
+            "-ffast-math"
         ],
         "include_dirs": [
             "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include",
-            "/Users/wdp/opt/master/include"
+            "/Users/wdp/opt/master/include",
+            "cosmolisa"
         ],
         "libraries": [
             "m",
@@ -627,6 +633,7 @@ static CYTHON_INLINE float __PYX_NAN() {
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
 #include <math.h>
+#include "lal/LALCosmologyCalculator.h"
 #include "pythread.h"
 #include <stdlib.h>
 #include "pystate.h"
@@ -864,6 +871,7 @@ static const char *__pyx_f[] = {
   "__init__.pxd",
   "stringsource",
   "type.pxd",
+  "cosmolisa/cosmology.pxd",
 };
 /* BufferFormatStructs.proto */
 #define IS_UNSIGNED(type) (((type) -1) > 0)
@@ -1188,7 +1196,8 @@ static CYTHON_INLINE __pyx_t_double_complex __pyx_t_double_complex_from_parts(do
 
 
 /*--- Type declarations ---*/
-struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py;
+struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters;
+struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py;
 struct __pyx_array_obj;
 struct __pyx_MemviewEnum_obj;
 struct __pyx_memoryview_obj;
@@ -1232,10 +1241,10 @@ typedef npy_cdouble __pyx_t_5numpy_complex_t;
 struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event;
 struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisation;
 
-/* "cosmolisa/likelihood.pyx":16
- * @cython.boundscheck(False)
- * @cython.wraparound(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+/* "cosmolisa/likelihood.pyx":19
+ * @cython.cdivision(True)
+ * 
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
@@ -1246,10 +1255,10 @@ struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event {
   double zmax;
 };
 
-/* "cosmolisa/likelihood.pyx":99
+/* "cosmolisa/likelihood.pyx":102
  *     return (1.0)/(1.0+(dl/3700.0)**7)**1.35
  * 
- * cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):             # <<<<<<<<<<<<<<
+ * cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):             # <<<<<<<<<<<<<<
  *     cdef double tmp
  *     cdef int i      = 0
  */
@@ -1258,16 +1267,35 @@ struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisatio
   int N;
 };
 
+/* "cosmology.pxd":72
+ *     cdef double XLALGetW2(LALCosmologicalParameters *omega)
+ * 
+ * cdef class CosmologicalParameters:             # <<<<<<<<<<<<<<
+ *     cdef LALCosmologicalParameters* _LALCosmologicalParameters
+ *     cdef public double h
+ */
+struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_vtab;
+  LALCosmologicalParameters *_LALCosmologicalParameters;
+  double h;
+  double om;
+  double ol;
+  double w0;
+  double w1;
+};
+
+
 /* "cfunc.to_py":64
  * 
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):             # <<<<<<<<<<<<<<
- *     def wrap(double z, object omega, double dl):
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):             # <<<<<<<<<<<<<<
+ *     def wrap(double z, CosmologicalParameters omega, double dl):
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  */
-struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py {
+struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py {
   PyObject_HEAD
-  double (*__pyx_v_f)(double, PyObject *, double);
+  double (*__pyx_v_f)(double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double);
 };
 
 
@@ -1347,6 +1375,32 @@ struct __pyx_memoryviewslice_obj {
   int (*to_dtype_func)(char *, PyObject *);
 };
 
+
+
+/* "cosmology.pxd":72
+ *     cdef double XLALGetW2(LALCosmologicalParameters *omega)
+ * 
+ * cdef class CosmologicalParameters:             # <<<<<<<<<<<<<<
+ *     cdef LALCosmologicalParameters* _LALCosmologicalParameters
+ *     cdef public double h
+ */
+
+struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters {
+  void (*SetH)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  void (*SetOM)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  void (*SetOL)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*HubbleParameter)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*LuminosityDistance)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*HubbleDistance)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, int __pyx_skip_dispatch);
+  double (*IntegrateComovingVolumeDensity)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*IntegrateComovingVolume)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*UniformComovingVolumeDensity)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*UniformComovingVolumeDistribution)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, double, int __pyx_skip_dispatch);
+  double (*ComovingVolumeElement)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  double (*ComovingVolume)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
+  void (*DestroyCosmologicalParameters)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, int __pyx_skip_dispatch);
+};
+static struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_vtabptr_9cosmolisa_9cosmology_CosmologicalParameters;
 
 
 /* "View.MemoryView":105
@@ -1538,53 +1592,12 @@ static PyObject *__Pyx__GetModuleGlobalName(PyObject *name, PY_UINT64_T *dict_ve
 static CYTHON_INLINE PyObject *__Pyx__GetModuleGlobalName(PyObject *name);
 #endif
 
-/* PyCFunctionFastCall.proto */
-#if CYTHON_FAST_PYCCALL
-static CYTHON_INLINE PyObject *__Pyx_PyCFunction_FastCall(PyObject *func, PyObject **args, Py_ssize_t nargs);
-#else
-#define __Pyx_PyCFunction_FastCall(func, args, nargs)  (assert(0), NULL)
-#endif
-
-/* PyFunctionFastCall.proto */
-#if CYTHON_FAST_PYCALL
-#define __Pyx_PyFunction_FastCall(func, args, nargs)\
-    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
-#if 1 || PY_VERSION_HEX < 0x030600B1
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs);
-#else
-#define __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs) _PyFunction_FastCallDict(func, args, nargs, kwargs)
-#endif
-#define __Pyx_BUILD_ASSERT_EXPR(cond)\
-    (sizeof(char [1 - 2*!(cond)]) - 1)
-#ifndef Py_MEMBER_SIZE
-#define Py_MEMBER_SIZE(type, member) sizeof(((type *)0)->member)
-#endif
-  static size_t __pyx_pyframe_localsplus_offset = 0;
-  #include "frameobject.h"
-  #define __Pxy_PyFrame_Initialize_Offsets()\
-    ((void)__Pyx_BUILD_ASSERT_EXPR(sizeof(PyFrameObject) == offsetof(PyFrameObject, f_localsplus) + Py_MEMBER_SIZE(PyFrameObject, f_localsplus)),\
-     (void)(__pyx_pyframe_localsplus_offset = ((size_t)PyFrame_Type.tp_basicsize) - Py_MEMBER_SIZE(PyFrameObject, f_localsplus)))
-  #define __Pyx_PyFrame_GetLocalsplus(frame)\
-    (assert(__pyx_pyframe_localsplus_offset), (PyObject **)(((char *)(frame)) + __pyx_pyframe_localsplus_offset))
-#endif
-
 /* PyObjectCall.proto */
 #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
 #else
 #define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
 #endif
-
-/* PyObjectCall2Args.proto */
-static CYTHON_UNUSED PyObject* __Pyx_PyObject_Call2Args(PyObject* function, PyObject* arg1, PyObject* arg2);
-
-/* PyObjectCallMethO.proto */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
-#endif
-
-/* PyObjectCallOneArg.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
 
 /* MemviewSliceInit.proto */
 #define __Pyx_BUF_MAX_NDIMS %(BUF_MAX_NDIMS)d
@@ -1673,6 +1686,44 @@ static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *nam
 
 /* RaiseException.proto */
 static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+
+/* PyCFunctionFastCall.proto */
+#if CYTHON_FAST_PYCCALL
+static CYTHON_INLINE PyObject *__Pyx_PyCFunction_FastCall(PyObject *func, PyObject **args, Py_ssize_t nargs);
+#else
+#define __Pyx_PyCFunction_FastCall(func, args, nargs)  (assert(0), NULL)
+#endif
+
+/* PyFunctionFastCall.proto */
+#if CYTHON_FAST_PYCALL
+#define __Pyx_PyFunction_FastCall(func, args, nargs)\
+    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
+#if 1 || PY_VERSION_HEX < 0x030600B1
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs);
+#else
+#define __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs) _PyFunction_FastCallDict(func, args, nargs, kwargs)
+#endif
+#define __Pyx_BUILD_ASSERT_EXPR(cond)\
+    (sizeof(char [1 - 2*!(cond)]) - 1)
+#ifndef Py_MEMBER_SIZE
+#define Py_MEMBER_SIZE(type, member) sizeof(((type *)0)->member)
+#endif
+  static size_t __pyx_pyframe_localsplus_offset = 0;
+  #include "frameobject.h"
+  #define __Pxy_PyFrame_Initialize_Offsets()\
+    ((void)__Pyx_BUILD_ASSERT_EXPR(sizeof(PyFrameObject) == offsetof(PyFrameObject, f_localsplus) + Py_MEMBER_SIZE(PyFrameObject, f_localsplus)),\
+     (void)(__pyx_pyframe_localsplus_offset = ((size_t)PyFrame_Type.tp_basicsize) - Py_MEMBER_SIZE(PyFrameObject, f_localsplus)))
+  #define __Pyx_PyFrame_GetLocalsplus(frame)\
+    (assert(__pyx_pyframe_localsplus_offset), (PyObject **)(((char *)(frame)) + __pyx_pyframe_localsplus_offset))
+#endif
+
+/* PyObjectCallMethO.proto */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
+#endif
+
+/* PyObjectCallOneArg.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
 
 /* DictGetItem.proto */
 #if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
@@ -1791,6 +1842,9 @@ static PyObject *__Pyx_CyFunction_New(PyMethodDef *ml,
                                       PyObject *closure,
                                       PyObject *module, PyObject *globals,
                                       PyObject* code);
+
+/* PyObjectCall2Args.proto */
+static CYTHON_UNUSED PyObject* __Pyx_PyObject_Call2Args(PyObject* function, PyObject* arg1, PyObject* arg2);
 
 /* IncludeStringH.proto */
 #include <string.h>
@@ -1997,6 +2051,9 @@ enum __Pyx_ImportType_CheckSize {
 };
 static PyTypeObject *__Pyx_ImportType(PyObject* module, const char *module_name, const char *class_name, size_t size, enum __Pyx_ImportType_CheckSize check_size);
 #endif
+
+/* GetVTable.proto */
+static void* __Pyx_GetVtable(PyObject *dict);
 
 /* CLineInTraceback.proto */
 #ifdef CYTHON_CLINE_IN_TRACEBACK
@@ -2265,8 +2322,11 @@ static double (*__pyx_fuse_1__pyx_f_5scipy_7special_14cython_special_erfc)(doubl
 static __pyx_t_double_complex (*__pyx_fuse_0__pyx_f_5scipy_7special_14cython_special_hyp2f1)(double, double, double, __pyx_t_double_complex, int __pyx_skip_dispatch); /*proto*/
 static double (*__pyx_fuse_1__pyx_f_5scipy_7special_14cython_special_hyp2f1)(double, double, double, double, int __pyx_skip_dispatch); /*proto*/
 
+/* Module declarations from 'cosmolisa.cosmology' */
+static PyTypeObject *__pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters = 0;
+
 /* Module declarations from 'cosmolisa.likelihood' */
-static PyTypeObject *__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = 0;
+static PyTypeObject *__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py = 0;
 static PyTypeObject *__pyx_array_type = 0;
 static PyTypeObject *__pyx_MemviewEnum_type = 0;
 static PyTypeObject *__pyx_memoryview_type = 0;
@@ -2279,13 +2339,14 @@ static PyObject *indirect_contiguous = 0;
 static int __pyx_memoryview_thread_locks_used;
 static PyThread_type_lock __pyx_memoryview_thread_locks[8];
 static CYTHON_INLINE double __pyx_f_9cosmolisa_10likelihood_log_add(double, double); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *, double, double, PyObject *, double, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *, double, double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(double, double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_em_selection_function(double, int __pyx_skip_dispatch); /*proto*/
 static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_number_density(double, int __pyx_skip_dispatch); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisation(double, double, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisation *__pyx_optional_args); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_objective(double, PyObject *, double); /*proto*/
-static PyObject *__Pyx_CFunc_double____double____object____double___to_py(double (*)(double, PyObject *, double)); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisation(double, double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisation *__pyx_optional_args); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_find_redshift(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_objective(double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double); /*proto*/
+static PyObject *__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*)(double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double)); /*proto*/
 static struct __pyx_array_obj *__pyx_array_new(PyObject *, Py_ssize_t, char *, char *, char *); /*proto*/
 static void *__pyx_align_pointer(void *, size_t); /*proto*/
 static PyObject *__pyx_memoryview_new(PyObject *, int, int, __Pyx_TypeInfo *); /*proto*/
@@ -2419,23 +2480,19 @@ static const char __pyx_k_dtype_is_object[] = "dtype_is_object";
 static const char __pyx_k_pyx_PickleError[] = "__pyx_PickleError";
 static const char __pyx_k_setstate_cython[] = "__setstate_cython__";
 static const char __pyx_k_pyx_unpickle_Enum[] = "__pyx_unpickle_Enum";
-static const char __pyx_k_LuminosityDistance[] = "LuminosityDistance";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_strided_and_direct[] = "<strided and direct>";
 static const char __pyx_k_strided_and_indirect[] = "<strided and indirect>";
-static const char __pyx_k_ComovingVolumeElement[] = "ComovingVolumeElement";
 static const char __pyx_k_contiguous_and_direct[] = "<contiguous and direct>";
 static const char __pyx_k_MemoryView_of_r_object[] = "<MemoryView of %r object>";
 static const char __pyx_k_MemoryView_of_r_at_0x_x[] = "<MemoryView of %r at 0x%x>";
 static const char __pyx_k_contiguous_and_indirect[] = "<contiguous and indirect>";
 static const char __pyx_k_Cannot_index_with_type_s[] = "Cannot index with type '%s'";
 static const char __pyx_k_Invalid_shape_in_axis_d_d[] = "Invalid shape in axis %d: %d.";
-static const char __pyx_k_Pyx_CFunc_double____double[] = "__Pyx_CFunc_double____double____object____double___to_py.<locals>.wrap";
+static const char __pyx_k_Pyx_CFunc_double____double[] = "__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.<locals>.wrap";
 static const char __pyx_k_itemsize_0_for_cython_array[] = "itemsize <= 0 for cython.array";
 static const char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
-static const char __pyx_k_UniformComovingVolumeDensity[] = "UniformComovingVolumeDensity";
 static const char __pyx_k_unable_to_allocate_array_data[] = "unable to allocate array data.";
-static const char __pyx_k_IntegrateComovingVolumeDensity[] = "IntegrateComovingVolumeDensity";
 static const char __pyx_k_strided_and_direct_or_indirect[] = "<strided and direct or indirect>";
 static const char __pyx_k_numpy_core_multiarray_failed_to[] = "numpy.core.multiarray failed to import";
 static const char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
@@ -2463,7 +2520,6 @@ static PyObject *__pyx_kp_s_Can_only_create_a_buffer_that_is;
 static PyObject *__pyx_kp_s_Cannot_assign_to_read_only_memor;
 static PyObject *__pyx_kp_s_Cannot_create_writable_memory_vi;
 static PyObject *__pyx_kp_s_Cannot_index_with_type_s;
-static PyObject *__pyx_n_s_ComovingVolumeElement;
 static PyObject *__pyx_n_s_Ellipsis;
 static PyObject *__pyx_kp_s_Empty_shape_tuple_for_cython_arr;
 static PyObject *__pyx_kp_u_Format_string_allocated_too_shor;
@@ -2472,10 +2528,8 @@ static PyObject *__pyx_n_s_ImportError;
 static PyObject *__pyx_kp_s_Incompatible_checksums_s_vs_0xb0;
 static PyObject *__pyx_n_s_IndexError;
 static PyObject *__pyx_kp_s_Indirect_dimensions_not_supporte;
-static PyObject *__pyx_n_s_IntegrateComovingVolumeDensity;
 static PyObject *__pyx_kp_s_Invalid_mode_expected_c_or_fortr;
 static PyObject *__pyx_kp_s_Invalid_shape_in_axis_d_d;
-static PyObject *__pyx_n_s_LuminosityDistance;
 static PyObject *__pyx_n_s_MemoryError;
 static PyObject *__pyx_kp_s_MemoryView_of_r_at_0x_x;
 static PyObject *__pyx_kp_s_MemoryView_of_r_object;
@@ -2488,7 +2542,6 @@ static PyObject *__pyx_n_s_Pyx_CFunc_double____double;
 static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_TypeError;
 static PyObject *__pyx_kp_s_Unable_to_convert_item_to_object;
-static PyObject *__pyx_n_s_UniformComovingVolumeDensity;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_View_MemoryView;
 static PyObject *__pyx_n_s_allocate_buffer;
@@ -2537,8 +2590,8 @@ static PyObject *__pyx_n_s_newton;
 static PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
 static PyObject *__pyx_n_s_np;
 static PyObject *__pyx_n_s_numpy;
-static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
-static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
+static PyObject *__pyx_kp_u_numpy_core_multiarray_failed_to;
+static PyObject *__pyx_kp_u_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_obj;
 static PyObject *__pyx_n_s_omega;
 static PyObject *__pyx_n_s_pack;
@@ -2581,14 +2634,15 @@ static PyObject *__pyx_n_s_wrap;
 static PyObject *__pyx_n_s_z;
 static PyObject *__pyx_n_s_zmax;
 static PyObject *__pyx_n_s_zmin;
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax); /* proto */
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_2sigma_weak_lensing(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_z, double __pyx_v_dl); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_4em_selection_function(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
 static PyObject *__pyx_pf_9cosmolisa_10likelihood_6em_selection_function_number_density(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_dl); /* proto */
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N); /* proto */
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, int __pyx_v_N); /* proto */
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_10find_redshift(CYTHON_UNUSED PyObject *__pyx_self, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
-static PyObject *__pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap(PyObject *__pyx_self, double __pyx_v_z, PyObject *__pyx_v_omega, double __pyx_v_dl); /* proto */
+static PyObject *__pyx_pf_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_wrap(PyObject *__pyx_self, double __pyx_v_z, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2631,7 +2685,7 @@ static PyObject *__pyx_pf_15View_dot_MemoryView_16_memoryviewslice_4base___get__
 static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_15View_dot_MemoryView___pyx_unpickle_Enum(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_array(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_Enum(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_memoryview(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -2679,12 +2733,12 @@ static PyObject *__pyx_codeobj__9;
 static PyObject *__pyx_codeobj__34;
 /* Late includes */
 
-/* "cosmolisa/likelihood.pyx":11
- * from scipy.optimize import newton
+/* "cosmolisa/likelihood.pyx":12
+ * from .cosmology cimport CosmologicalParameters
  * 
  * cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))             # <<<<<<<<<<<<<<
  * 
- * @cython.cdivision(True)
+ * @cython.boundscheck(False)
  */
 
 static CYTHON_INLINE double __pyx_f_9cosmolisa_10likelihood_log_add(double __pyx_v_x, double __pyx_v_y) {
@@ -2706,16 +2760,16 @@ static CYTHON_INLINE double __pyx_f_9cosmolisa_10likelihood_log_add(double __pyx
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":16
- * @cython.boundscheck(False)
- * @cython.wraparound(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+/* "cosmolisa/likelihood.pyx":19
+ * @cython.cdivision(True)
+ * 
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
 
 static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args) {
+static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_event_redshift, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_logLikelihood_single_event *__pyx_optional_args) {
   int __pyx_v_em_selection = ((int)0);
   double __pyx_v_zmax = ((double)1.0);
   unsigned int __pyx_v_i;
@@ -2742,17 +2796,17 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   PyObject *__pyx_t_1 = NULL;
   PyObject *__pyx_t_2 = NULL;
   double __pyx_t_3;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  __Pyx_memviewslice __pyx_t_6 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  __Pyx_memviewslice __pyx_t_4 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  unsigned int __pyx_t_5;
+  unsigned int __pyx_t_6;
   unsigned int __pyx_t_7;
-  unsigned int __pyx_t_8;
-  unsigned int __pyx_t_9;
+  size_t __pyx_t_8;
+  Py_ssize_t __pyx_t_9;
   size_t __pyx_t_10;
   Py_ssize_t __pyx_t_11;
-  size_t __pyx_t_12;
-  Py_ssize_t __pyx_t_13;
-  int __pyx_t_14;
+  int __pyx_t_12;
+  PyObject *__pyx_t_13 = NULL;
+  PyObject *__pyx_t_14 = NULL;
   __Pyx_RefNannySetupContext("logLikelihood_single_event", 0);
   if (__pyx_optional_args) {
     if (__pyx_optional_args->__pyx_n > 0) {
@@ -2768,11 +2822,11 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   __pyx_pybuffernd_hosts.rcbuffer = &__pyx_pybuffer_hosts;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_hosts.rcbuffer->pybuffer, (PyObject*)__pyx_v_hosts, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 16, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_hosts.rcbuffer->pybuffer, (PyObject*)__pyx_v_hosts, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 19, __pyx_L1_error)
   }
   __pyx_pybuffernd_hosts.diminfo[0].strides = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_hosts.diminfo[0].shape = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_hosts.diminfo[1].strides = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_hosts.diminfo[1].shape = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.shape[1];
 
-  /* "cosmolisa/likelihood.pyx":34
+  /* "cosmolisa/likelihood.pyx":37
  *     cdef double sigma_z, score_z
  *     cdef double weak_lensing_error
  *     cdef unsigned int N           = hosts.shape[0]             # <<<<<<<<<<<<<<
@@ -2781,64 +2835,64 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   __pyx_v_N = (__pyx_v_hosts->dimensions[0]);
 
-  /* "cosmolisa/likelihood.pyx":35
+  /* "cosmolisa/likelihood.pyx":38
  *     cdef double weak_lensing_error
  *     cdef unsigned int N           = hosts.shape[0]
  *     cdef double logTwoPiByTwo     = 0.5*log(2.0*np.pi)             # <<<<<<<<<<<<<<
  *     cdef double logL              = -np.inf
  *     cdef double logLn             = -np.inf
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_pi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_pi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Multiply(__pyx_float_2_0, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_float_2_0, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_logTwoPiByTwo = (0.5 * log(__pyx_t_3));
 
-  /* "cosmolisa/likelihood.pyx":36
+  /* "cosmolisa/likelihood.pyx":39
  *     cdef unsigned int N           = hosts.shape[0]
  *     cdef double logTwoPiByTwo     = 0.5*log(2.0*np.pi)
  *     cdef double logL              = -np.inf             # <<<<<<<<<<<<<<
  *     cdef double logLn             = -np.inf
  *     cdef double logp_detection    = 0.0
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_logL = __pyx_t_3;
 
-  /* "cosmolisa/likelihood.pyx":37
+  /* "cosmolisa/likelihood.pyx":40
  *     cdef double logTwoPiByTwo     = 0.5*log(2.0*np.pi)
  *     cdef double logL              = -np.inf
  *     cdef double logLn             = -np.inf             # <<<<<<<<<<<<<<
  *     cdef double logp_detection    = 0.0
  *     cdef double logp_nondetection = 0.0
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_logLn = __pyx_t_3;
 
-  /* "cosmolisa/likelihood.pyx":38
+  /* "cosmolisa/likelihood.pyx":41
  *     cdef double logL              = -np.inf
  *     cdef double logLn             = -np.inf
  *     cdef double logp_detection    = 0.0             # <<<<<<<<<<<<<<
@@ -2847,7 +2901,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   __pyx_v_logp_detection = 0.0;
 
-  /* "cosmolisa/likelihood.pyx":39
+  /* "cosmolisa/likelihood.pyx":42
  *     cdef double logLn             = -np.inf
  *     cdef double logp_detection    = 0.0
  *     cdef double logp_nondetection = 0.0             # <<<<<<<<<<<<<<
@@ -2856,186 +2910,120 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   __pyx_v_logp_nondetection = 0.0;
 
-  /* "cosmolisa/likelihood.pyx":42
+  /* "cosmolisa/likelihood.pyx":45
  * 
  *     # p(z_gw|O H I)
  *     cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))             # <<<<<<<<<<<<<<
  *     cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
  * 
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_IntegrateComovingVolumeDensity); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-    }
-  }
-  __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 42, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_log_norm = log(__pyx_t_3);
+  __pyx_v_log_norm = log(((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->IntegrateComovingVolumeDensity(__pyx_v_omega, __pyx_v_zmax, 0));
 
-  /* "cosmolisa/likelihood.pyx":43
+  /* "cosmolisa/likelihood.pyx":46
  *     # p(z_gw|O H I)
  *     cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
  *     cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm             # <<<<<<<<<<<<<<
  * 
  *     # Predict dl from the cosmology O and the redshift z_gw
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_UniformComovingVolumeDensity); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 43, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_event_redshift); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 43, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-    }
-  }
-  __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 43, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_logP = (log(__pyx_t_3) - __pyx_v_log_norm);
+  __pyx_v_logP = (log(((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->UniformComovingVolumeDensity(__pyx_v_omega, __pyx_v_event_redshift, 0)) - __pyx_v_log_norm);
 
-  /* "cosmolisa/likelihood.pyx":46
+  /* "cosmolisa/likelihood.pyx":49
  * 
  *     # Predict dl from the cosmology O and the redshift z_gw
  *     dl = omega.LuminosityDistance(event_redshift)             # <<<<<<<<<<<<<<
  * 
  *     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_LuminosityDistance); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_event_redshift); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-    }
-  }
-  __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_dl = __pyx_t_3;
+  __pyx_v_dl = ((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->LuminosityDistance(__pyx_v_omega, __pyx_v_event_redshift, 0);
 
-  /* "cosmolisa/likelihood.pyx":49
+  /* "cosmolisa/likelihood.pyx":52
  * 
  *     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
- *     weak_lensing_error        = sigma_weak_lensing(event_redshift, dl)             # <<<<<<<<<<<<<<
- *     cdef double SigmaSquared  = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
+ *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)             # <<<<<<<<<<<<<<
+ *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
+ *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
  */
   __pyx_v_weak_lensing_error = __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(__pyx_v_event_redshift, __pyx_v_dl, 0);
 
-  /* "cosmolisa/likelihood.pyx":50
+  /* "cosmolisa/likelihood.pyx":53
  *     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
- *     weak_lensing_error        = sigma_weak_lensing(event_redshift, dl)
- *     cdef double SigmaSquared  = sigma**2+weak_lensing_error**2             # <<<<<<<<<<<<<<
- *     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
+ *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
+ *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2             # <<<<<<<<<<<<<<
+ *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
  */
   __pyx_v_SigmaSquared = (pow(__pyx_v_sigma, 2.0) + pow(__pyx_v_weak_lensing_error, 2.0));
 
-  /* "cosmolisa/likelihood.pyx":51
- *     weak_lensing_error        = sigma_weak_lensing(event_redshift, dl)
- *     cdef double SigmaSquared  = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)             # <<<<<<<<<<<<<<
+  /* "cosmolisa/likelihood.pyx":54
+ *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
+ *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
+ *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
  *     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
  */
   __pyx_v_logSigmaByTwo = (0.5 * log((pow(__pyx_v_sigma, 2.0) + pow(__pyx_v_weak_lensing_error, 2.0))));
 
-  /* "cosmolisa/likelihood.pyx":52
- *     cdef double SigmaSquared  = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo = 0.5*log(sigma**2+weak_lensing_error**2)
+  /* "cosmolisa/likelihood.pyx":55
+ *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
+ *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead             # <<<<<<<<<<<<<<
  *     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
  *     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
  */
-  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(((PyObject *)__pyx_v_hosts), PyBUF_WRITABLE); if (unlikely(!__pyx_t_6.memview)) __PYX_ERR(0, 52, __pyx_L1_error)
-  __pyx_v_hosts_view = __pyx_t_6;
-  __pyx_t_6.memview = NULL;
-  __pyx_t_6.data = NULL;
+  __pyx_t_4 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(((PyObject *)__pyx_v_hosts), PyBUF_WRITABLE); if (unlikely(!__pyx_t_4.memview)) __PYX_ERR(0, 55, __pyx_L1_error)
+  __pyx_v_hosts_view = __pyx_t_4;
+  __pyx_t_4.memview = NULL;
+  __pyx_t_4.data = NULL;
 
-  /* "cosmolisa/likelihood.pyx":55
+  /* "cosmolisa/likelihood.pyx":58
  *     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
  *     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
  *     for i in range(N):             # <<<<<<<<<<<<<<
  *         sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])
  *         score_z     = (event_redshift-hosts_view[i,0])/sigma_z
  */
-  __pyx_t_7 = __pyx_v_N;
-  __pyx_t_8 = __pyx_t_7;
-  for (__pyx_t_9 = 0; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
-    __pyx_v_i = __pyx_t_9;
+  __pyx_t_5 = __pyx_v_N;
+  __pyx_t_6 = __pyx_t_5;
+  for (__pyx_t_7 = 0; __pyx_t_7 < __pyx_t_6; __pyx_t_7+=1) {
+    __pyx_v_i = __pyx_t_7;
 
-    /* "cosmolisa/likelihood.pyx":56
+    /* "cosmolisa/likelihood.pyx":59
  *     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
  *     for i in range(N):
  *         sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])             # <<<<<<<<<<<<<<
  *         score_z     = (event_redshift-hosts_view[i,0])/sigma_z
  *         logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo
  */
+    __pyx_t_8 = __pyx_v_i;
+    __pyx_t_9 = 1;
     __pyx_t_10 = __pyx_v_i;
-    __pyx_t_11 = 1;
-    __pyx_t_12 = __pyx_v_i;
-    __pyx_t_13 = 0;
-    __pyx_v_sigma_z = ((*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_10 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_11)) ))) * (1.0 + (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_12 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_13)) )))));
+    __pyx_t_11 = 0;
+    __pyx_v_sigma_z = ((*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_8 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_9)) ))) * (1.0 + (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_10 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_11)) )))));
 
-    /* "cosmolisa/likelihood.pyx":57
+    /* "cosmolisa/likelihood.pyx":60
  *     for i in range(N):
  *         sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])
  *         score_z     = (event_redshift-hosts_view[i,0])/sigma_z             # <<<<<<<<<<<<<<
  *         logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo
  *         logL        = log_add(logL,logL_galaxy)
  */
-    __pyx_t_12 = __pyx_v_i;
-    __pyx_t_13 = 0;
-    __pyx_v_score_z = ((__pyx_v_event_redshift - (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_12 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_13)) )))) / __pyx_v_sigma_z);
+    __pyx_t_10 = __pyx_v_i;
+    __pyx_t_11 = 0;
+    __pyx_v_score_z = ((__pyx_v_event_redshift - (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_10 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_11)) )))) / __pyx_v_sigma_z);
 
-    /* "cosmolisa/likelihood.pyx":58
+    /* "cosmolisa/likelihood.pyx":61
  *         sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])
  *         score_z     = (event_redshift-hosts_view[i,0])/sigma_z
  *         logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo             # <<<<<<<<<<<<<<
  *         logL        = log_add(logL,logL_galaxy)
  * 
  */
-    __pyx_t_12 = __pyx_v_i;
-    __pyx_t_13 = 2;
-    __pyx_v_logL_galaxy = (((((-0.5 * __pyx_v_score_z) * __pyx_v_score_z) + log((*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_12 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_13)) ))))) - log(__pyx_v_sigma_z)) - __pyx_v_logTwoPiByTwo);
+    __pyx_t_10 = __pyx_v_i;
+    __pyx_t_11 = 2;
+    __pyx_v_logL_galaxy = (((((-0.5 * __pyx_v_score_z) * __pyx_v_score_z) + log((*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_hosts_view.data + __pyx_t_10 * __pyx_v_hosts_view.strides[0]) )) + __pyx_t_11)) ))))) - log(__pyx_v_sigma_z)) - __pyx_v_logTwoPiByTwo);
 
-    /* "cosmolisa/likelihood.pyx":59
+    /* "cosmolisa/likelihood.pyx":62
  *         score_z     = (event_redshift-hosts_view[i,0])/sigma_z
  *         logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo
  *         logL        = log_add(logL,logL_galaxy)             # <<<<<<<<<<<<<<
@@ -3045,17 +3033,17 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
     __pyx_v_logL = __pyx_f_9cosmolisa_10likelihood_log_add(__pyx_v_logL, __pyx_v_logL_galaxy);
   }
 
-  /* "cosmolisa/likelihood.pyx":61
+  /* "cosmolisa/likelihood.pyx":64
  *         logL        = log_add(logL,logL_galaxy)
  * 
  *     if em_selection == 1:             # <<<<<<<<<<<<<<
  *         # Define the 'completeness function' as a weight f(dL),
  *         # entering the probability p(G| dL z_gw O H I) that the event
  */
-  __pyx_t_14 = ((__pyx_v_em_selection == 1) != 0);
-  if (__pyx_t_14) {
+  __pyx_t_12 = ((__pyx_v_em_selection == 1) != 0);
+  if (__pyx_t_12) {
 
-    /* "cosmolisa/likelihood.pyx":65
+    /* "cosmolisa/likelihood.pyx":68
  *         # entering the probability p(G| dL z_gw O H I) that the event
  *         # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
  *         logp_detection    = log(em_selection_function(dl))             # <<<<<<<<<<<<<<
@@ -3064,7 +3052,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
     __pyx_v_logp_detection = log(__pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_v_dl, 0));
 
-    /* "cosmolisa/likelihood.pyx":66
+    /* "cosmolisa/likelihood.pyx":69
  *         # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
  *         logp_detection    = log(em_selection_function(dl))
  *         logL             += logp_detection             # <<<<<<<<<<<<<<
@@ -3073,52 +3061,52 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
     __pyx_v_logL = (__pyx_v_logL + __pyx_v_logp_detection);
 
-    /* "cosmolisa/likelihood.pyx":69
+    /* "cosmolisa/likelihood.pyx":72
  *         # Compute the probability p(notG| dL z_gw O H I) that the event
  *         # is located in a non-detected galaxy as 1-p(G| dL z_gw O H I)
  *         logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])             # <<<<<<<<<<<<<<
  *         logLn             = logp_nondetection
  * 
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_logsumexp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_logsumexp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = PyFloat_FromDouble(__pyx_v_logp_detection); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_2 = PyFloat_FromDouble(__pyx_v_logp_detection); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = PyList_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_13 = PyList_New(2); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_13);
     __Pyx_INCREF(__pyx_float_0_0);
     __Pyx_GIVEREF(__pyx_float_0_0);
-    PyList_SET_ITEM(__pyx_t_4, 0, __pyx_float_0_0);
+    PyList_SET_ITEM(__pyx_t_13, 0, __pyx_float_0_0);
     __Pyx_GIVEREF(__pyx_t_2);
-    PyList_SET_ITEM(__pyx_t_4, 1, __pyx_t_2);
+    PyList_SET_ITEM(__pyx_t_13, 1, __pyx_t_2);
     __pyx_t_2 = 0;
-    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_GIVEREF(__pyx_t_4);
-    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_4);
-    __pyx_t_4 = 0;
-    __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = PyList_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_13);
+    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_13);
+    __pyx_t_13 = 0;
+    __pyx_t_13 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_13);
+    __pyx_t_14 = PyList_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_14);
     __Pyx_INCREF(__pyx_int_1);
     __Pyx_GIVEREF(__pyx_int_1);
-    PyList_SET_ITEM(__pyx_t_5, 0, __pyx_int_1);
+    PyList_SET_ITEM(__pyx_t_14, 0, __pyx_int_1);
     __Pyx_INCREF(__pyx_int_neg_1);
     __Pyx_GIVEREF(__pyx_int_neg_1);
-    PyList_SET_ITEM(__pyx_t_5, 1, __pyx_int_neg_1);
-    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_b, __pyx_t_5) < 0) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, __pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    PyList_SET_ITEM(__pyx_t_14, 1, __pyx_int_neg_1);
+    if (PyDict_SetItem(__pyx_t_13, __pyx_n_s_b, __pyx_t_14) < 0) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+    __pyx_t_14 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_14);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 69, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_14); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
     __pyx_v_logp_nondetection = __pyx_t_3;
 
-    /* "cosmolisa/likelihood.pyx":70
+    /* "cosmolisa/likelihood.pyx":73
  *         # is located in a non-detected galaxy as 1-p(G| dL z_gw O H I)
  *         logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
  *         logLn             = logp_nondetection             # <<<<<<<<<<<<<<
@@ -3127,7 +3115,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
     __pyx_v_logLn = __pyx_v_logp_nondetection;
 
-    /* "cosmolisa/likelihood.pyx":61
+    /* "cosmolisa/likelihood.pyx":64
  *         logL        = log_add(logL,logL_galaxy)
  * 
  *     if em_selection == 1:             # <<<<<<<<<<<<<<
@@ -3136,7 +3124,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  */
   }
 
-  /* "cosmolisa/likelihood.pyx":73
+  /* "cosmolisa/likelihood.pyx":76
  * 
  *     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)+logP             # <<<<<<<<<<<<<<
@@ -3146,10 +3134,10 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   __pyx_r = (((((((-0.5 * (__pyx_v_dl - __pyx_v_meandl)) * (__pyx_v_dl - __pyx_v_meandl)) / __pyx_v_SigmaSquared) - __pyx_v_logTwoPiByTwo) - __pyx_v_logSigmaByTwo) + __pyx_f_9cosmolisa_10likelihood_log_add(__pyx_v_logL, __pyx_v_logLn)) + __pyx_v_logP);
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":16
- * @cython.boundscheck(False)
- * @cython.wraparound(False)
- * cpdef double logLikelihood_single_event(ndarray[double, ndim=2] hosts, double meandl, double sigma, object omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
+  /* "cosmolisa/likelihood.pyx":19
+ * @cython.cdivision(True)
+ * 
+ * cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):             # <<<<<<<<<<<<<<
  *     """
  *     Likelihood function for a single GW event.
  */
@@ -3158,9 +3146,9 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
+  __PYX_XDEC_MEMVIEW(&__pyx_t_4, 1);
+  __Pyx_XDECREF(__pyx_t_13);
+  __Pyx_XDECREF(__pyx_t_14);
   { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
     __Pyx_PyThreadState_declare
     __Pyx_PyThreadState_assign
@@ -3185,7 +3173,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
   PyArrayObject *__pyx_v_hosts = 0;
   double __pyx_v_meandl;
   double __pyx_v_sigma;
-  PyObject *__pyx_v_omega = 0;
+  struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega = 0;
   double __pyx_v_event_redshift;
   int __pyx_v_em_selection;
   double __pyx_v_zmin;
@@ -3228,25 +3216,25 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_meandl)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 1); __PYX_ERR(0, 16, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 1); __PYX_ERR(0, 19, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sigma)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 2); __PYX_ERR(0, 16, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 2); __PYX_ERR(0, 19, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_omega)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 3); __PYX_ERR(0, 16, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 3); __PYX_ERR(0, 19, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_event_redshift)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 4); __PYX_ERR(0, 16, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, 4); __PYX_ERR(0, 19, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
@@ -3268,7 +3256,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "logLikelihood_single_event") < 0)) __PYX_ERR(0, 16, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "logLikelihood_single_event") < 0)) __PYX_ERR(0, 19, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -3288,35 +3276,36 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
       }
     }
     __pyx_v_hosts = ((PyArrayObject *)values[0]);
-    __pyx_v_meandl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_meandl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
-    __pyx_v_sigma = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_sigma == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
-    __pyx_v_omega = values[3];
-    __pyx_v_event_redshift = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_event_redshift == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
+    __pyx_v_meandl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_meandl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
+    __pyx_v_sigma = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_sigma == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
+    __pyx_v_omega = ((struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *)values[3]);
+    __pyx_v_event_redshift = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_event_redshift == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
     if (values[5]) {
-      __pyx_v_em_selection = __Pyx_PyInt_As_int(values[5]); if (unlikely((__pyx_v_em_selection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
+      __pyx_v_em_selection = __Pyx_PyInt_As_int(values[5]); if (unlikely((__pyx_v_em_selection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
     } else {
       __pyx_v_em_selection = ((int)0);
     }
     if (values[6]) {
-      __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
+      __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
     } else {
       __pyx_v_zmin = ((double)0.0);
     }
     if (values[7]) {
-      __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 16, __pyx_L3_error)
+      __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 19, __pyx_L3_error)
     } else {
       __pyx_v_zmax = ((double)1.0);
     }
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 16, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("logLikelihood_single_event", 0, 5, 8, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 19, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.likelihood.logLikelihood_single_event", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_hosts), __pyx_ptype_5numpy_ndarray, 1, "hosts", 0))) __PYX_ERR(0, 16, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_hosts), __pyx_ptype_5numpy_ndarray, 1, "hosts", 0))) __PYX_ERR(0, 19, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_omega), __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters, 1, "omega", 0))) __PYX_ERR(0, 19, __pyx_L1_error)
   __pyx_r = __pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_self, __pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_omega, __pyx_v_event_redshift, __pyx_v_em_selection, __pyx_v_zmin, __pyx_v_zmax);
 
   /* function exit code */
@@ -3328,7 +3317,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_1logLikelihood_single_event(Py
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, PyObject *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax) {
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_hosts, double __pyx_v_meandl, double __pyx_v_sigma, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_event_redshift, int __pyx_v_em_selection, double __pyx_v_zmin, double __pyx_v_zmax) {
   __Pyx_LocalBuf_ND __pyx_pybuffernd_hosts;
   __Pyx_Buffer __pyx_pybuffer_hosts;
   PyObject *__pyx_r = NULL;
@@ -3343,7 +3332,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYT
   __pyx_pybuffernd_hosts.rcbuffer = &__pyx_pybuffer_hosts;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_hosts.rcbuffer->pybuffer, (PyObject*)__pyx_v_hosts, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 16, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_hosts.rcbuffer->pybuffer, (PyObject*)__pyx_v_hosts, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 19, __pyx_L1_error)
   }
   __pyx_pybuffernd_hosts.diminfo[0].strides = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_hosts.diminfo[0].shape = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_hosts.diminfo[1].strides = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_hosts.diminfo[1].shape = __pyx_pybuffernd_hosts.rcbuffer->pybuffer.shape[1];
   __Pyx_XDECREF(__pyx_r);
@@ -3352,7 +3341,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYT
   __pyx_t_2.zmin = __pyx_v_zmin;
   __pyx_t_2.zmax = __pyx_v_zmax;
   __pyx_t_1 = __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(__pyx_v_hosts, __pyx_v_meandl, __pyx_v_sigma, __pyx_v_omega, __pyx_v_event_redshift, 0, &__pyx_t_2); 
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 19, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
@@ -3378,7 +3367,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_logLikelihood_single_event(CYT
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":75
+/* "cosmolisa/likelihood.pyx":78
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)+logP
  * 
  * cpdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
@@ -3392,7 +3381,7 @@ static double __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(double __pyx_v_
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("sigma_weak_lensing", 0);
 
-  /* "cosmolisa/likelihood.pyx":83
+  /* "cosmolisa/likelihood.pyx":86
  *     dl: :obj:'numpy.double': luminosity distance
  *     """
  *     return 0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8             # <<<<<<<<<<<<<<
@@ -3402,7 +3391,7 @@ static double __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(double __pyx_v_
   __pyx_r = ((0.066 * __pyx_v_dl) * pow(((1.0 - pow((1.0 + __pyx_v_z), -0.25)) / 0.25), 1.8));
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":75
+  /* "cosmolisa/likelihood.pyx":78
  *     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)+logP
  * 
  * cpdef double sigma_weak_lensing(double z, double dl):             # <<<<<<<<<<<<<<
@@ -3448,11 +3437,11 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_3sigma_weak_lensing(PyObject *
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dl)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, 1); __PYX_ERR(0, 75, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, 1); __PYX_ERR(0, 78, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "sigma_weak_lensing") < 0)) __PYX_ERR(0, 75, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "sigma_weak_lensing") < 0)) __PYX_ERR(0, 78, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3460,12 +3449,12 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_3sigma_weak_lensing(PyObject *
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L3_error)
-    __pyx_v_dl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L3_error)
+    __pyx_v_dl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 75, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("sigma_weak_lensing", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 78, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.likelihood.sigma_weak_lensing", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3484,7 +3473,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_2sigma_weak_lensing(CYTHON_UNU
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("sigma_weak_lensing", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(__pyx_v_z, __pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(__pyx_v_z, __pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3501,7 +3490,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_2sigma_weak_lensing(CYTHON_UNU
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":88
+/* "cosmolisa/likelihood.pyx":91
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
  * cpdef double em_selection_function(double dl):             # <<<<<<<<<<<<<<
@@ -3515,7 +3504,7 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function(double __pyx
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("em_selection_function", 0);
 
-  /* "cosmolisa/likelihood.pyx":89
+  /* "cosmolisa/likelihood.pyx":92
  * @cython.boundscheck(False)
  * cpdef double em_selection_function(double dl):
  *     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35             # <<<<<<<<<<<<<<
@@ -3525,7 +3514,7 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function(double __pyx
   __pyx_r = ((1.0 - (__pyx_v_dl / 12000.)) / pow((1.0 + pow((__pyx_v_dl / 3700.0), 7.0)), 1.35));
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":88
+  /* "cosmolisa/likelihood.pyx":91
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
  * cpdef double em_selection_function(double dl):             # <<<<<<<<<<<<<<
@@ -3547,7 +3536,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_5em_selection_function(PyObjec
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("em_selection_function (wrapper)", 0);
   assert(__pyx_arg_dl); {
-    __pyx_v_dl = __pyx_PyFloat_AsDouble(__pyx_arg_dl); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 88, __pyx_L3_error)
+    __pyx_v_dl = __pyx_PyFloat_AsDouble(__pyx_arg_dl); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 91, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3568,7 +3557,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_4em_selection_function(CYTHON_
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("em_selection_function", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 88, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3585,7 +3574,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_4em_selection_function(CYTHON_
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":96
+/* "cosmolisa/likelihood.pyx":99
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
  * cpdef double em_selection_function_number_density(double dl):             # <<<<<<<<<<<<<<
@@ -3599,17 +3588,17 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_number_densi
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("em_selection_function_number_density", 0);
 
-  /* "cosmolisa/likelihood.pyx":97
+  /* "cosmolisa/likelihood.pyx":100
  * @cython.boundscheck(False)
  * cpdef double em_selection_function_number_density(double dl):
  *     return (1.0)/(1.0+(dl/3700.0)**7)**1.35             # <<<<<<<<<<<<<<
  * 
- * cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):
+ * cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):
  */
   __pyx_r = (1.0 / pow((1.0 + pow((__pyx_v_dl / 3700.0), 7.0)), 1.35));
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":96
+  /* "cosmolisa/likelihood.pyx":99
  * @cython.cdivision(True)
  * @cython.boundscheck(False)
  * cpdef double em_selection_function_number_density(double dl):             # <<<<<<<<<<<<<<
@@ -3631,7 +3620,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_7em_selection_function_number_
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("em_selection_function_number_density (wrapper)", 0);
   assert(__pyx_arg_dl); {
-    __pyx_v_dl = __pyx_PyFloat_AsDouble(__pyx_arg_dl); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 96, __pyx_L3_error)
+    __pyx_v_dl = __pyx_PyFloat_AsDouble(__pyx_arg_dl); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3652,7 +3641,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_6em_selection_function_number_
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("em_selection_function_number_density", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_em_selection_function_number_density(__pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_em_selection_function_number_density(__pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3669,32 +3658,29 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_6em_selection_function_number_
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":99
+/* "cosmolisa/likelihood.pyx":102
  *     return (1.0)/(1.0+(dl/3700.0)**7)**1.35
  * 
- * cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):             # <<<<<<<<<<<<<<
+ * cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):             # <<<<<<<<<<<<<<
  *     cdef double tmp
  *     cdef int i      = 0
  */
 
 static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisation(double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisation *__pyx_optional_args) {
+static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisation(double __pyx_v_zmin, double __pyx_v_zmax, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_9cosmolisa_10likelihood_em_selection_function_normalisation *__pyx_optional_args) {
   int __pyx_v_N = ((int)1);
   double __pyx_v_tmp;
   CYTHON_UNUSED int __pyx_v_i;
   double __pyx_v_z;
   double __pyx_v_dz;
   double __pyx_v_res;
-  PyObject *__pyx_v_dl = NULL;
+  double __pyx_v_dl;
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   PyObject *__pyx_t_2 = NULL;
   double __pyx_t_3;
   int __pyx_t_4;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  double __pyx_t_7;
   __Pyx_RefNannySetupContext("em_selection_function_normalisation", 0);
   if (__pyx_optional_args) {
     if (__pyx_optional_args->__pyx_n > 0) {
@@ -3702,8 +3688,8 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
     }
   }
 
-  /* "cosmolisa/likelihood.pyx":101
- * cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):
+  /* "cosmolisa/likelihood.pyx":104
+ * cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):
  *     cdef double tmp
  *     cdef int i      = 0             # <<<<<<<<<<<<<<
  *     cdef double z   = zmin, dz = (zmax-zmin)/100.
@@ -3711,7 +3697,7 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
  */
   __pyx_v_i = 0;
 
-  /* "cosmolisa/likelihood.pyx":102
+  /* "cosmolisa/likelihood.pyx":105
  *     cdef double tmp
  *     cdef int i      = 0
  *     cdef double z   = zmin, dz = (zmax-zmin)/100.             # <<<<<<<<<<<<<<
@@ -3721,26 +3707,26 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
   __pyx_v_z = __pyx_v_zmin;
   __pyx_v_dz = ((__pyx_v_zmax - __pyx_v_zmin) / 100.);
 
-  /* "cosmolisa/likelihood.pyx":103
+  /* "cosmolisa/likelihood.pyx":106
  *     cdef int i      = 0
  *     cdef double z   = zmin, dz = (zmax-zmin)/100.
  *     cdef double res = -np.inf             # <<<<<<<<<<<<<<
  *     for i in range(0,100):
  *         dl  = omega.LuminosityDistance(z)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_inf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Negative(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_res = __pyx_t_3;
 
-  /* "cosmolisa/likelihood.pyx":104
+  /* "cosmolisa/likelihood.pyx":107
  *     cdef double z   = zmin, dz = (zmax-zmin)/100.
  *     cdef double res = -np.inf
  *     for i in range(0,100):             # <<<<<<<<<<<<<<
@@ -3750,69 +3736,25 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
   for (__pyx_t_4 = 0; __pyx_t_4 < 0x64; __pyx_t_4+=1) {
     __pyx_v_i = __pyx_t_4;
 
-    /* "cosmolisa/likelihood.pyx":105
+    /* "cosmolisa/likelihood.pyx":108
  *     cdef double res = -np.inf
  *     for i in range(0,100):
  *         dl  = omega.LuminosityDistance(z)             # <<<<<<<<<<<<<<
  *         tmp = N*(log(1.0-em_selection_function(dl))+log(omega.ComovingVolumeElement(z)))#
  *         res = log_add(res,tmp)
  */
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_LuminosityDistance); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_5 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_6 = NULL;
-    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-      __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_2);
-      if (likely(__pyx_t_6)) {
-        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-        __Pyx_INCREF(__pyx_t_6);
-        __Pyx_INCREF(function);
-        __Pyx_DECREF_SET(__pyx_t_2, function);
-      }
-    }
-    __pyx_t_1 = (__pyx_t_6) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_6, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_5);
-    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF_SET(__pyx_v_dl, __pyx_t_1);
-    __pyx_t_1 = 0;
+    __pyx_v_dl = ((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->LuminosityDistance(__pyx_v_omega, __pyx_v_z, 0);
 
-    /* "cosmolisa/likelihood.pyx":106
+    /* "cosmolisa/likelihood.pyx":109
  *     for i in range(0,100):
  *         dl  = omega.LuminosityDistance(z)
  *         tmp = N*(log(1.0-em_selection_function(dl))+log(omega.ComovingVolumeElement(z)))#             # <<<<<<<<<<<<<<
  *         res = log_add(res,tmp)
  *         z  += dz
  */
-    __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_v_dl); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 106, __pyx_L1_error)
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_ComovingVolumeElement); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 106, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_5 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 106, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_6 = NULL;
-    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-      __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_2);
-      if (likely(__pyx_t_6)) {
-        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-        __Pyx_INCREF(__pyx_t_6);
-        __Pyx_INCREF(function);
-        __Pyx_DECREF_SET(__pyx_t_2, function);
-      }
-    }
-    __pyx_t_1 = (__pyx_t_6) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_6, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_5);
-    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 106, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_7 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_7 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 106, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_v_tmp = (__pyx_v_N * (log((1.0 - __pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_t_3, 0))) + log(__pyx_t_7)));
+    __pyx_v_tmp = (__pyx_v_N * (log((1.0 - __pyx_f_9cosmolisa_10likelihood_em_selection_function(__pyx_v_dl, 0))) + log(((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->ComovingVolumeElement(__pyx_v_omega, __pyx_v_z, 0))));
 
-    /* "cosmolisa/likelihood.pyx":107
+    /* "cosmolisa/likelihood.pyx":110
  *         dl  = omega.LuminosityDistance(z)
  *         tmp = N*(log(1.0-em_selection_function(dl))+log(omega.ComovingVolumeElement(z)))#
  *         res = log_add(res,tmp)             # <<<<<<<<<<<<<<
@@ -3821,7 +3763,7 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
  */
     __pyx_v_res = __pyx_f_9cosmolisa_10likelihood_log_add(__pyx_v_res, __pyx_v_tmp);
 
-    /* "cosmolisa/likelihood.pyx":108
+    /* "cosmolisa/likelihood.pyx":111
  *         tmp = N*(log(1.0-em_selection_function(dl))+log(omega.ComovingVolumeElement(z)))#
  *         res = log_add(res,tmp)
  *         z  += dz             # <<<<<<<<<<<<<<
@@ -3831,20 +3773,20 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
     __pyx_v_z = (__pyx_v_z + __pyx_v_dz);
   }
 
-  /* "cosmolisa/likelihood.pyx":109
+  /* "cosmolisa/likelihood.pyx":112
  *         res = log_add(res,tmp)
  *         z  += dz
  *     return res+log(dz)             # <<<<<<<<<<<<<<
  * 
- * cdef double find_redshift(object omega, double dl):
+ * cpdef double find_redshift(CosmologicalParameters omega, double dl):
  */
   __pyx_r = (__pyx_v_res + log(__pyx_v_dz));
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":99
+  /* "cosmolisa/likelihood.pyx":102
  *     return (1.0)/(1.0+(dl/3700.0)**7)**1.35
  * 
- * cpdef double em_selection_function_normalisation(double zmin, double zmax, object omega, int N = 1):             # <<<<<<<<<<<<<<
+ * cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):             # <<<<<<<<<<<<<<
  *     cdef double tmp
  *     cdef int i      = 0
  */
@@ -3853,12 +3795,9 @@ static double __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisatio
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
   __Pyx_WriteUnraisable("cosmolisa.likelihood.em_selection_function_normalisation", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_dl);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
@@ -3868,7 +3807,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normali
 static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normalisation(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   double __pyx_v_zmin;
   double __pyx_v_zmax;
-  PyObject *__pyx_v_omega = 0;
+  struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega = 0;
   int __pyx_v_N;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
@@ -3900,13 +3839,13 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normali
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmax)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, 1); __PYX_ERR(0, 99, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, 1); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_omega)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, 2); __PYX_ERR(0, 99, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, 2); __PYX_ERR(0, 102, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
@@ -3916,7 +3855,7 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normali
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "em_selection_function_normalisation") < 0)) __PYX_ERR(0, 99, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "em_selection_function_normalisation") < 0)) __PYX_ERR(0, 102, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -3929,31 +3868,36 @@ static PyObject *__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normali
         default: goto __pyx_L5_argtuple_error;
       }
     }
-    __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L3_error)
-    __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L3_error)
-    __pyx_v_omega = values[2];
+    __pyx_v_zmin = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_zmin == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L3_error)
+    __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L3_error)
+    __pyx_v_omega = ((struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *)values[2]);
     if (values[3]) {
-      __pyx_v_N = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_N == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L3_error)
+      __pyx_v_N = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_N == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 102, __pyx_L3_error)
     } else {
       __pyx_v_N = ((int)1);
     }
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 99, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("em_selection_function_normalisation", 0, 3, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 102, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.likelihood.em_selection_function_normalisation", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_omega), __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters, 1, "omega", 0))) __PYX_ERR(0, 102, __pyx_L1_error)
   __pyx_r = __pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normalisation(__pyx_self, __pyx_v_zmin, __pyx_v_zmax, __pyx_v_omega, __pyx_v_N);
 
   /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, PyObject *__pyx_v_omega, int __pyx_v_N) {
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normalisation(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_zmin, double __pyx_v_zmax, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, int __pyx_v_N) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
@@ -3964,7 +3908,7 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normali
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.N = __pyx_v_N;
   __pyx_t_1 = __pyx_f_9cosmolisa_10likelihood_em_selection_function_normalisation(__pyx_v_zmin, __pyx_v_zmax, __pyx_v_omega, 0, &__pyx_t_2); 
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 99, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 102, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
@@ -3981,15 +3925,16 @@ static PyObject *__pyx_pf_9cosmolisa_10likelihood_8em_selection_function_normali
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":111
+/* "cosmolisa/likelihood.pyx":114
  *     return res+log(dz)
  * 
- * cdef double find_redshift(object omega, double dl):             # <<<<<<<<<<<<<<
+ * cpdef double find_redshift(CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
  *     return newton(objective,1.0,args=(omega,dl))
  * 
  */
 
-static double __pyx_f_9cosmolisa_10likelihood_find_redshift(PyObject *__pyx_v_omega, double __pyx_v_dl) {
+static PyObject *__pyx_pw_9cosmolisa_10likelihood_11find_redshift(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static double __pyx_f_9cosmolisa_10likelihood_find_redshift(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl, CYTHON_UNUSED int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -4000,18 +3945,18 @@ static double __pyx_f_9cosmolisa_10likelihood_find_redshift(PyObject *__pyx_v_om
   double __pyx_t_6;
   __Pyx_RefNannySetupContext("find_redshift", 0);
 
-  /* "cosmolisa/likelihood.pyx":112
+  /* "cosmolisa/likelihood.pyx":115
  * 
- * cdef double find_redshift(object omega, double dl):
+ * cpdef double find_redshift(CosmologicalParameters omega, double dl):
  *     return newton(objective,1.0,args=(omega,dl))             # <<<<<<<<<<<<<<
  * 
- * cdef double objective(double z, object omega, double dl):
+ * cdef double objective(double z, CosmologicalParameters omega, double dl):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_newton); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_newton); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_CFunc_double____double____object____double___to_py(__pyx_f_9cosmolisa_10likelihood_objective); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(__pyx_f_9cosmolisa_10likelihood_objective); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_2);
@@ -4019,34 +3964,34 @@ static double __pyx_f_9cosmolisa_10likelihood_find_redshift(PyObject *__pyx_v_om
   __Pyx_GIVEREF(__pyx_float_1_0);
   PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_float_1_0);
   __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_dl); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_dl); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_INCREF(__pyx_v_omega);
-  __Pyx_GIVEREF(__pyx_v_omega);
-  PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_v_omega);
+  __Pyx_INCREF(((PyObject *)__pyx_v_omega));
+  __Pyx_GIVEREF(((PyObject *)__pyx_v_omega));
+  PyTuple_SET_ITEM(__pyx_t_5, 0, ((PyObject *)__pyx_v_omega));
   __Pyx_GIVEREF(__pyx_t_4);
   PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_4);
   __pyx_t_4 = 0;
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_args, __pyx_t_5) < 0) __PYX_ERR(0, 112, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_args, __pyx_t_5) < 0) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 115, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_6;
   goto __pyx_L0;
 
-  /* "cosmolisa/likelihood.pyx":111
+  /* "cosmolisa/likelihood.pyx":114
  *     return res+log(dz)
  * 
- * cdef double find_redshift(object omega, double dl):             # <<<<<<<<<<<<<<
+ * cpdef double find_redshift(CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
  *     return newton(objective,1.0,args=(omega,dl))
  * 
  */
@@ -4065,76 +4010,123 @@ static double __pyx_f_9cosmolisa_10likelihood_find_redshift(PyObject *__pyx_v_om
   return __pyx_r;
 }
 
-/* "cosmolisa/likelihood.pyx":114
- *     return newton(objective,1.0,args=(omega,dl))
- * 
- * cdef double objective(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *     return dl - omega.LuminosityDistance(z)
- */
+/* Python wrapper */
+static PyObject *__pyx_pw_9cosmolisa_10likelihood_11find_redshift(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_9cosmolisa_10likelihood_11find_redshift(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega = 0;
+  double __pyx_v_dl;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("find_redshift (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_omega,&__pyx_n_s_dl,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_omega)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dl)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("find_redshift", 1, 2, 2, 1); __PYX_ERR(0, 114, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_redshift") < 0)) __PYX_ERR(0, 114, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_omega = ((struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *)values[0]);
+    __pyx_v_dl = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 114, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("find_redshift", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 114, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("cosmolisa.likelihood.find_redshift", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_omega), __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters, 1, "omega", 0))) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_r = __pyx_pf_9cosmolisa_10likelihood_10find_redshift(__pyx_self, __pyx_v_omega, __pyx_v_dl);
 
-static double __pyx_f_9cosmolisa_10likelihood_objective(double __pyx_v_z, PyObject *__pyx_v_omega, double __pyx_v_dl) {
-  double __pyx_r;
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_9cosmolisa_10likelihood_10find_redshift(CYTHON_UNUSED PyObject *__pyx_self, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl) {
+  PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  double __pyx_t_6;
-  __Pyx_RefNannySetupContext("objective", 0);
-
-  /* "cosmolisa/likelihood.pyx":115
- * 
- * cdef double objective(double z, object omega, double dl):
- *     return dl - omega.LuminosityDistance(z)             # <<<<<<<<<<<<<<
- */
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_dl); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
+  __Pyx_RefNannySetupContext("find_redshift", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_10likelihood_find_redshift(__pyx_v_omega, __pyx_v_dl, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_omega, __pyx_n_s_LuminosityDistance); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 115, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_3);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_3, function);
-    }
-  }
-  __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyNumber_Subtract(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 115, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_3); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 115, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_r = __pyx_t_6;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
   goto __pyx_L0;
-
-  /* "cosmolisa/likelihood.pyx":114
- *     return newton(objective,1.0,args=(omega,dl))
- * 
- * cdef double objective(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *     return dl - omega.LuminosityDistance(z)
- */
 
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_WriteUnraisable("cosmolisa.likelihood.objective", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
-  __pyx_r = 0;
+  __Pyx_AddTraceback("cosmolisa.likelihood.find_redshift", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "cosmolisa/likelihood.pyx":117
+ *     return newton(objective,1.0,args=(omega,dl))
+ * 
+ * cdef double objective(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *     return dl - omega.LuminosityDistance(z)
+ */
+
+static double __pyx_f_9cosmolisa_10likelihood_objective(double __pyx_v_z, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl) {
+  double __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("objective", 0);
+
+  /* "cosmolisa/likelihood.pyx":118
+ * 
+ * cdef double objective(double z, CosmologicalParameters omega, double dl):
+ *     return dl - omega.LuminosityDistance(z)             # <<<<<<<<<<<<<<
+ */
+  __pyx_r = (__pyx_v_dl - ((struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *)__pyx_v_omega->__pyx_vtab)->LuminosityDistance(__pyx_v_omega, __pyx_v_z, 0));
+  goto __pyx_L0;
+
+  /* "cosmolisa/likelihood.pyx":117
+ *     return newton(objective,1.0,args=(omega,dl))
+ * 
+ * cdef double objective(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *     return dl - omega.LuminosityDistance(z)
+ */
+
+  /* function exit code */
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -6559,20 +6551,20 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
 }
 
 /* "cfunc.to_py":65
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):
- *     def wrap(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):
+ *     def wrap(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_1wrap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static char __pyx_doc_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap[] = "wrap(z: float, omega, dl: float) -> float";
-static PyMethodDef __pyx_mdef_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_1wrap = {"wrap", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_1wrap, METH_VARARGS|METH_KEYWORDS, __pyx_doc_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap};
-static PyObject *__pyx_pw_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_1wrap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_1wrap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_wrap[] = "wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float";
+static PyMethodDef __pyx_mdef_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_1wrap = {"wrap", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_1wrap, METH_VARARGS|METH_KEYWORDS, __pyx_doc_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_wrap};
+static PyObject *__pyx_pw_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_1wrap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   double __pyx_v_z;
-  PyObject *__pyx_v_omega = 0;
+  struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega = 0;
   double __pyx_v_dl;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
@@ -6622,38 +6614,43 @@ static PyObject *__pyx_pw_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____ob
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 65, __pyx_L3_error)
-    __pyx_v_omega = values[1];
+    __pyx_v_omega = ((struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *)values[1]);
     __pyx_v_dl = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_dl == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 65, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("wrap", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(2, 65, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____object____double___to_py.wrap", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.wrap", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap(__pyx_self, __pyx_v_z, __pyx_v_omega, __pyx_v_dl);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_omega), __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters, 1, "omega", 0))) __PYX_ERR(2, 65, __pyx_L1_error)
+  __pyx_r = __pyx_pf_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_wrap(__pyx_self, __pyx_v_z, __pyx_v_omega, __pyx_v_dl);
 
   /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_wrap(PyObject *__pyx_self, double __pyx_v_z, PyObject *__pyx_v_omega, double __pyx_v_dl) {
-  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *__pyx_cur_scope;
-  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *__pyx_outer_scope;
+static PyObject *__pyx_pf_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_wrap(PyObject *__pyx_self, double __pyx_v_z, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_v_omega, double __pyx_v_dl) {
+  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *__pyx_cur_scope;
+  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *__pyx_outer_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("wrap", 0);
-  __pyx_outer_scope = (struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "cfunc.to_py":67
- *     def wrap(double z, object omega, double dl):
- *         """wrap(z: float, omega, dl: float) -> float"""
+ *     def wrap(double z, CosmologicalParameters omega, double dl):
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)             # <<<<<<<<<<<<<<
  *     return wrap
  * 
@@ -6667,17 +6664,17 @@ static PyObject *__pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____ob
   goto __pyx_L0;
 
   /* "cfunc.to_py":65
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):
- *     def wrap(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):
+ *     def wrap(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)
  */
 
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____object____double___to_py.wrap", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.wrap", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -6687,22 +6684,22 @@ static PyObject *__pyx_pf_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____ob
 
 /* "cfunc.to_py":64
  * 
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):             # <<<<<<<<<<<<<<
- *     def wrap(double z, object omega, double dl):
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):             # <<<<<<<<<<<<<<
+ *     def wrap(double z, CosmologicalParameters omega, double dl):
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  */
 
-static PyObject *__Pyx_CFunc_double____double____object____double___to_py(double (*__pyx_v_f)(double, PyObject *, double)) {
-  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *__pyx_cur_scope;
+static PyObject *__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*__pyx_v_f)(double, struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double)) {
+  struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *__pyx_cur_scope;
   PyObject *__pyx_v_wrap = 0;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__Pyx_CFunc_double____double____object____double___to_py", 0);
-  __pyx_cur_scope = (struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *)__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py(__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py, __pyx_empty_tuple, NULL);
+  __Pyx_RefNannySetupContext("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py", 0);
+  __pyx_cur_scope = (struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *)__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(__pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py, __pyx_empty_tuple, NULL);
   if (unlikely(!__pyx_cur_scope)) {
-    __pyx_cur_scope = ((struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *)Py_None);
+    __pyx_cur_scope = ((struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *)Py_None);
     __Pyx_INCREF(Py_None);
     __PYX_ERR(2, 64, __pyx_L1_error)
   } else {
@@ -6711,19 +6708,19 @@ static PyObject *__Pyx_CFunc_double____double____object____double___to_py(double
   __pyx_cur_scope->__pyx_v_f = __pyx_v_f;
 
   /* "cfunc.to_py":65
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):
- *     def wrap(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):
+ *     def wrap(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)
  */
-  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_11cfunc_dot_to_py_56__Pyx_CFunc_double____double____object____double___to_py_1wrap, 0, __pyx_n_s_Pyx_CFunc_double____double, ((PyObject*)__pyx_cur_scope), __pyx_n_s_cfunc_to_py, __pyx_d, ((PyObject *)__pyx_codeobj__9)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 65, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_11cfunc_dot_to_py_72__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py_1wrap, 0, __pyx_n_s_Pyx_CFunc_double____double, ((PyObject*)__pyx_cur_scope), __pyx_n_s_cfunc_to_py, __pyx_d, ((PyObject *)__pyx_codeobj__9)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 65, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_wrap = __pyx_t_1;
   __pyx_t_1 = 0;
 
   /* "cfunc.to_py":68
- *         """wrap(z: float, omega, dl: float) -> float"""
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)
  *     return wrap             # <<<<<<<<<<<<<<
  * 
@@ -6736,16 +6733,16 @@ static PyObject *__Pyx_CFunc_double____double____object____double___to_py(double
 
   /* "cfunc.to_py":64
  * 
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):             # <<<<<<<<<<<<<<
- *     def wrap(double z, object omega, double dl):
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):             # <<<<<<<<<<<<<<
+ *     def wrap(double z, CosmologicalParameters omega, double dl):
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  */
 
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____object____double___to_py", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("cfunc.to_py.__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_wrap);
@@ -19578,14 +19575,14 @@ static PyObject *__pyx_unpickle_Enum__set_state(struct __pyx_MemviewEnum_obj *__
   return __pyx_r;
 }
 
-static struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *__pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py[8];
-static int __pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = 0;
+static struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *__pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py[8];
+static int __pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py = 0;
 
-static PyObject *__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+static PyObject *__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
   PyObject *o;
-  if (CYTHON_COMPILING_IN_CPYTHON && likely((__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py > 0) & (t->tp_basicsize == sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py)))) {
-    o = (PyObject*)__pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py[--__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py];
-    memset(o, 0, sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py));
+  if (CYTHON_COMPILING_IN_CPYTHON && likely((__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py > 0) & (t->tp_basicsize == sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py)))) {
+    o = (PyObject*)__pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py[--__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py];
+    memset(o, 0, sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py));
     (void) PyObject_INIT(o, t);
   } else {
     o = (*t->tp_alloc)(t, 0);
@@ -19594,20 +19591,20 @@ static PyObject *__pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double__
   return o;
 }
 
-static void __pyx_tp_dealloc___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py(PyObject *o) {
-  if (CYTHON_COMPILING_IN_CPYTHON && ((__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py < 8) & (Py_TYPE(o)->tp_basicsize == sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py)))) {
-    __pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py[__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py++] = ((struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py *)o);
+static void __pyx_tp_dealloc___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(PyObject *o) {
+  if (CYTHON_COMPILING_IN_CPYTHON && ((__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py < 8) & (Py_TYPE(o)->tp_basicsize == sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py)))) {
+    __pyx_freelist___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py[__pyx_freecount___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py++] = ((struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py *)o);
   } else {
     (*Py_TYPE(o)->tp_free)(o);
   }
 }
 
-static PyTypeObject __pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = {
+static PyTypeObject __pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py = {
   PyVarObject_HEAD_INIT(0, 0)
-  "cosmolisa.likelihood.__pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py", /*tp_name*/
-  sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py), /*tp_basicsize*/
+  "cosmolisa.likelihood.__pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py", /*tp_name*/
+  sizeof(struct __pyx_obj___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py, /*tp_dealloc*/
+  __pyx_tp_dealloc___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py, /*tp_dealloc*/
   #if PY_VERSION_HEX < 0x030800b4
   0, /*tp_print*/
   #endif
@@ -19650,7 +19647,7 @@ static PyTypeObject __pyx_scope_struct____Pyx_CFunc_double____double____object__
   0, /*tp_dictoffset*/
   0, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py, /*tp_new*/
+  __pyx_tp_new___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -20392,6 +20389,7 @@ static PyMethodDef __pyx_methods[] = {
   {"em_selection_function", (PyCFunction)__pyx_pw_9cosmolisa_10likelihood_5em_selection_function, METH_O, 0},
   {"em_selection_function_number_density", (PyCFunction)__pyx_pw_9cosmolisa_10likelihood_7em_selection_function_number_density, METH_O, 0},
   {"em_selection_function_normalisation", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_9cosmolisa_10likelihood_9em_selection_function_normalisation, METH_VARARGS|METH_KEYWORDS, 0},
+  {"find_redshift", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_9cosmolisa_10likelihood_11find_redshift, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -20443,7 +20441,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_Cannot_assign_to_read_only_memor, __pyx_k_Cannot_assign_to_read_only_memor, sizeof(__pyx_k_Cannot_assign_to_read_only_memor), 0, 0, 1, 0},
   {&__pyx_kp_s_Cannot_create_writable_memory_vi, __pyx_k_Cannot_create_writable_memory_vi, sizeof(__pyx_k_Cannot_create_writable_memory_vi), 0, 0, 1, 0},
   {&__pyx_kp_s_Cannot_index_with_type_s, __pyx_k_Cannot_index_with_type_s, sizeof(__pyx_k_Cannot_index_with_type_s), 0, 0, 1, 0},
-  {&__pyx_n_s_ComovingVolumeElement, __pyx_k_ComovingVolumeElement, sizeof(__pyx_k_ComovingVolumeElement), 0, 0, 1, 1},
   {&__pyx_n_s_Ellipsis, __pyx_k_Ellipsis, sizeof(__pyx_k_Ellipsis), 0, 0, 1, 1},
   {&__pyx_kp_s_Empty_shape_tuple_for_cython_arr, __pyx_k_Empty_shape_tuple_for_cython_arr, sizeof(__pyx_k_Empty_shape_tuple_for_cython_arr), 0, 0, 1, 0},
   {&__pyx_kp_u_Format_string_allocated_too_shor, __pyx_k_Format_string_allocated_too_shor, sizeof(__pyx_k_Format_string_allocated_too_shor), 0, 1, 0, 0},
@@ -20452,10 +20449,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_Incompatible_checksums_s_vs_0xb0, __pyx_k_Incompatible_checksums_s_vs_0xb0, sizeof(__pyx_k_Incompatible_checksums_s_vs_0xb0), 0, 0, 1, 0},
   {&__pyx_n_s_IndexError, __pyx_k_IndexError, sizeof(__pyx_k_IndexError), 0, 0, 1, 1},
   {&__pyx_kp_s_Indirect_dimensions_not_supporte, __pyx_k_Indirect_dimensions_not_supporte, sizeof(__pyx_k_Indirect_dimensions_not_supporte), 0, 0, 1, 0},
-  {&__pyx_n_s_IntegrateComovingVolumeDensity, __pyx_k_IntegrateComovingVolumeDensity, sizeof(__pyx_k_IntegrateComovingVolumeDensity), 0, 0, 1, 1},
   {&__pyx_kp_s_Invalid_mode_expected_c_or_fortr, __pyx_k_Invalid_mode_expected_c_or_fortr, sizeof(__pyx_k_Invalid_mode_expected_c_or_fortr), 0, 0, 1, 0},
   {&__pyx_kp_s_Invalid_shape_in_axis_d_d, __pyx_k_Invalid_shape_in_axis_d_d, sizeof(__pyx_k_Invalid_shape_in_axis_d_d), 0, 0, 1, 0},
-  {&__pyx_n_s_LuminosityDistance, __pyx_k_LuminosityDistance, sizeof(__pyx_k_LuminosityDistance), 0, 0, 1, 1},
   {&__pyx_n_s_MemoryError, __pyx_k_MemoryError, sizeof(__pyx_k_MemoryError), 0, 0, 1, 1},
   {&__pyx_kp_s_MemoryView_of_r_at_0x_x, __pyx_k_MemoryView_of_r_at_0x_x, sizeof(__pyx_k_MemoryView_of_r_at_0x_x), 0, 0, 1, 0},
   {&__pyx_kp_s_MemoryView_of_r_object, __pyx_k_MemoryView_of_r_object, sizeof(__pyx_k_MemoryView_of_r_object), 0, 0, 1, 0},
@@ -20468,7 +20463,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
   {&__pyx_kp_s_Unable_to_convert_item_to_object, __pyx_k_Unable_to_convert_item_to_object, sizeof(__pyx_k_Unable_to_convert_item_to_object), 0, 0, 1, 0},
-  {&__pyx_n_s_UniformComovingVolumeDensity, __pyx_k_UniformComovingVolumeDensity, sizeof(__pyx_k_UniformComovingVolumeDensity), 0, 0, 1, 1},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_View_MemoryView, __pyx_k_View_MemoryView, sizeof(__pyx_k_View_MemoryView), 0, 0, 1, 1},
   {&__pyx_n_s_allocate_buffer, __pyx_k_allocate_buffer, sizeof(__pyx_k_allocate_buffer), 0, 0, 1, 1},
@@ -20517,8 +20511,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
   {&__pyx_n_s_np, __pyx_k_np, sizeof(__pyx_k_np), 0, 0, 1, 1},
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
-  {&__pyx_kp_s_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 0, 1, 0},
-  {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
+  {&__pyx_kp_u_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 1, 0, 0},
+  {&__pyx_kp_u_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 1, 0, 0},
   {&__pyx_n_s_obj, __pyx_k_obj, sizeof(__pyx_k_obj), 0, 0, 1, 1},
   {&__pyx_n_s_omega, __pyx_k_omega, sizeof(__pyx_k_omega), 0, 0, 1, 1},
   {&__pyx_n_s_pack, __pyx_k_pack, sizeof(__pyx_k_pack), 0, 0, 1, 1},
@@ -20564,7 +20558,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 55, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 58, __pyx_L1_error)
   __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 272, __pyx_L1_error)
   __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(1, 856, __pyx_L1_error)
   __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 1038, __pyx_L1_error)
@@ -20645,7 +20639,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_umath() except -1:
  */
-  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(1, 1038, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(1, 1038, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
 
@@ -20656,15 +20650,15 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_ufunc() except -1:
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_s_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(1, 1044, __pyx_L1_error)
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(1, 1044, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
 
   /* "cfunc.to_py":65
- * @cname("__Pyx_CFunc_double____double____object____double___to_py")
- * cdef object __Pyx_CFunc_double____double____object____double___to_py(double (*f)(double, object, double) except *):
- *     def wrap(double z, object omega, double dl):             # <<<<<<<<<<<<<<
- *         """wrap(z: float, omega, dl: float) -> float"""
+ * @cname("__Pyx_CFunc_double____double____CosmologicalParameters____double___to_py")
+ * cdef object __Pyx_CFunc_double____double____CosmologicalParameters____double___to_py(double (*f)(double, CosmologicalParameters, double) except *):
+ *     def wrap(double z, CosmologicalParameters omega, double dl):             # <<<<<<<<<<<<<<
+ *         """wrap(z: float, omega: 'CosmologicalParameters', dl: float) -> float"""
  *         return f(z, omega, dl)
  */
   __pyx_tuple__8 = PyTuple_Pack(3, __pyx_n_s_z, __pyx_n_s_omega, __pyx_n_s_dl); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(2, 65, __pyx_L1_error)
@@ -20990,14 +20984,14 @@ static int __Pyx_modinit_type_init_code(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_init_code", 0);
   /*--- Type init code ---*/
-  if (PyType_Ready(&__pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py) < 0) __PYX_ERR(2, 64, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py) < 0) __PYX_ERR(2, 64, __pyx_L1_error)
   #if PY_VERSION_HEX < 0x030800B1
-  __pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py.tp_print = 0;
+  __pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.tp_print = 0;
   #endif
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py.tp_dictoffset && __pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py.tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py.tp_getattro = __Pyx_PyObject_GenericGetAttrNoDict;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.tp_dictoffset && __pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py.tp_getattro = __Pyx_PyObject_GenericGetAttrNoDict;
   }
-  __pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py = &__pyx_scope_struct____Pyx_CFunc_double____double____object____double___to_py;
+  __pyx_ptype___pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py = &__pyx_scope_struct____Pyx_CFunc_double____double____CosmologicalParameters____double___to_py;
   __pyx_vtabptr_array = &__pyx_vtable_array;
   __pyx_vtable_array.get_memview = (PyObject *(*)(struct __pyx_array_obj *))__pyx_array_get_memview;
   if (PyType_Ready(&__pyx_type___pyx_array) < 0) __PYX_ERR(2, 105, __pyx_L1_error)
@@ -21084,6 +21078,12 @@ static int __Pyx_modinit_type_import_code(void) {
    if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(1, 242, __pyx_L1_error)
   __pyx_ptype_5numpy_ufunc = __Pyx_ImportType(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __Pyx_ImportType_CheckSize_Warn);
    if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(1, 918, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyImport_ImportModule("cosmolisa.cosmology"); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 72, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters = __Pyx_ImportType(__pyx_t_1, "cosmolisa.cosmology", "CosmologicalParameters", sizeof(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters), __Pyx_ImportType_CheckSize_Warn);
+   if (!__pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters) __PYX_ERR(4, 72, __pyx_L1_error)
+  __pyx_vtabptr_9cosmolisa_9cosmology_CosmologicalParameters = (struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters*)__Pyx_GetVtable(__pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters->tp_dict); if (unlikely(!__pyx_vtabptr_9cosmolisa_9cosmology_CosmologicalParameters)) __PYX_ERR(4, 72, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -21325,7 +21325,7 @@ if (!__Pyx_RefNanny) {
  * cimport numpy as np
  * from numpy cimport ndarray
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 2, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -21335,14 +21335,14 @@ if (!__Pyx_RefNanny) {
  * from scipy.special.cython_special cimport erfc, hyp2f1
  * from scipy.special import logsumexp             # <<<<<<<<<<<<<<
  * from scipy.optimize import newton
- * 
+ * from .cosmology cimport CosmologicalParameters
  */
   __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_n_s_logsumexp);
   __Pyx_GIVEREF(__pyx_n_s_logsumexp);
   PyList_SET_ITEM(__pyx_t_1, 0, __pyx_n_s_logsumexp);
-  __pyx_t_2 = __Pyx_Import(__pyx_n_s_scipy_special, __pyx_t_1, -1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_Import(__pyx_n_s_scipy_special, __pyx_t_1, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_1 = __Pyx_ImportFrom(__pyx_t_2, __pyx_n_s_logsumexp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
@@ -21355,15 +21355,15 @@ if (!__Pyx_RefNanny) {
  * from scipy.special.cython_special cimport erfc, hyp2f1
  * from scipy.special import logsumexp
  * from scipy.optimize import newton             # <<<<<<<<<<<<<<
+ * from .cosmology cimport CosmologicalParameters
  * 
- * cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
  */
   __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 9, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_n_s_newton);
   __Pyx_GIVEREF(__pyx_n_s_newton);
   PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s_newton);
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_scipy_optimize, __pyx_t_2, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 9, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_scipy_optimize, __pyx_t_2, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 9, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = __Pyx_ImportFrom(__pyx_t_1, __pyx_n_s_newton); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 9, __pyx_L1_error)
@@ -22228,148 +22228,6 @@ static CYTHON_INLINE PyObject *__Pyx__GetModuleGlobalName(PyObject *name)
     return __Pyx_GetBuiltinName(name);
 }
 
-/* PyCFunctionFastCall */
-  #if CYTHON_FAST_PYCCALL
-static CYTHON_INLINE PyObject * __Pyx_PyCFunction_FastCall(PyObject *func_obj, PyObject **args, Py_ssize_t nargs) {
-    PyCFunctionObject *func = (PyCFunctionObject*)func_obj;
-    PyCFunction meth = PyCFunction_GET_FUNCTION(func);
-    PyObject *self = PyCFunction_GET_SELF(func);
-    int flags = PyCFunction_GET_FLAGS(func);
-    assert(PyCFunction_Check(func));
-    assert(METH_FASTCALL == (flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_KEYWORDS | METH_STACKLESS)));
-    assert(nargs >= 0);
-    assert(nargs == 0 || args != NULL);
-    /* _PyCFunction_FastCallDict() must not be called with an exception set,
-       because it may clear it (directly or indirectly) and so the
-       caller loses its exception */
-    assert(!PyErr_Occurred());
-    if ((PY_VERSION_HEX < 0x030700A0) || unlikely(flags & METH_KEYWORDS)) {
-        return (*((__Pyx_PyCFunctionFastWithKeywords)(void*)meth)) (self, args, nargs, NULL);
-    } else {
-        return (*((__Pyx_PyCFunctionFast)(void*)meth)) (self, args, nargs);
-    }
-}
-#endif
-
-/* PyFunctionFastCall */
-  #if CYTHON_FAST_PYCALL
-static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
-                                               PyObject *globals) {
-    PyFrameObject *f;
-    PyThreadState *tstate = __Pyx_PyThreadState_Current;
-    PyObject **fastlocals;
-    Py_ssize_t i;
-    PyObject *result;
-    assert(globals != NULL);
-    /* XXX Perhaps we should create a specialized
-       PyFrame_New() that doesn't take locals, but does
-       take builtins without sanity checking them.
-       */
-    assert(tstate != NULL);
-    f = PyFrame_New(tstate, co, globals, NULL);
-    if (f == NULL) {
-        return NULL;
-    }
-    fastlocals = __Pyx_PyFrame_GetLocalsplus(f);
-    for (i = 0; i < na; i++) {
-        Py_INCREF(*args);
-        fastlocals[i] = *args++;
-    }
-    result = PyEval_EvalFrameEx(f,0);
-    ++tstate->recursion_depth;
-    Py_DECREF(f);
-    --tstate->recursion_depth;
-    return result;
-}
-#if 1 || PY_VERSION_HEX < 0x030600B1
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
-    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
-    PyObject *globals = PyFunction_GET_GLOBALS(func);
-    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
-    PyObject *closure;
-#if PY_MAJOR_VERSION >= 3
-    PyObject *kwdefs;
-#endif
-    PyObject *kwtuple, **k;
-    PyObject **d;
-    Py_ssize_t nd;
-    Py_ssize_t nk;
-    PyObject *result;
-    assert(kwargs == NULL || PyDict_Check(kwargs));
-    nk = kwargs ? PyDict_Size(kwargs) : 0;
-    if (Py_EnterRecursiveCall((char*)" while calling a Python object")) {
-        return NULL;
-    }
-    if (
-#if PY_MAJOR_VERSION >= 3
-            co->co_kwonlyargcount == 0 &&
-#endif
-            likely(kwargs == NULL || nk == 0) &&
-            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
-        if (argdefs == NULL && co->co_argcount == nargs) {
-            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
-            goto done;
-        }
-        else if (nargs == 0 && argdefs != NULL
-                 && co->co_argcount == Py_SIZE(argdefs)) {
-            /* function called with no arguments, but all parameters have
-               a default value: use default values as arguments .*/
-            args = &PyTuple_GET_ITEM(argdefs, 0);
-            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
-            goto done;
-        }
-    }
-    if (kwargs != NULL) {
-        Py_ssize_t pos, i;
-        kwtuple = PyTuple_New(2 * nk);
-        if (kwtuple == NULL) {
-            result = NULL;
-            goto done;
-        }
-        k = &PyTuple_GET_ITEM(kwtuple, 0);
-        pos = i = 0;
-        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
-            Py_INCREF(k[i]);
-            Py_INCREF(k[i+1]);
-            i += 2;
-        }
-        nk = i / 2;
-    }
-    else {
-        kwtuple = NULL;
-        k = NULL;
-    }
-    closure = PyFunction_GET_CLOSURE(func);
-#if PY_MAJOR_VERSION >= 3
-    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
-#endif
-    if (argdefs != NULL) {
-        d = &PyTuple_GET_ITEM(argdefs, 0);
-        nd = Py_SIZE(argdefs);
-    }
-    else {
-        d = NULL;
-        nd = 0;
-    }
-#if PY_MAJOR_VERSION >= 3
-    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, kwdefs, closure);
-#else
-    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, closure);
-#endif
-    Py_XDECREF(kwtuple);
-done:
-    Py_LeaveRecursiveCall();
-    return result;
-}
-#endif
-#endif
-
 /* PyObjectCall */
   #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
@@ -22386,95 +22244,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg
             PyExc_SystemError,
             "NULL result without error in PyObject_Call");
     }
-    return result;
-}
-#endif
-
-/* PyObjectCall2Args */
-  static CYTHON_UNUSED PyObject* __Pyx_PyObject_Call2Args(PyObject* function, PyObject* arg1, PyObject* arg2) {
-    PyObject *args, *result = NULL;
-    #if CYTHON_FAST_PYCALL
-    if (PyFunction_Check(function)) {
-        PyObject *args[2] = {arg1, arg2};
-        return __Pyx_PyFunction_FastCall(function, args, 2);
-    }
-    #endif
-    #if CYTHON_FAST_PYCCALL
-    if (__Pyx_PyFastCFunction_Check(function)) {
-        PyObject *args[2] = {arg1, arg2};
-        return __Pyx_PyCFunction_FastCall(function, args, 2);
-    }
-    #endif
-    args = PyTuple_New(2);
-    if (unlikely(!args)) goto done;
-    Py_INCREF(arg1);
-    PyTuple_SET_ITEM(args, 0, arg1);
-    Py_INCREF(arg2);
-    PyTuple_SET_ITEM(args, 1, arg2);
-    Py_INCREF(function);
-    result = __Pyx_PyObject_Call(function, args, NULL);
-    Py_DECREF(args);
-    Py_DECREF(function);
-done:
-    return result;
-}
-
-/* PyObjectCallMethO */
-  #if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
-    PyObject *self, *result;
-    PyCFunction cfunc;
-    cfunc = PyCFunction_GET_FUNCTION(func);
-    self = PyCFunction_GET_SELF(func);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = cfunc(self, arg);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-/* PyObjectCallOneArg */
-  #if CYTHON_COMPILING_IN_CPYTHON
-static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_New(1);
-    if (unlikely(!args)) return NULL;
-    Py_INCREF(arg);
-    PyTuple_SET_ITEM(args, 0, arg);
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
-    return result;
-}
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-#if CYTHON_FAST_PYCALL
-    if (PyFunction_Check(func)) {
-        return __Pyx_PyFunction_FastCall(func, &arg, 1);
-    }
-#endif
-    if (likely(PyCFunction_Check(func))) {
-        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
-            return __Pyx_PyObject_CallMethO(func, arg);
-#if CYTHON_FAST_PYCCALL
-        } else if (PyCFunction_GET_FLAGS(func) & METH_FASTCALL) {
-            return __Pyx_PyCFunction_FastCall(func, &arg, 1);
-#endif
-        }
-    }
-    return __Pyx__PyObject_CallOneArg(func, arg);
-}
-#else
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_Pack(1, arg);
-    if (unlikely(!args)) return NULL;
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
     return result;
 }
 #endif
@@ -22998,6 +22767,208 @@ static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject 
 bad:
     Py_XDECREF(owned_instance);
     return;
+}
+#endif
+
+/* PyCFunctionFastCall */
+  #if CYTHON_FAST_PYCCALL
+static CYTHON_INLINE PyObject * __Pyx_PyCFunction_FastCall(PyObject *func_obj, PyObject **args, Py_ssize_t nargs) {
+    PyCFunctionObject *func = (PyCFunctionObject*)func_obj;
+    PyCFunction meth = PyCFunction_GET_FUNCTION(func);
+    PyObject *self = PyCFunction_GET_SELF(func);
+    int flags = PyCFunction_GET_FLAGS(func);
+    assert(PyCFunction_Check(func));
+    assert(METH_FASTCALL == (flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_KEYWORDS | METH_STACKLESS)));
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    /* _PyCFunction_FastCallDict() must not be called with an exception set,
+       because it may clear it (directly or indirectly) and so the
+       caller loses its exception */
+    assert(!PyErr_Occurred());
+    if ((PY_VERSION_HEX < 0x030700A0) || unlikely(flags & METH_KEYWORDS)) {
+        return (*((__Pyx_PyCFunctionFastWithKeywords)(void*)meth)) (self, args, nargs, NULL);
+    } else {
+        return (*((__Pyx_PyCFunctionFast)(void*)meth)) (self, args, nargs);
+    }
+}
+#endif
+
+/* PyFunctionFastCall */
+  #if CYTHON_FAST_PYCALL
+static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
+                                               PyObject *globals) {
+    PyFrameObject *f;
+    PyThreadState *tstate = __Pyx_PyThreadState_Current;
+    PyObject **fastlocals;
+    Py_ssize_t i;
+    PyObject *result;
+    assert(globals != NULL);
+    /* XXX Perhaps we should create a specialized
+       PyFrame_New() that doesn't take locals, but does
+       take builtins without sanity checking them.
+       */
+    assert(tstate != NULL);
+    f = PyFrame_New(tstate, co, globals, NULL);
+    if (f == NULL) {
+        return NULL;
+    }
+    fastlocals = __Pyx_PyFrame_GetLocalsplus(f);
+    for (i = 0; i < na; i++) {
+        Py_INCREF(*args);
+        fastlocals[i] = *args++;
+    }
+    result = PyEval_EvalFrameEx(f,0);
+    ++tstate->recursion_depth;
+    Py_DECREF(f);
+    --tstate->recursion_depth;
+    return result;
+}
+#if 1 || PY_VERSION_HEX < 0x030600B1
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
+    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
+    PyObject *globals = PyFunction_GET_GLOBALS(func);
+    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
+    PyObject *closure;
+#if PY_MAJOR_VERSION >= 3
+    PyObject *kwdefs;
+#endif
+    PyObject *kwtuple, **k;
+    PyObject **d;
+    Py_ssize_t nd;
+    Py_ssize_t nk;
+    PyObject *result;
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+    nk = kwargs ? PyDict_Size(kwargs) : 0;
+    if (Py_EnterRecursiveCall((char*)" while calling a Python object")) {
+        return NULL;
+    }
+    if (
+#if PY_MAJOR_VERSION >= 3
+            co->co_kwonlyargcount == 0 &&
+#endif
+            likely(kwargs == NULL || nk == 0) &&
+            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
+        if (argdefs == NULL && co->co_argcount == nargs) {
+            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
+            goto done;
+        }
+        else if (nargs == 0 && argdefs != NULL
+                 && co->co_argcount == Py_SIZE(argdefs)) {
+            /* function called with no arguments, but all parameters have
+               a default value: use default values as arguments .*/
+            args = &PyTuple_GET_ITEM(argdefs, 0);
+            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
+            goto done;
+        }
+    }
+    if (kwargs != NULL) {
+        Py_ssize_t pos, i;
+        kwtuple = PyTuple_New(2 * nk);
+        if (kwtuple == NULL) {
+            result = NULL;
+            goto done;
+        }
+        k = &PyTuple_GET_ITEM(kwtuple, 0);
+        pos = i = 0;
+        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
+            Py_INCREF(k[i]);
+            Py_INCREF(k[i+1]);
+            i += 2;
+        }
+        nk = i / 2;
+    }
+    else {
+        kwtuple = NULL;
+        k = NULL;
+    }
+    closure = PyFunction_GET_CLOSURE(func);
+#if PY_MAJOR_VERSION >= 3
+    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
+#endif
+    if (argdefs != NULL) {
+        d = &PyTuple_GET_ITEM(argdefs, 0);
+        nd = Py_SIZE(argdefs);
+    }
+    else {
+        d = NULL;
+        nd = 0;
+    }
+#if PY_MAJOR_VERSION >= 3
+    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
+                               args, (int)nargs,
+                               k, (int)nk,
+                               d, (int)nd, kwdefs, closure);
+#else
+    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
+                               args, (int)nargs,
+                               k, (int)nk,
+                               d, (int)nd, closure);
+#endif
+    Py_XDECREF(kwtuple);
+done:
+    Py_LeaveRecursiveCall();
+    return result;
+}
+#endif
+#endif
+
+/* PyObjectCallMethO */
+  #if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
+    PyObject *self, *result;
+    PyCFunction cfunc;
+    cfunc = PyCFunction_GET_FUNCTION(func);
+    self = PyCFunction_GET_SELF(func);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = cfunc(self, arg);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+/* PyObjectCallOneArg */
+  #if CYTHON_COMPILING_IN_CPYTHON
+static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_New(1);
+    if (unlikely(!args)) return NULL;
+    Py_INCREF(arg);
+    PyTuple_SET_ITEM(args, 0, arg);
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+#if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(func)) {
+        return __Pyx_PyFunction_FastCall(func, &arg, 1);
+    }
+#endif
+    if (likely(PyCFunction_Check(func))) {
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
+            return __Pyx_PyObject_CallMethO(func, arg);
+#if CYTHON_FAST_PYCCALL
+        } else if (PyCFunction_GET_FLAGS(func) & METH_FASTCALL) {
+            return __Pyx_PyCFunction_FastCall(func, &arg, 1);
+#endif
+        }
+    }
+    return __Pyx__PyObject_CallOneArg(func, arg);
+}
+#else
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_Pack(1, arg);
+    if (unlikely(!args)) return NULL;
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
 }
 #endif
 
@@ -23863,6 +23834,35 @@ static CYTHON_INLINE void __Pyx_CyFunction_SetAnnotationsDict(PyObject *func, Py
         PyObject_GC_Track(op);
     }
     return op;
+}
+
+/* PyObjectCall2Args */
+  static CYTHON_UNUSED PyObject* __Pyx_PyObject_Call2Args(PyObject* function, PyObject* arg1, PyObject* arg2) {
+    PyObject *args, *result = NULL;
+    #if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(function)) {
+        PyObject *args[2] = {arg1, arg2};
+        return __Pyx_PyFunction_FastCall(function, args, 2);
+    }
+    #endif
+    #if CYTHON_FAST_PYCCALL
+    if (__Pyx_PyFastCFunction_Check(function)) {
+        PyObject *args[2] = {arg1, arg2};
+        return __Pyx_PyCFunction_FastCall(function, args, 2);
+    }
+    #endif
+    args = PyTuple_New(2);
+    if (unlikely(!args)) goto done;
+    Py_INCREF(arg1);
+    PyTuple_SET_ITEM(args, 0, arg1);
+    Py_INCREF(arg2);
+    PyTuple_SET_ITEM(args, 1, arg2);
+    Py_INCREF(function);
+    result = __Pyx_PyObject_Call(function, args, NULL);
+    Py_DECREF(args);
+    Py_DECREF(function);
+done:
+    return result;
 }
 
 /* BytesEquals */
@@ -24802,6 +24802,26 @@ bad:
     return NULL;
 }
 #endif
+
+/* GetVTable */
+  static void* __Pyx_GetVtable(PyObject *dict) {
+    void* ptr;
+    PyObject *ob = PyObject_GetItem(dict, __pyx_n_s_pyx_vtable);
+    if (!ob)
+        goto bad;
+#if PY_VERSION_HEX >= 0x02070000
+    ptr = PyCapsule_GetPointer(ob, 0);
+#else
+    ptr = PyCObject_AsVoidPtr(ob);
+#endif
+    if (!ptr && !PyErr_Occurred())
+        PyErr_SetString(PyExc_RuntimeError, "invalid vtable found for imported type");
+    Py_DECREF(ob);
+    return ptr;
+bad:
+    Py_XDECREF(ob);
+    return NULL;
+}
 
 /* CLineInTraceback */
   #ifndef CYTHON_CLINE_IN_TRACEBACK

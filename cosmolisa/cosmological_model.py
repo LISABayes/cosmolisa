@@ -131,7 +131,7 @@ class CosmologicalModel(cpnest.model.Model):
         
         # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
         logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma,
-                       self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.bounds[2+j][1]) for j,e in enumerate(self.data)])
+                       self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.z_threshold) for j,e in enumerate(self.data)])#self.bounds[2+j][1]
 
         self.O.DestroyCosmologicalParameters()
 

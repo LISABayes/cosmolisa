@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.stats
 import lal
+import os
+import sys
 
 def redshift_rejection_sampling(min, max, p, pmax, norm):
     """
@@ -124,10 +126,11 @@ class EMRIDistribution(object):
         snrs = self.compute_SNR(self.samps[:,1])
         e_d  = self.credible_distance_error(snrs)
         Vc   = self.credible_volume(snrs)
-        cat  = np.column_stack((self.samps,snrs,e_d,Vc))
+        self.catalog = np.column_stack((self.samps,snrs,e_d,Vc))
+        self.catalog = self.find_redshift_limits()
         (idx,) = np.where(snrs > SNR_threshold)
         print("Effective number of sources = ",len(idx))
-        self.catalog = cat[idx,:]
+        self.catalog = self.catalog[idx,:]
         return self.catalog
     
     def compute_SNR(self, distance):
@@ -141,6 +144,61 @@ class EMRIDistribution(object):
         # see https://arxiv.org/pdf/1801.08009.pdf
         return self.delta_D0 * (SNR/self.SNR0)**(-1)
 
+    def find_redshift_limits(self,
+                             h_w  = (0.5,1.0),
+                             om_w = (0.04, 1.0),
+                             w0_w = (-1,-1),
+                             w1_w = (0,0)):
+        from cosmolisa.likelihood import find_redshift
+        import cosmolisa.cosmology as cs
+        
+        def limits(O, Dmin, Dmax):
+            return find_redshift(O,Dmin), find_redshift(O,Dmax)
+        
+        redshift_min = np.zeros(self.catalog.shape[0])
+        redshift_max = np.zeros(self.catalog.shape[0])
+        redshift_fiducial = np.zeros(self.catalog.shape[0])
+        fiducial_O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
+        for k in range(self.catalog.shape[0]):
+            sys.stderr.write("finding redshift limits for event {0} out of {1}\r".format(k+1,self.catalog.shape[0]))
+            z_min = np.zeros(100)
+            z_max = np.zeros(100)
+            for i in range(100):
+                h = np.random.uniform(h_w[0],h_w[1])
+                om = np.random.uniform(om_w[0],om_w[1])
+                ol = 1.0-om
+                w0 = np.random.uniform(w0_w[0],w0_w[1])
+                w1 = np.random.uniform(w1_w[0],w1_w[1])
+                O = cs.CosmologicalParameters(h,om,ol,w0,w1)
+                z_min[i], z_max[i] = limits(O, self.catalog[k,1]*(np.maximum(0.0,1.0-3*self.catalog[k,5])), self.catalog[k,1]*(1.0+3*self.catalog[k,5]))
+            redshift_min[k] = z_min.min()
+            redshift_max[k] = z_max.max()
+            redshift_fiducial[k] = find_redshift(fiducial_O, self.catalog[k,1])
+        sys.stderr.write("\n")
+        self.catalog = np.column_stack((self.catalog,redshift_fiducial,redshift_min,redshift_max))
+        return self.catalog
+        
+    def save_catalog_ids(self, folder):
+        """
+        The file ID.dat has a single row containing:
+        1-event ID
+        2-Luminosity distance (Mpc)
+        3-relative error on luminosity distance (usually few %)
+        4-rough estimate of comoving volume of the errorbox
+        5-observed redshift of the true host
+        6-minimum redshift assuming the *true cosmology*
+        7-maximum redshift assuming the *true cosmology*
+        8-fiducial redshift (i.e. the redshift corresponding to the measured distance in the true cosmology)
+        9-minimum redshift adding the cosmological prior
+        10-maximum redshift adding the cosmological prior
+        11-SNR
+        12-SNR at the true distance
+        """
+        os.system("mkdir -p {0}".format(folder))
+        for i in range(self.catalog.shape[0]):
+            os.system("mkdir -p {0}".format(os.path.join(folder,"EVENT_1{))
+            np.savetxt(os.path.join(
+        return
 if __name__=="__main__":
     h  = 0.7
     om = 0.25

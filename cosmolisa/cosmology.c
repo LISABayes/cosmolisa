@@ -8,9 +8,14 @@
             "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include/numpy/ufuncobject.h",
             "/Users/wdp/opt/master/include/lal/LALCosmologyCalculator.h"
         ],
+        "extra_compile_args": [
+            "-O3",
+            "-ffast-math"
+        ],
         "include_dirs": [
             "/Users/wdp/anaconda3/lib/python3.7/site-packages/numpy/core/include",
-            "/Users/wdp/opt/master/include"
+            "/Users/wdp/opt/master/include",
+            "cosmolisa"
         ],
         "libraries": [
             "m",
@@ -623,12 +628,12 @@ static CYTHON_INLINE float __PYX_NAN() {
 #define __PYX_HAVE__cosmolisa__cosmology
 #define __PYX_HAVE_API__cosmolisa__cosmology
 /* Early includes */
+#include "lal/LALCosmologyCalculator.h"
 #include <string.h>
 #include <stdio.h>
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
 #include <math.h>
-#include "lal/LALCosmologyCalculator.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -861,6 +866,7 @@ static const char *__pyx_filename;
 static const char *__pyx_f[] = {
   "stringsource",
   "cosmolisa/cosmology.pyx",
+  "cosmolisa/cosmology.pxd",
   "__init__.pxd",
   "type.pxd",
 };
@@ -1117,17 +1123,17 @@ typedef npy_clongdouble __pyx_t_5numpy_clongdouble_t;
  */
 typedef npy_cdouble __pyx_t_5numpy_complex_t;
 
-/* "cosmolisa/cosmology.pyx":79
- * 
+/* "cosmolisa/cosmology.pxd":72
+ *     cdef double XLALGetW2(LALCosmologicalParameters *omega)
  * 
  * cdef class CosmologicalParameters:             # <<<<<<<<<<<<<<
- *     cdef LALCosmologicalParameters* __LALCosmologicalParameters
+ *     cdef LALCosmologicalParameters* _LALCosmologicalParameters
  *     cdef public double h
  */
 struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters {
   PyObject_HEAD
   struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters *__pyx_vtab;
-  LALCosmologicalParameters *__pyx___LALCosmologicalParameters;
+  LALCosmologicalParameters *_LALCosmologicalParameters;
   double h;
   double om;
   double ol;
@@ -1136,6 +1142,14 @@ struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters {
 };
 
 
+
+/* "cosmolisa/cosmology.pyx":7
+ * cimport cython
+ * 
+ * cdef class CosmologicalParameters:             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
+ */
 
 struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters {
   void (*SetH)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch);
@@ -1755,8 +1769,8 @@ static PyObject *__pyx_kp_u_ndarray_is_not_Fortran_contiguou;
 static PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
 static PyObject *__pyx_n_s_np;
 static PyObject *__pyx_n_s_numpy;
-static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
-static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
+static PyObject *__pyx_kp_u_numpy_core_multiarray_failed_to;
+static PyObject *__pyx_kp_u_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_ol;
 static PyObject *__pyx_n_s_om;
 static PyObject *__pyx_n_s_pyx_vtable;
@@ -1812,9 +1826,9 @@ static PyObject *__pyx_tuple__8;
 static PyObject *__pyx_tuple__9;
 /* Late includes */
 
-/* "cosmolisa/cosmology.pyx":86
- *     cdef public double w0
- *     cdef public double w1
+/* "cosmolisa/cosmology.pyx":9
+ * cdef class CosmologicalParameters:
+ * 
  *     def __cinit__(self,double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
  *         self.h = h
  *         self.om = om
@@ -1860,29 +1874,29 @@ static int __pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_1__cinit__(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_om)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 1); __PYX_ERR(1, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 1); __PYX_ERR(1, 9, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_ol)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 2); __PYX_ERR(1, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 2); __PYX_ERR(1, 9, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_w0)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 3); __PYX_ERR(1, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 3); __PYX_ERR(1, 9, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_w1)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 4); __PYX_ERR(1, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, 4); __PYX_ERR(1, 9, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(1, 86, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(1, 9, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -1893,15 +1907,15 @@ static int __pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_1__cinit__(Py
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
       values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
     }
-    __pyx_v_h = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_h == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 86, __pyx_L3_error)
-    __pyx_v_om = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_om == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 86, __pyx_L3_error)
-    __pyx_v_ol = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_ol == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 86, __pyx_L3_error)
-    __pyx_v_w0 = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_w0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 86, __pyx_L3_error)
-    __pyx_v_w1 = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_w1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 86, __pyx_L3_error)
+    __pyx_v_h = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_h == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 9, __pyx_L3_error)
+    __pyx_v_om = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_om == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 9, __pyx_L3_error)
+    __pyx_v_ol = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_ol == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 9, __pyx_L3_error)
+    __pyx_v_w0 = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_w0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 9, __pyx_L3_error)
+    __pyx_v_w1 = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_w1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 9, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 86, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 9, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.cosmology.CosmologicalParameters.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1919,8 +1933,8 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "cosmolisa/cosmology.pyx":87
- *     cdef public double w1
+  /* "cosmolisa/cosmology.pyx":10
+ * 
  *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
  *         self.h = h             # <<<<<<<<<<<<<<
  *         self.om = om
@@ -1928,7 +1942,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
  */
   __pyx_v_self->h = __pyx_v_h;
 
-  /* "cosmolisa/cosmology.pyx":88
+  /* "cosmolisa/cosmology.pyx":11
  *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
  *         self.h = h
  *         self.om = om             # <<<<<<<<<<<<<<
@@ -1937,7 +1951,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
  */
   __pyx_v_self->om = __pyx_v_om;
 
-  /* "cosmolisa/cosmology.pyx":89
+  /* "cosmolisa/cosmology.pyx":12
  *         self.h = h
  *         self.om = om
  *         self.ol = ol             # <<<<<<<<<<<<<<
@@ -1946,36 +1960,36 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
  */
   __pyx_v_self->ol = __pyx_v_ol;
 
-  /* "cosmolisa/cosmology.pyx":90
+  /* "cosmolisa/cosmology.pyx":13
  *         self.om = om
  *         self.ol = ol
  *         self.w0 = w0             # <<<<<<<<<<<<<<
  *         self.w1 = w1
- *         self.__LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
+ *         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
  */
   __pyx_v_self->w0 = __pyx_v_w0;
 
-  /* "cosmolisa/cosmology.pyx":91
+  /* "cosmolisa/cosmology.pyx":14
  *         self.ol = ol
  *         self.w0 = w0
  *         self.w1 = w1             # <<<<<<<<<<<<<<
- *         self.__LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
+ *         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
  * 
  */
   __pyx_v_self->w1 = __pyx_v_w1;
 
-  /* "cosmolisa/cosmology.pyx":92
+  /* "cosmolisa/cosmology.pyx":15
  *         self.w0 = w0
  *         self.w1 = w1
- *         self.__LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)             # <<<<<<<<<<<<<<
+ *         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)             # <<<<<<<<<<<<<<
  * 
  *     cpdef void SetH(self, double h):
  */
-  __pyx_v_self->__pyx___LALCosmologicalParameters = XLALCreateCosmologicalParameters(__pyx_v_self->h, __pyx_v_self->om, __pyx_v_self->ol, __pyx_v_self->w0, __pyx_v_self->w1, 0.0);
+  __pyx_v_self->_LALCosmologicalParameters = XLALCreateCosmologicalParameters(__pyx_v_self->h, __pyx_v_self->om, __pyx_v_self->ol, __pyx_v_self->w0, __pyx_v_self->w1, 0.0);
 
-  /* "cosmolisa/cosmology.pyx":86
- *     cdef public double w0
- *     cdef public double w1
+  /* "cosmolisa/cosmology.pyx":9
+ * cdef class CosmologicalParameters:
+ * 
  *     def __cinit__(self,double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
  *         self.h = h
  *         self.om = om
@@ -1987,12 +2001,12 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":94
- *         self.__LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
+/* "cosmolisa/cosmology.pyx":17
+ *         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
  * 
  *     cpdef void SetH(self, double h):             # <<<<<<<<<<<<<<
  *         self.h = h
- *         self.__LALCosmologicalParameters.h = h
+ *         self._LALCosmologicalParameters.h = h
  */
 
 static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_3SetH(PyObject *__pyx_v_self, PyObject *__pyx_arg_h); /*proto*/
@@ -2013,10 +2027,10 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetH(struct _
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetH); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 94, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetH); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 17, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_3SetH)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_h); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 94, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_h); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 17, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2032,7 +2046,7 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetH(struct _
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 94, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 17, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -2052,30 +2066,30 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetH(struct _
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":95
+  /* "cosmolisa/cosmology.pyx":18
  * 
  *     cpdef void SetH(self, double h):
  *         self.h = h             # <<<<<<<<<<<<<<
- *         self.__LALCosmologicalParameters.h = h
+ *         self._LALCosmologicalParameters.h = h
  * 
  */
   __pyx_v_self->h = __pyx_v_h;
 
-  /* "cosmolisa/cosmology.pyx":96
+  /* "cosmolisa/cosmology.pyx":19
  *     cpdef void SetH(self, double h):
  *         self.h = h
- *         self.__LALCosmologicalParameters.h = h             # <<<<<<<<<<<<<<
+ *         self._LALCosmologicalParameters.h = h             # <<<<<<<<<<<<<<
  * 
  *     cpdef void SetOM(self, double om):
  */
-  __pyx_v_self->__pyx___LALCosmologicalParameters->h = __pyx_v_h;
+  __pyx_v_self->_LALCosmologicalParameters->h = __pyx_v_h;
 
-  /* "cosmolisa/cosmology.pyx":94
- *         self.__LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
+  /* "cosmolisa/cosmology.pyx":17
+ *         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(self.h,self.om,self.ol,self.w0,self.w1,0.0)
  * 
  *     cpdef void SetH(self, double h):             # <<<<<<<<<<<<<<
  *         self.h = h
- *         self.__LALCosmologicalParameters.h = h
+ *         self._LALCosmologicalParameters.h = h
  */
 
   /* function exit code */
@@ -2099,7 +2113,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_3SetH(P
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("SetH (wrapper)", 0);
   assert(__pyx_arg_h); {
-    __pyx_v_h = __pyx_PyFloat_AsDouble(__pyx_arg_h); if (unlikely((__pyx_v_h == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 94, __pyx_L3_error)
+    __pyx_v_h = __pyx_PyFloat_AsDouble(__pyx_arg_h); if (unlikely((__pyx_v_h == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 17, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2120,7 +2134,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2SetH(s
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("SetH", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetH(__pyx_v_self, __pyx_v_h, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 94, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetH(__pyx_v_self, __pyx_v_h, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2137,12 +2151,12 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2SetH(s
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":98
- *         self.__LALCosmologicalParameters.h = h
+/* "cosmolisa/cosmology.pyx":21
+ *         self._LALCosmologicalParameters.h = h
  * 
  *     cpdef void SetOM(self, double om):             # <<<<<<<<<<<<<<
  *         self.om = om
- *         self.__LALCosmologicalParameters.om = om
+ *         self._LALCosmologicalParameters.om = om
  */
 
 static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_5SetOM(PyObject *__pyx_v_self, PyObject *__pyx_arg_om); /*proto*/
@@ -2163,10 +2177,10 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOM(struct 
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetOM); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 98, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetOM); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 21, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_5SetOM)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_om); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 98, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_om); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2182,7 +2196,7 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOM(struct 
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 98, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -2202,30 +2216,30 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOM(struct 
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":99
+  /* "cosmolisa/cosmology.pyx":22
  * 
  *     cpdef void SetOM(self, double om):
  *         self.om = om             # <<<<<<<<<<<<<<
- *         self.__LALCosmologicalParameters.om = om
+ *         self._LALCosmologicalParameters.om = om
  * 
  */
   __pyx_v_self->om = __pyx_v_om;
 
-  /* "cosmolisa/cosmology.pyx":100
+  /* "cosmolisa/cosmology.pyx":23
  *     cpdef void SetOM(self, double om):
  *         self.om = om
- *         self.__LALCosmologicalParameters.om = om             # <<<<<<<<<<<<<<
+ *         self._LALCosmologicalParameters.om = om             # <<<<<<<<<<<<<<
  * 
  *     cpdef void SetOL(self, double ol):
  */
-  __pyx_v_self->__pyx___LALCosmologicalParameters->om = __pyx_v_om;
+  __pyx_v_self->_LALCosmologicalParameters->om = __pyx_v_om;
 
-  /* "cosmolisa/cosmology.pyx":98
- *         self.__LALCosmologicalParameters.h = h
+  /* "cosmolisa/cosmology.pyx":21
+ *         self._LALCosmologicalParameters.h = h
  * 
  *     cpdef void SetOM(self, double om):             # <<<<<<<<<<<<<<
  *         self.om = om
- *         self.__LALCosmologicalParameters.om = om
+ *         self._LALCosmologicalParameters.om = om
  */
 
   /* function exit code */
@@ -2249,7 +2263,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_5SetOM(
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("SetOM (wrapper)", 0);
   assert(__pyx_arg_om); {
-    __pyx_v_om = __pyx_PyFloat_AsDouble(__pyx_arg_om); if (unlikely((__pyx_v_om == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 98, __pyx_L3_error)
+    __pyx_v_om = __pyx_PyFloat_AsDouble(__pyx_arg_om); if (unlikely((__pyx_v_om == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 21, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2270,7 +2284,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_4SetOM(
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("SetOM", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOM(__pyx_v_self, __pyx_v_om, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 98, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOM(__pyx_v_self, __pyx_v_om, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2287,12 +2301,12 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_4SetOM(
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":102
- *         self.__LALCosmologicalParameters.om = om
+/* "cosmolisa/cosmology.pyx":25
+ *         self._LALCosmologicalParameters.om = om
  * 
  *     cpdef void SetOL(self, double ol):             # <<<<<<<<<<<<<<
  *         self.ol = ol
- *         self.__LALCosmologicalParameters.ol = ol
+ *         self._LALCosmologicalParameters.ol = ol
  */
 
 static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_7SetOL(PyObject *__pyx_v_self, PyObject *__pyx_arg_ol); /*proto*/
@@ -2313,10 +2327,10 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOL(struct 
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetOL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 102, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_SetOL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 25, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_7SetOL)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_ol); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 102, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_ol); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 25, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2332,7 +2346,7 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOL(struct 
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 102, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 25, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -2352,30 +2366,30 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOL(struct 
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":103
+  /* "cosmolisa/cosmology.pyx":26
  * 
  *     cpdef void SetOL(self, double ol):
  *         self.ol = ol             # <<<<<<<<<<<<<<
- *         self.__LALCosmologicalParameters.ol = ol
+ *         self._LALCosmologicalParameters.ol = ol
  * 
  */
   __pyx_v_self->ol = __pyx_v_ol;
 
-  /* "cosmolisa/cosmology.pyx":104
+  /* "cosmolisa/cosmology.pyx":27
  *     cpdef void SetOL(self, double ol):
  *         self.ol = ol
- *         self.__LALCosmologicalParameters.ol = ol             # <<<<<<<<<<<<<<
+ *         self._LALCosmologicalParameters.ol = ol             # <<<<<<<<<<<<<<
  * 
  *     cpdef double HubbleParameter(self,double z):
  */
-  __pyx_v_self->__pyx___LALCosmologicalParameters->ol = __pyx_v_ol;
+  __pyx_v_self->_LALCosmologicalParameters->ol = __pyx_v_ol;
 
-  /* "cosmolisa/cosmology.pyx":102
- *         self.__LALCosmologicalParameters.om = om
+  /* "cosmolisa/cosmology.pyx":25
+ *         self._LALCosmologicalParameters.om = om
  * 
  *     cpdef void SetOL(self, double ol):             # <<<<<<<<<<<<<<
  *         self.ol = ol
- *         self.__LALCosmologicalParameters.ol = ol
+ *         self._LALCosmologicalParameters.ol = ol
  */
 
   /* function exit code */
@@ -2399,7 +2413,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_7SetOL(
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("SetOL (wrapper)", 0);
   assert(__pyx_arg_ol); {
-    __pyx_v_ol = __pyx_PyFloat_AsDouble(__pyx_arg_ol); if (unlikely((__pyx_v_ol == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 102, __pyx_L3_error)
+    __pyx_v_ol = __pyx_PyFloat_AsDouble(__pyx_arg_ol); if (unlikely((__pyx_v_ol == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 25, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2420,7 +2434,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_6SetOL(
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("SetOL", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOL(__pyx_v_self, __pyx_v_ol, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 102, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_SetOL(__pyx_v_self, __pyx_v_ol, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2437,11 +2451,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_6SetOL(
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":106
- *         self.__LALCosmologicalParameters.ol = ol
+/* "cosmolisa/cosmology.pyx":29
+ *         self._LALCosmologicalParameters.ol = ol
  * 
  *     cpdef double HubbleParameter(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALHubbleParameter(z, self.__LALCosmologicalParameters)
+ *         return XLALHubbleParameter(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -2465,10 +2479,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleParam
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_HubbleParameter); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 106, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_HubbleParameter); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 29, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_9HubbleParameter)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 106, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 29, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2484,10 +2498,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleParam
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 106, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 29, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 106, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 29, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2506,21 +2520,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleParam
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":107
+  /* "cosmolisa/cosmology.pyx":30
  * 
  *     cpdef double HubbleParameter(self,double z):
- *         return XLALHubbleParameter(z, self.__LALCosmologicalParameters)             # <<<<<<<<<<<<<<
+ *         return XLALHubbleParameter(z, self._LALCosmologicalParameters)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double LuminosityDistance(self, double z):
  */
-  __pyx_r = XLALHubbleParameter(__pyx_v_z, __pyx_v_self->__pyx___LALCosmologicalParameters);
+  __pyx_r = XLALHubbleParameter(__pyx_v_z, __pyx_v_self->_LALCosmologicalParameters);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":106
- *         self.__LALCosmologicalParameters.ol = ol
+  /* "cosmolisa/cosmology.pyx":29
+ *         self._LALCosmologicalParameters.ol = ol
  * 
  *     cpdef double HubbleParameter(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALHubbleParameter(z, self.__LALCosmologicalParameters)
+ *         return XLALHubbleParameter(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -2546,7 +2560,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_9Hubble
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("HubbleParameter (wrapper)", 0);
   assert(__pyx_arg_z); {
-    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 106, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 29, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2567,7 +2581,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_8Hubble
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("HubbleParameter", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleParameter(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 106, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleParameter(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 29, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2584,11 +2598,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_8Hubble
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":109
- *         return XLALHubbleParameter(z, self.__LALCosmologicalParameters)
+/* "cosmolisa/cosmology.pyx":32
+ *         return XLALHubbleParameter(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double LuminosityDistance(self, double z):             # <<<<<<<<<<<<<<
- *         return XLALLuminosityDistance(self.__LALCosmologicalParameters,z)
+ *         return XLALLuminosityDistance(self._LALCosmologicalParameters,z)
  * 
  */
 
@@ -2612,10 +2626,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_LuminosityD
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_LuminosityDistance); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 109, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_LuminosityDistance); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 32, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_11LuminosityDistance)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 109, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 32, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2631,10 +2645,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_LuminosityD
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 109, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 32, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 109, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2653,21 +2667,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_LuminosityD
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":110
+  /* "cosmolisa/cosmology.pyx":33
  * 
  *     cpdef double LuminosityDistance(self, double z):
- *         return XLALLuminosityDistance(self.__LALCosmologicalParameters,z)             # <<<<<<<<<<<<<<
+ *         return XLALLuminosityDistance(self._LALCosmologicalParameters,z)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double HubbleDistance(self):
  */
-  __pyx_r = XLALLuminosityDistance(__pyx_v_self->__pyx___LALCosmologicalParameters, __pyx_v_z);
+  __pyx_r = XLALLuminosityDistance(__pyx_v_self->_LALCosmologicalParameters, __pyx_v_z);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":109
- *         return XLALHubbleParameter(z, self.__LALCosmologicalParameters)
+  /* "cosmolisa/cosmology.pyx":32
+ *         return XLALHubbleParameter(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double LuminosityDistance(self, double z):             # <<<<<<<<<<<<<<
- *         return XLALLuminosityDistance(self.__LALCosmologicalParameters,z)
+ *         return XLALLuminosityDistance(self._LALCosmologicalParameters,z)
  * 
  */
 
@@ -2693,7 +2707,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_11Lumin
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("LuminosityDistance (wrapper)", 0);
   assert(__pyx_arg_z); {
-    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 109, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2714,7 +2728,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_10Lumin
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("LuminosityDistance", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_LuminosityDistance(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 109, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_LuminosityDistance(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 32, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2731,11 +2745,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_10Lumin
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":112
- *         return XLALLuminosityDistance(self.__LALCosmologicalParameters,z)
+/* "cosmolisa/cosmology.pyx":35
+ *         return XLALLuminosityDistance(self._LALCosmologicalParameters,z)
  * 
  *     cpdef double HubbleDistance(self):             # <<<<<<<<<<<<<<
- *         return XLALHubbleDistance(self.__LALCosmologicalParameters)
+ *         return XLALHubbleDistance(self._LALCosmologicalParameters)
  * 
  */
 
@@ -2758,7 +2772,7 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleDista
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_HubbleDistance); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 112, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_HubbleDistance); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 35, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_13HubbleDistance)) {
         __Pyx_INCREF(__pyx_t_1);
@@ -2774,10 +2788,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleDista
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 112, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 35, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        __pyx_t_5 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_5 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 112, __pyx_L1_error)
+        __pyx_t_5 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_5 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 35, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_5;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2796,21 +2810,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleDista
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":113
+  /* "cosmolisa/cosmology.pyx":36
  * 
  *     cpdef double HubbleDistance(self):
- *         return XLALHubbleDistance(self.__LALCosmologicalParameters)             # <<<<<<<<<<<<<<
+ *         return XLALHubbleDistance(self._LALCosmologicalParameters)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double IntegrateComovingVolumeDensity(self, double zmax):
  */
-  __pyx_r = XLALHubbleDistance(__pyx_v_self->__pyx___LALCosmologicalParameters);
+  __pyx_r = XLALHubbleDistance(__pyx_v_self->_LALCosmologicalParameters);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":112
- *         return XLALLuminosityDistance(self.__LALCosmologicalParameters,z)
+  /* "cosmolisa/cosmology.pyx":35
+ *         return XLALLuminosityDistance(self._LALCosmologicalParameters,z)
  * 
  *     cpdef double HubbleDistance(self):             # <<<<<<<<<<<<<<
- *         return XLALHubbleDistance(self.__LALCosmologicalParameters)
+ *         return XLALHubbleDistance(self._LALCosmologicalParameters)
  * 
  */
 
@@ -2846,7 +2860,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_12Hubbl
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("HubbleDistance", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleDistance(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 112, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_HubbleDistance(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2863,11 +2877,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_12Hubbl
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":115
- *         return XLALHubbleDistance(self.__LALCosmologicalParameters)
+/* "cosmolisa/cosmology.pyx":38
+ *         return XLALHubbleDistance(self._LALCosmologicalParameters)
  * 
  *     cpdef double IntegrateComovingVolumeDensity(self, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALIntegrateComovingVolumeDensity(self.__LALCosmologicalParameters,zmax)
+ *         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)
  * 
  */
 
@@ -2891,10 +2905,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_IntegrateComovingVolumeDensity); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 115, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_IntegrateComovingVolumeDensity); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 38, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_15IntegrateComovingVolumeDensity)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 115, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2910,10 +2924,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 115, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 115, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 38, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2932,21 +2946,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":116
+  /* "cosmolisa/cosmology.pyx":39
  * 
  *     cpdef double IntegrateComovingVolumeDensity(self, double zmax):
- *         return XLALIntegrateComovingVolumeDensity(self.__LALCosmologicalParameters,zmax)             # <<<<<<<<<<<<<<
+ *         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double IntegrateComovingVolume(self, double zmax):
  */
-  __pyx_r = XLALIntegrateComovingVolumeDensity(__pyx_v_self->__pyx___LALCosmologicalParameters, __pyx_v_zmax);
+  __pyx_r = XLALIntegrateComovingVolumeDensity(__pyx_v_self->_LALCosmologicalParameters, __pyx_v_zmax);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":115
- *         return XLALHubbleDistance(self.__LALCosmologicalParameters)
+  /* "cosmolisa/cosmology.pyx":38
+ *         return XLALHubbleDistance(self._LALCosmologicalParameters)
  * 
  *     cpdef double IntegrateComovingVolumeDensity(self, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALIntegrateComovingVolumeDensity(self.__LALCosmologicalParameters,zmax)
+ *         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)
  * 
  */
 
@@ -2972,7 +2986,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_15Integ
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("IntegrateComovingVolumeDensity (wrapper)", 0);
   assert(__pyx_arg_zmax); {
-    __pyx_v_zmax = __pyx_PyFloat_AsDouble(__pyx_arg_zmax); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 115, __pyx_L3_error)
+    __pyx_v_zmax = __pyx_PyFloat_AsDouble(__pyx_arg_zmax); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 38, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2993,7 +3007,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_14Integ
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("IntegrateComovingVolumeDensity", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateComovingVolumeDensity(__pyx_v_self, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 115, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateComovingVolumeDensity(__pyx_v_self, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3010,11 +3024,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_14Integ
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":118
- *         return XLALIntegrateComovingVolumeDensity(self.__LALCosmologicalParameters,zmax)
+/* "cosmolisa/cosmology.pyx":41
+ *         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)
  * 
  *     cpdef double IntegrateComovingVolume(self, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALIntegrateComovingVolume(self.__LALCosmologicalParameters,zmax)
+ *         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,zmax)
  * 
  */
 
@@ -3038,10 +3052,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_IntegrateComovingVolume); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 118, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_IntegrateComovingVolume); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 41, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_17IntegrateComovingVolume)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 118, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 41, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3057,10 +3071,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 118, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 41, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 118, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 41, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3079,21 +3093,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateCo
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":119
+  /* "cosmolisa/cosmology.pyx":42
  * 
  *     cpdef double IntegrateComovingVolume(self, double zmax):
- *         return XLALIntegrateComovingVolume(self.__LALCosmologicalParameters,zmax)             # <<<<<<<<<<<<<<
+ *         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,zmax)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double UniformComovingVolumeDensity(self, double z):
  */
-  __pyx_r = XLALIntegrateComovingVolume(__pyx_v_self->__pyx___LALCosmologicalParameters, __pyx_v_zmax);
+  __pyx_r = XLALIntegrateComovingVolume(__pyx_v_self->_LALCosmologicalParameters, __pyx_v_zmax);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":118
- *         return XLALIntegrateComovingVolumeDensity(self.__LALCosmologicalParameters,zmax)
+  /* "cosmolisa/cosmology.pyx":41
+ *         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)
  * 
  *     cpdef double IntegrateComovingVolume(self, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALIntegrateComovingVolume(self.__LALCosmologicalParameters,zmax)
+ *         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,zmax)
  * 
  */
 
@@ -3119,7 +3133,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_17Integ
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("IntegrateComovingVolume (wrapper)", 0);
   assert(__pyx_arg_zmax); {
-    __pyx_v_zmax = __pyx_PyFloat_AsDouble(__pyx_arg_zmax); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 118, __pyx_L3_error)
+    __pyx_v_zmax = __pyx_PyFloat_AsDouble(__pyx_arg_zmax); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 41, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3140,7 +3154,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_16Integ
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("IntegrateComovingVolume", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateComovingVolume(__pyx_v_self, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 118, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_IntegrateComovingVolume(__pyx_v_self, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 41, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3157,11 +3171,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_16Integ
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":121
- *         return XLALIntegrateComovingVolume(self.__LALCosmologicalParameters,zmax)
+/* "cosmolisa/cosmology.pyx":44
+ *         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,zmax)
  * 
  *     cpdef double UniformComovingVolumeDensity(self, double z):             # <<<<<<<<<<<<<<
- *         return XLALUniformComovingVolumeDensity(z, self.__LALCosmologicalParameters)
+ *         return XLALUniformComovingVolumeDensity(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -3185,10 +3199,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_UniformComovingVolumeDensity); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 121, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_UniformComovingVolumeDensity); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 44, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_19UniformComovingVolumeDensity)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 121, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 44, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3204,10 +3218,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 121, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 44, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 121, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 44, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3226,21 +3240,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":122
+  /* "cosmolisa/cosmology.pyx":45
  * 
  *     cpdef double UniformComovingVolumeDensity(self, double z):
- *         return XLALUniformComovingVolumeDensity(z, self.__LALCosmologicalParameters)             # <<<<<<<<<<<<<<
+ *         return XLALUniformComovingVolumeDensity(z, self._LALCosmologicalParameters)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double UniformComovingVolumeDistribution(self, double z, double zmax):
  */
-  __pyx_r = XLALUniformComovingVolumeDensity(__pyx_v_z, __pyx_v_self->__pyx___LALCosmologicalParameters);
+  __pyx_r = XLALUniformComovingVolumeDensity(__pyx_v_z, __pyx_v_self->_LALCosmologicalParameters);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":121
- *         return XLALIntegrateComovingVolume(self.__LALCosmologicalParameters,zmax)
+  /* "cosmolisa/cosmology.pyx":44
+ *         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,zmax)
  * 
  *     cpdef double UniformComovingVolumeDensity(self, double z):             # <<<<<<<<<<<<<<
- *         return XLALUniformComovingVolumeDensity(z, self.__LALCosmologicalParameters)
+ *         return XLALUniformComovingVolumeDensity(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -3266,7 +3280,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_19Unifo
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("UniformComovingVolumeDensity (wrapper)", 0);
   assert(__pyx_arg_z); {
-    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 121, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 44, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3287,7 +3301,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_18Unifo
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("UniformComovingVolumeDensity", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComovingVolumeDensity(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 121, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComovingVolumeDensity(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 44, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3304,11 +3318,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_18Unifo
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":124
- *         return XLALUniformComovingVolumeDensity(z, self.__LALCosmologicalParameters)
+/* "cosmolisa/cosmology.pyx":47
+ *         return XLALUniformComovingVolumeDensity(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double UniformComovingVolumeDistribution(self, double z, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALUniformComovingVolumeDistribution(self.__LALCosmologicalParameters, z, zmax)
+ *         return XLALUniformComovingVolumeDistribution(self._LALCosmologicalParameters, z, zmax)
  * 
  */
 
@@ -3335,12 +3349,12 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_UniformComovingVolumeDistributio); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 124, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_UniformComovingVolumeDistributio); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 47, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_21UniformComovingVolumeDistribution)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 124, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 47, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 124, __pyx_L1_error)
+        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_zmax); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 47, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -3358,7 +3372,7 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_5)) {
           PyObject *__pyx_temp[3] = {__pyx_t_6, __pyx_t_3, __pyx_t_4};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 2+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 2+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 47, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3368,7 +3382,7 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_5)) {
           PyObject *__pyx_temp[3] = {__pyx_t_6, __pyx_t_3, __pyx_t_4};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 2+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 2+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 47, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3376,7 +3390,7 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
         } else
         #endif
         {
-          __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 124, __pyx_L1_error)
+          __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 47, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_8);
           if (__pyx_t_6) {
             __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -3387,12 +3401,12 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
           PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
           __pyx_t_3 = 0;
           __pyx_t_4 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 47, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
         }
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-        __pyx_t_9 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_9 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 124, __pyx_L1_error)
+        __pyx_t_9 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_9 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 47, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_9;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3411,21 +3425,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComo
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":125
+  /* "cosmolisa/cosmology.pyx":48
  * 
  *     cpdef double UniformComovingVolumeDistribution(self, double z, double zmax):
- *         return XLALUniformComovingVolumeDistribution(self.__LALCosmologicalParameters, z, zmax)             # <<<<<<<<<<<<<<
+ *         return XLALUniformComovingVolumeDistribution(self._LALCosmologicalParameters, z, zmax)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double ComovingVolumeElement(self,double z):
  */
-  __pyx_r = XLALUniformComovingVolumeDistribution(__pyx_v_self->__pyx___LALCosmologicalParameters, __pyx_v_z, __pyx_v_zmax);
+  __pyx_r = XLALUniformComovingVolumeDistribution(__pyx_v_self->_LALCosmologicalParameters, __pyx_v_z, __pyx_v_zmax);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":124
- *         return XLALUniformComovingVolumeDensity(z, self.__LALCosmologicalParameters)
+  /* "cosmolisa/cosmology.pyx":47
+ *         return XLALUniformComovingVolumeDensity(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double UniformComovingVolumeDistribution(self, double z, double zmax):             # <<<<<<<<<<<<<<
- *         return XLALUniformComovingVolumeDistribution(self.__LALCosmologicalParameters, z, zmax)
+ *         return XLALUniformComovingVolumeDistribution(self._LALCosmologicalParameters, z, zmax)
  * 
  */
 
@@ -3476,11 +3490,11 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_21Unifo
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_zmax)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("UniformComovingVolumeDistribution", 1, 2, 2, 1); __PYX_ERR(1, 124, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("UniformComovingVolumeDistribution", 1, 2, 2, 1); __PYX_ERR(1, 47, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "UniformComovingVolumeDistribution") < 0)) __PYX_ERR(1, 124, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "UniformComovingVolumeDistribution") < 0)) __PYX_ERR(1, 47, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3488,12 +3502,12 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_21Unifo
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 124, __pyx_L3_error)
-    __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 124, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 47, __pyx_L3_error)
+    __pyx_v_zmax = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_zmax == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 47, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("UniformComovingVolumeDistribution", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 124, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("UniformComovingVolumeDistribution", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 47, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cosmolisa.cosmology.CosmologicalParameters.UniformComovingVolumeDistribution", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3512,7 +3526,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_20Unifo
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("UniformComovingVolumeDistribution", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComovingVolumeDistribution(__pyx_v_self, __pyx_v_z, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 124, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_UniformComovingVolumeDistribution(__pyx_v_self, __pyx_v_z, __pyx_v_zmax, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 47, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3529,11 +3543,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_20Unifo
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":127
- *         return XLALUniformComovingVolumeDistribution(self.__LALCosmologicalParameters, z, zmax)
+/* "cosmolisa/cosmology.pyx":50
+ *         return XLALUniformComovingVolumeDistribution(self._LALCosmologicalParameters, z, zmax)
  * 
  *     cpdef double ComovingVolumeElement(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALComovingVolumeElement(z, self.__LALCosmologicalParameters)
+ *         return XLALComovingVolumeElement(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -3557,10 +3571,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ComovingVolumeElement); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 127, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ComovingVolumeElement); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 50, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_23ComovingVolumeElement)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 127, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 50, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3576,10 +3590,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 127, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 50, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 127, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 50, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3598,21 +3612,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":128
+  /* "cosmolisa/cosmology.pyx":51
  * 
  *     cpdef double ComovingVolumeElement(self,double z):
- *         return XLALComovingVolumeElement(z, self.__LALCosmologicalParameters)             # <<<<<<<<<<<<<<
+ *         return XLALComovingVolumeElement(z, self._LALCosmologicalParameters)             # <<<<<<<<<<<<<<
  * 
  *     cpdef double ComovingVolume(self,double z):
  */
-  __pyx_r = XLALComovingVolumeElement(__pyx_v_z, __pyx_v_self->__pyx___LALCosmologicalParameters);
+  __pyx_r = XLALComovingVolumeElement(__pyx_v_z, __pyx_v_self->_LALCosmologicalParameters);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":127
- *         return XLALUniformComovingVolumeDistribution(self.__LALCosmologicalParameters, z, zmax)
+  /* "cosmolisa/cosmology.pyx":50
+ *         return XLALUniformComovingVolumeDistribution(self._LALCosmologicalParameters, z, zmax)
  * 
  *     cpdef double ComovingVolumeElement(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALComovingVolumeElement(z, self.__LALCosmologicalParameters)
+ *         return XLALComovingVolumeElement(z, self._LALCosmologicalParameters)
  * 
  */
 
@@ -3638,7 +3652,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_23Comov
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("ComovingVolumeElement (wrapper)", 0);
   assert(__pyx_arg_z); {
-    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 127, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 50, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3659,7 +3673,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_22Comov
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("ComovingVolumeElement", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolumeElement(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 127, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolumeElement(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 50, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3676,11 +3690,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_22Comov
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":130
- *         return XLALComovingVolumeElement(z, self.__LALCosmologicalParameters)
+/* "cosmolisa/cosmology.pyx":53
+ *         return XLALComovingVolumeElement(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double ComovingVolume(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALComovingVolume(self.__LALCosmologicalParameters, z)
+ *         return XLALComovingVolume(self._LALCosmologicalParameters, z)
  * 
  */
 
@@ -3704,10 +3718,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ComovingVolume); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 130, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ComovingVolume); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 53, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_25ComovingVolume)) {
-        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 130, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 53, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3723,10 +3737,10 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
         __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_5, __pyx_t_3) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3);
         __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 130, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 53, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 130, __pyx_L1_error)
+        __pyx_t_6 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_6 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 53, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3745,21 +3759,21 @@ static double __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVol
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":131
+  /* "cosmolisa/cosmology.pyx":54
  * 
  *     cpdef double ComovingVolume(self,double z):
- *         return XLALComovingVolume(self.__LALCosmologicalParameters, z)             # <<<<<<<<<<<<<<
+ *         return XLALComovingVolume(self._LALCosmologicalParameters, z)             # <<<<<<<<<<<<<<
  * 
  *     cpdef void DestroyCosmologicalParameters(self):
  */
-  __pyx_r = XLALComovingVolume(__pyx_v_self->__pyx___LALCosmologicalParameters, __pyx_v_z);
+  __pyx_r = XLALComovingVolume(__pyx_v_self->_LALCosmologicalParameters, __pyx_v_z);
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":130
- *         return XLALComovingVolumeElement(z, self.__LALCosmologicalParameters)
+  /* "cosmolisa/cosmology.pyx":53
+ *         return XLALComovingVolumeElement(z, self._LALCosmologicalParameters)
  * 
  *     cpdef double ComovingVolume(self,double z):             # <<<<<<<<<<<<<<
- *         return XLALComovingVolume(self.__LALCosmologicalParameters, z)
+ *         return XLALComovingVolume(self._LALCosmologicalParameters, z)
  * 
  */
 
@@ -3785,7 +3799,7 @@ static PyObject *__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_25Comov
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("ComovingVolume (wrapper)", 0);
   assert(__pyx_arg_z); {
-    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 130, __pyx_L3_error)
+    __pyx_v_z = __pyx_PyFloat_AsDouble(__pyx_arg_z); if (unlikely((__pyx_v_z == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 53, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3806,7 +3820,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_24Comov
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("ComovingVolume", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolume(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 130, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolume(__pyx_v_self, __pyx_v_z, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3823,11 +3837,11 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_24Comov
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":133
- *         return XLALComovingVolume(self.__LALCosmologicalParameters, z)
+/* "cosmolisa/cosmology.pyx":56
+ *         return XLALComovingVolume(self._LALCosmologicalParameters, z)
  * 
  *     cpdef void DestroyCosmologicalParameters(self):             # <<<<<<<<<<<<<<
- *         XLALDestroyCosmologicalParameters(self.__LALCosmologicalParameters)
+ *         XLALDestroyCosmologicalParameters(self._LALCosmologicalParameters)
  *         return
  */
 
@@ -3848,7 +3862,7 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmol
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_DestroyCosmologicalParameters); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 133, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_DestroyCosmologicalParameters); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 56, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_9cosmolisa_9cosmology_22CosmologicalParameters_27DestroyCosmologicalParameters)) {
         __Pyx_INCREF(__pyx_t_1);
@@ -3864,7 +3878,7 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmol
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 133, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 56, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -3884,26 +3898,26 @@ static void __pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmol
     #endif
   }
 
-  /* "cosmolisa/cosmology.pyx":134
+  /* "cosmolisa/cosmology.pyx":57
  * 
  *     cpdef void DestroyCosmologicalParameters(self):
- *         XLALDestroyCosmologicalParameters(self.__LALCosmologicalParameters)             # <<<<<<<<<<<<<<
+ *         XLALDestroyCosmologicalParameters(self._LALCosmologicalParameters)             # <<<<<<<<<<<<<<
  *         return
  */
-  XLALDestroyCosmologicalParameters(__pyx_v_self->__pyx___LALCosmologicalParameters);
+  XLALDestroyCosmologicalParameters(__pyx_v_self->_LALCosmologicalParameters);
 
-  /* "cosmolisa/cosmology.pyx":135
+  /* "cosmolisa/cosmology.pyx":58
  *     cpdef void DestroyCosmologicalParameters(self):
- *         XLALDestroyCosmologicalParameters(self.__LALCosmologicalParameters)
+ *         XLALDestroyCosmologicalParameters(self._LALCosmologicalParameters)
  *         return             # <<<<<<<<<<<<<<
  */
   goto __pyx_L0;
 
-  /* "cosmolisa/cosmology.pyx":133
- *         return XLALComovingVolume(self.__LALCosmologicalParameters, z)
+  /* "cosmolisa/cosmology.pyx":56
+ *         return XLALComovingVolume(self._LALCosmologicalParameters, z)
  * 
  *     cpdef void DestroyCosmologicalParameters(self):             # <<<<<<<<<<<<<<
- *         XLALDestroyCosmologicalParameters(self.__LALCosmologicalParameters)
+ *         XLALDestroyCosmologicalParameters(self._LALCosmologicalParameters)
  *         return
  */
 
@@ -3937,7 +3951,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_26Destr
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("DestroyCosmologicalParameters", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmologicalParameters(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 133, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmologicalParameters(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 56, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3954,9 +3968,9 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_26Destr
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":81
+/* "cosmolisa/cosmology.pxd":74
  * cdef class CosmologicalParameters:
- *     cdef LALCosmologicalParameters* __LALCosmologicalParameters
+ *     cdef LALCosmologicalParameters* _LALCosmologicalParameters
  *     cdef public double h             # <<<<<<<<<<<<<<
  *     cdef public double om
  *     cdef public double ol
@@ -3981,7 +3995,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_1h___ge
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->h); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 81, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->h); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 74, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4016,7 +4030,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_1h_2__set__(s
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 81, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 74, __pyx_L1_error)
   __pyx_v_self->h = __pyx_t_1;
 
   /* function exit code */
@@ -4030,8 +4044,8 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_1h_2__set__(s
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":82
- *     cdef LALCosmologicalParameters* __LALCosmologicalParameters
+/* "cosmolisa/cosmology.pxd":75
+ *     cdef LALCosmologicalParameters* _LALCosmologicalParameters
  *     cdef public double h
  *     cdef public double om             # <<<<<<<<<<<<<<
  *     cdef public double ol
@@ -4057,7 +4071,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2om___g
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->om); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 82, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->om); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 75, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4092,7 +4106,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2om_2__set__(
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 82, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 75, __pyx_L1_error)
   __pyx_v_self->om = __pyx_t_1;
 
   /* function exit code */
@@ -4106,7 +4120,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2om_2__set__(
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":83
+/* "cosmolisa/cosmology.pxd":76
  *     cdef public double h
  *     cdef public double om
  *     cdef public double ol             # <<<<<<<<<<<<<<
@@ -4133,7 +4147,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2ol___g
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->ol); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 83, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->ol); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 76, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4168,7 +4182,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2ol_2__set__(
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 83, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 76, __pyx_L1_error)
   __pyx_v_self->ol = __pyx_t_1;
 
   /* function exit code */
@@ -4182,12 +4196,12 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2ol_2__set__(
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":84
+/* "cosmolisa/cosmology.pxd":77
  *     cdef public double om
  *     cdef public double ol
  *     cdef public double w0             # <<<<<<<<<<<<<<
  *     cdef public double w1
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
+ *     cpdef void SetH(self, double h)
  */
 
 /* Python wrapper */
@@ -4209,7 +4223,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2w0___g
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->w0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 84, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->w0); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 77, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4244,7 +4258,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2w0_2__set__(
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 84, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 77, __pyx_L1_error)
   __pyx_v_self->w0 = __pyx_t_1;
 
   /* function exit code */
@@ -4258,12 +4272,12 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2w0_2__set__(
   return __pyx_r;
 }
 
-/* "cosmolisa/cosmology.pyx":85
+/* "cosmolisa/cosmology.pxd":78
  *     cdef public double ol
  *     cdef public double w0
  *     cdef public double w1             # <<<<<<<<<<<<<<
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
- *         self.h = h
+ *     cpdef void SetH(self, double h)
+ *     cpdef void SetOM(self, double om)
  */
 
 /* Python wrapper */
@@ -4285,7 +4299,7 @@ static PyObject *__pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2w1___g
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->w1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 85, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->w1); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 78, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4320,7 +4334,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters_2w1_2__set__(
   __Pyx_RefNannyDeclarations
   double __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 85, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(2, 78, __pyx_L1_error)
   __pyx_v_self->w1 = __pyx_t_1;
 
   /* function exit code */
@@ -4558,11 +4572,11 @@ static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, P
  * 
  *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 272, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 272, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(2, 272, __pyx_L1_error)
+    __PYX_ERR(3, 272, __pyx_L1_error)
 
     /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":270
  *             ndim = PyArray_NDIM(self)
@@ -4614,11 +4628,11 @@ static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, P
  * 
  *             info.buf = PyArray_DATA(self)
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 276, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 276, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(2, 276, __pyx_L1_error)
+    __PYX_ERR(3, 276, __pyx_L1_error)
 
     /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":274
  *                 raise ValueError(u"ndarray is not C contiguous")
@@ -4872,11 +4886,11 @@ static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, P
  *                 if   t == NPY_BYTE:        f = "b"
  *                 elif t == NPY_UBYTE:       f = "B"
  */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 306, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 306, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(2, 306, __pyx_L1_error)
+      __PYX_ERR(3, 306, __pyx_L1_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":304
  *             if not PyDataType_HASFIELDS(descr):
@@ -5083,17 +5097,17 @@ static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, P
  *                 info.format = f
  *                 return
  */
-      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 325, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 325, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_8 = PyUnicode_Format(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_t_3); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 325, __pyx_L1_error)
+      __pyx_t_8 = PyUnicode_Format(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_t_3); if (unlikely(!__pyx_t_8)) __PYX_ERR(3, 325, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_8); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 325, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_8); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 325, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(2, 325, __pyx_L1_error)
+      __PYX_ERR(3, 325, __pyx_L1_error)
       break;
     }
 
@@ -5160,7 +5174,7 @@ static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, P
  *                                       info.format + _buffer_format_string_len,
  *                                       &offset)
  */
-    __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_descr, (__pyx_v_info->format + 1), (__pyx_v_info->format + 0xFF), (&__pyx_v_offset)); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(2, 332, __pyx_L1_error)
+    __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_descr, (__pyx_v_info->format + 1), (__pyx_v_info->format + 0xFF), (&__pyx_v_offset)); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(3, 332, __pyx_L1_error)
     __pyx_v_f = __pyx_t_9;
 
     /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":335
@@ -5319,7 +5333,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew1(PyObject *__
  * cdef inline object PyArray_MultiIterNew2(a, b):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 822, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 822, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5366,7 +5380,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew2(PyObject *__
  * cdef inline object PyArray_MultiIterNew3(a, b, c):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 825, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 825, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5413,7 +5427,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew3(PyObject *__
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 828, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 828, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5460,7 +5474,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew4(PyObject *__
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 831, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 831, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5507,7 +5521,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew5(PyObject *__
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 834, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 834, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5662,15 +5676,15 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
   if (unlikely(__pyx_v_descr->names == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(2, 851, __pyx_L1_error)
+    __PYX_ERR(3, 851, __pyx_L1_error)
   }
   __pyx_t_1 = __pyx_v_descr->names; __Pyx_INCREF(__pyx_t_1); __pyx_t_2 = 0;
   for (;;) {
     if (__pyx_t_2 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_3); __pyx_t_2++; if (unlikely(0 < 0)) __PYX_ERR(2, 851, __pyx_L1_error)
+    __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_3); __pyx_t_2++; if (unlikely(0 < 0)) __PYX_ERR(3, 851, __pyx_L1_error)
     #else
-    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 851, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 851, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     #endif
     __Pyx_XDECREF_SET(__pyx_v_childname, __pyx_t_3);
@@ -5685,11 +5699,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
     if (unlikely(__pyx_v_descr->fields == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(2, 852, __pyx_L1_error)
+      __PYX_ERR(3, 852, __pyx_L1_error)
     }
-    __pyx_t_3 = __Pyx_PyDict_GetItem(__pyx_v_descr->fields, __pyx_v_childname); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 852, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyDict_GetItem(__pyx_v_descr->fields, __pyx_v_childname); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 852, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (!(likely(PyTuple_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "tuple", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(2, 852, __pyx_L1_error)
+    if (!(likely(PyTuple_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "tuple", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(3, 852, __pyx_L1_error)
     __Pyx_XDECREF_SET(__pyx_v_fields, ((PyObject*)__pyx_t_3));
     __pyx_t_3 = 0;
 
@@ -5706,7 +5720,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       if (unlikely(size != 2)) {
         if (size > 2) __Pyx_RaiseTooManyValuesError(2);
         else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-        __PYX_ERR(2, 853, __pyx_L1_error)
+        __PYX_ERR(3, 853, __pyx_L1_error)
       }
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
       __pyx_t_3 = PyTuple_GET_ITEM(sequence, 0); 
@@ -5714,15 +5728,15 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_4);
       #else
-      __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 853, __pyx_L1_error)
+      __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 853, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 853, __pyx_L1_error)
+      __pyx_t_4 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 853, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       #endif
     } else {
-      __Pyx_RaiseNoneNotIterableError(); __PYX_ERR(2, 853, __pyx_L1_error)
+      __Pyx_RaiseNoneNotIterableError(); __PYX_ERR(3, 853, __pyx_L1_error)
     }
-    if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_5numpy_dtype))))) __PYX_ERR(2, 853, __pyx_L1_error)
+    if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_5numpy_dtype))))) __PYX_ERR(3, 853, __pyx_L1_error)
     __Pyx_XDECREF_SET(__pyx_v_child, ((PyArray_Descr *)__pyx_t_3));
     __pyx_t_3 = 0;
     __Pyx_XDECREF_SET(__pyx_v_new_offset, __pyx_t_4);
@@ -5735,12 +5749,12 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
  * 
  */
-    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 855, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 855, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = PyNumber_Subtract(__pyx_v_new_offset, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 855, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Subtract(__pyx_v_new_offset, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 855, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(2, 855, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(3, 855, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __pyx_t_6 = ((((__pyx_v_end - __pyx_v_f) - ((int)__pyx_t_5)) < 15) != 0);
     if (unlikely(__pyx_t_6)) {
@@ -5752,11 +5766,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  * 
  *         if ((child.byteorder == c'>' and little_endian) or
  */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 856, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 856, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(2, 856, __pyx_L1_error)
+      __PYX_ERR(3, 856, __pyx_L1_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":855
  *         child, new_offset = fields
@@ -5820,11 +5834,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             # One could encode it in the format string and have Cython
  *             # complain instead, BUT: < and > in format strings also imply
  */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 860, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 860, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(2, 860, __pyx_L1_error)
+      __PYX_ERR(3, 860, __pyx_L1_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":858
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
@@ -5843,11 +5857,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             f += 1
  */
     while (1) {
-      __pyx_t_3 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 870, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 870, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_t_3, __pyx_v_new_offset, Py_LT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 870, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_t_3, __pyx_v_new_offset, Py_LT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 870, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 870, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 870, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (!__pyx_t_6) break;
 
@@ -5907,7 +5921,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             if end - f < 5:
  *                 raise RuntimeError(u"Format string allocated too short.")
  */
-      __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_child->type_num); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 878, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_child->type_num); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 878, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_XDECREF_SET(__pyx_v_t, __pyx_t_4);
       __pyx_t_4 = 0;
@@ -5929,11 +5943,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  * 
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  */
-        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 880, __pyx_L1_error)
+        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 880, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(2, 880, __pyx_L1_error)
+        __PYX_ERR(3, 880, __pyx_L1_error)
 
         /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":879
  *         if not PyDataType_HASFIELDS(child):
@@ -5951,11 +5965,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_UBYTE:       f[0] =  66 #"B"
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_BYTE); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 883, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_BYTE); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 883, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 883, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 883, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 883, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 883, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 98;
@@ -5969,11 +5983,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UBYTE); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 884, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UBYTE); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 884, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 884, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 884, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 884, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 884, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 66;
@@ -5987,11 +6001,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_SHORT); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 885, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_SHORT); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 885, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 885, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 885, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 885, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 885, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x68;
@@ -6005,11 +6019,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_USHORT); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 886, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_USHORT); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 886, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 886, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 886, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 886, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 886, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 72;
@@ -6023,11 +6037,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_INT); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 887, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_INT); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 887, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 887, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 887, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 887, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 887, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x69;
@@ -6041,11 +6055,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UINT); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 888, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UINT); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 888, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 888, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 888, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 888, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 888, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 73;
@@ -6059,11 +6073,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 889, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 889, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 889, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 889, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 889, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 889, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x6C;
@@ -6077,11 +6091,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 890, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 890, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 890, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 890, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 890, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 890, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 76;
@@ -6095,11 +6109,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGLONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 891, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGLONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 891, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 891, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 891, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 891, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 891, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x71;
@@ -6113,11 +6127,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONGLONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 892, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONGLONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 892, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 892, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 892, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 892, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 892, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 81;
@@ -6131,11 +6145,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_FLOAT); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 893, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_FLOAT); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 893, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 893, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 893, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 893, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 893, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x66;
@@ -6149,11 +6163,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_DOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 894, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_DOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 894, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 894, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 894, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 894, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 894, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x64;
@@ -6167,11 +6181,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 895, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 895, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 895, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 895, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 895, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 895, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x67;
@@ -6185,11 +6199,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CFLOAT); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 896, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CFLOAT); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 896, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 896, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 896, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 896, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 896, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -6205,11 +6219,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 897, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 897, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 897, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 897, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 897, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 897, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -6225,11 +6239,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"
  *             else:
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CLONGDOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 898, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CLONGDOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 898, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 898, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 898, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 898, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 898, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -6245,11 +6259,11 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             else:
  *                 raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_OBJECT); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 899, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_OBJECT); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 899, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 899, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 899, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(2, 899, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(3, 899, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (likely(__pyx_t_6)) {
         (__pyx_v_f[0]) = 79;
@@ -6264,14 +6278,14 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *         else:
  */
       /*else*/ {
-        __pyx_t_3 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 901, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(3, 901, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 901, __pyx_L1_error)
+        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(3, 901, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(2, 901, __pyx_L1_error)
+        __PYX_ERR(3, 901, __pyx_L1_error)
       }
       __pyx_L15:;
 
@@ -6302,7 +6316,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  * 
  */
     /*else*/ {
-      __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_child, __pyx_v_f, __pyx_v_end, __pyx_v_offset); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(2, 906, __pyx_L1_error)
+      __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_child, __pyx_v_f, __pyx_v_end, __pyx_v_offset); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(3, 906, __pyx_L1_error)
       __pyx_v_f = __pyx_t_9;
     }
     __pyx_L13:;
@@ -6519,7 +6533,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
  *     except Exception:
  *         raise ImportError("numpy.core.multiarray failed to import")
  */
-      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1036, __pyx_L3_error)
+      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(3, 1036, __pyx_L3_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":1035
  * # Cython code.
@@ -6545,7 +6559,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_array", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1037, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(3, 1037, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
@@ -6557,11 +6571,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
  * 
  * cdef inline int import_umath() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1038, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(3, 1038, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(2, 1038, __pyx_L5_except_error)
+      __PYX_ERR(3, 1038, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
@@ -6648,7 +6662,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1042, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(3, 1042, __pyx_L3_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":1041
  * 
@@ -6674,7 +6688,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_umath", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1043, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(3, 1043, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
@@ -6686,11 +6700,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
  * 
  * cdef inline int import_ufunc() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1044, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(3, 1044, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(2, 1044, __pyx_L5_except_error)
+      __PYX_ERR(3, 1044, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
@@ -6777,7 +6791,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1048, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(3, 1048, __pyx_L3_error)
 
       /* "../../anaconda3/lib/python3.7/site-packages/Cython/Includes/numpy/__init__.pxd":1047
  * 
@@ -6802,7 +6816,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_ufunc", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1049, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(3, 1049, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
@@ -6812,11 +6826,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")             # <<<<<<<<<<<<<<
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1050, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(3, 1050, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(2, 1050, __pyx_L5_except_error)
+      __PYX_ERR(3, 1050, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
@@ -7132,8 +7146,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
   {&__pyx_n_s_np, __pyx_k_np, sizeof(__pyx_k_np), 0, 0, 1, 1},
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
-  {&__pyx_kp_s_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 0, 1, 0},
-  {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
+  {&__pyx_kp_u_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 1, 0, 0},
+  {&__pyx_kp_u_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 1, 0, 0},
   {&__pyx_n_s_ol, __pyx_k_ol, sizeof(__pyx_k_ol), 0, 0, 1, 1},
   {&__pyx_n_s_om, __pyx_k_om, sizeof(__pyx_k_om), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
@@ -7153,10 +7167,10 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 2, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(2, 272, __pyx_L1_error)
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(2, 285, __pyx_L1_error)
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(2, 856, __pyx_L1_error)
-  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(2, 1038, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(3, 272, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(3, 285, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(3, 856, __pyx_L1_error)
+  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(3, 1038, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -7192,7 +7206,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
  */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_C_contiguous); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(2, 272, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_C_contiguous); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(3, 272, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
@@ -7203,7 +7217,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *             info.buf = PyArray_DATA(self)
  */
-  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_Fortran_contiguou); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(2, 276, __pyx_L1_error)
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_Fortran_contiguou); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(3, 276, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
 
@@ -7214,7 +7228,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *                 if   t == NPY_BYTE:        f = "b"
  *                 elif t == NPY_UBYTE:       f = "B"
  */
-  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_u_Non_native_byte_order_not_suppor); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(2, 306, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_u_Non_native_byte_order_not_suppor); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(3, 306, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
 
@@ -7225,7 +7239,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if ((child.byteorder == c'>' and little_endian) or
  */
-  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(2, 856, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(3, 856, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
 
@@ -7236,7 +7250,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor_2); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(2, 880, __pyx_L1_error)
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor_2); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(3, 880, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
 
@@ -7247,7 +7261,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_umath() except -1:
  */
-  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(2, 1038, __pyx_L1_error)
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(3, 1038, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
 
@@ -7258,7 +7272,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_ufunc() except -1:
  */
-  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(2, 1044, __pyx_L1_error)
+  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(3, 1044, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
   __Pyx_RefNannyFinishContext();
@@ -7325,16 +7339,16 @@ static int __Pyx_modinit_type_init_code(void) {
   __pyx_vtable_9cosmolisa_9cosmology_CosmologicalParameters.ComovingVolumeElement = (double (*)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch))__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolumeElement;
   __pyx_vtable_9cosmolisa_9cosmology_CosmologicalParameters.ComovingVolume = (double (*)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, double, int __pyx_skip_dispatch))__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_ComovingVolume;
   __pyx_vtable_9cosmolisa_9cosmology_CosmologicalParameters.DestroyCosmologicalParameters = (void (*)(struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters *, int __pyx_skip_dispatch))__pyx_f_9cosmolisa_9cosmology_22CosmologicalParameters_DestroyCosmologicalParameters;
-  if (PyType_Ready(&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 79, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   #if PY_VERSION_HEX < 0x030800B1
   __pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_print = 0;
   #endif
   if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_dictoffset && __pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_getattro == PyObject_GenericGetAttr)) {
     __pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
-  if (__Pyx_SetVtable(__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_dict, __pyx_vtabptr_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 79, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_CosmologicalParameters, (PyObject *)&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 79, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 79, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters.tp_dict, __pyx_vtabptr_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_CosmologicalParameters, (PyObject *)&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __pyx_ptype_9cosmolisa_9cosmology_CosmologicalParameters = &__pyx_type_9cosmolisa_9cosmology_CosmologicalParameters;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -7348,7 +7362,7 @@ static int __Pyx_modinit_type_import_code(void) {
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_import_code", 0);
   /*--- Type import code ---*/
-  __pyx_t_1 = PyImport_ImportModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 9, __pyx_L1_error)
+  __pyx_t_1 = PyImport_ImportModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 9, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_7cpython_4type_type = __Pyx_ImportType(__pyx_t_1, __Pyx_BUILTIN_MODULE_NAME, "type", 
   #if defined(PYPY_VERSION_NUM) && PYPY_VERSION_NUM < 0x050B0000
@@ -7357,20 +7371,20 @@ static int __Pyx_modinit_type_import_code(void) {
   sizeof(PyHeapTypeObject),
   #endif
   __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_7cpython_4type_type) __PYX_ERR(3, 9, __pyx_L1_error)
+   if (!__pyx_ptype_7cpython_4type_type) __PYX_ERR(4, 9, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 206, __pyx_L1_error)
+  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(3, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_5numpy_dtype = __Pyx_ImportType(__pyx_t_1, "numpy", "dtype", sizeof(PyArray_Descr), __Pyx_ImportType_CheckSize_Ignore);
-   if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(2, 206, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(3, 206, __pyx_L1_error)
   __pyx_ptype_5numpy_flatiter = __Pyx_ImportType(__pyx_t_1, "numpy", "flatiter", sizeof(PyArrayIterObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(2, 229, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(3, 229, __pyx_L1_error)
   __pyx_ptype_5numpy_broadcast = __Pyx_ImportType(__pyx_t_1, "numpy", "broadcast", sizeof(PyArrayMultiIterObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(2, 233, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(3, 233, __pyx_L1_error)
   __pyx_ptype_5numpy_ndarray = __Pyx_ImportType(__pyx_t_1, "numpy", "ndarray", sizeof(PyArrayObject), __Pyx_ImportType_CheckSize_Ignore);
-   if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(2, 242, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(3, 242, __pyx_L1_error)
   __pyx_ptype_5numpy_ufunc = __Pyx_ImportType(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(2, 918, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(3, 918, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -7599,7 +7613,7 @@ if (!__Pyx_RefNanny) {
  * cimport numpy as np
  * from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_numpy, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(1, 2, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
