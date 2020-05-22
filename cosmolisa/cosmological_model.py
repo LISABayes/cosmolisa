@@ -56,7 +56,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.z_threshold    = kwargs['z_threshold']
         self.snr_threshold  = kwargs['snr_threshold']
         self.event_class    = kwargs['event_class']
-        redshift_prior      = kwargs['redshift_prior']
+        self.redshift_prior = kwargs['redshift_prior']
         self.O              = None
         
         if self.model == "LambdaCDM":
