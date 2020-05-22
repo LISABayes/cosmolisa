@@ -50,7 +50,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
-    cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
+    cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)

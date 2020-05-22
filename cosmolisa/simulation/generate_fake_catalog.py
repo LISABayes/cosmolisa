@@ -207,7 +207,7 @@ class EMRIDistribution(object):
         return self.catalog
     
     def generate_galaxies(self, i):
-        self.n0 = 1.0e-2 # Mpc^{-1}
+        self.n0 = 0.66/100 # Mpc^{-1}
         if self.galaxy_norm is None:
             self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
         if self.galaxy_pmax is None:
@@ -332,7 +332,7 @@ if __name__=="__main__":
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
     C = EMRIDistribution(redshift_max  = 1.0, r0 = r0, W = W, R = R, Q = Q)
     C.get_catalog(T = 10, SNR_threshold = 0)
-    C.save_catalog_ids("test_multiple_hosts_exact")
+    C.save_catalog_ids("test_multiple_hosts_exact_z1")
     z  = np.linspace(C.z_min,C.z_max,1000)
     import matplotlib.pyplot as plt
     plt.hist(C.catalog[:,0],bins=100,density=True,alpha=0.5)

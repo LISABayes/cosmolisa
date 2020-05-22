@@ -56,6 +56,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.z_threshold    = kwargs['z_threshold']
         self.snr_threshold  = kwargs['snr_threshold']
         self.event_class    = kwargs['event_class']
+        redshift_prior      = kwargs['redshift_prior']
         self.O              = None
         
         if self.model == "LambdaCDM":
@@ -94,6 +95,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("Cosmological model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_selection))
+        print("Redshift prior: {0}".format(self.redshift_prior))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -123,8 +125,10 @@ class CosmologicalModel(cpnest.model.Model):
 
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
             
-            log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.z_threshold))
-            logP += np.sum([pr.logprior_redshift_single_event(self.O, x['z%d'%e.ID], log_norm) for e in self.data])
+            
+            if self.redshift_prior == 1:
+                log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.z_threshold))
+                logP += np.sum([pr.logprior_redshift_single_event(self.O, x['z%d'%e.ID], log_norm) for e in self.data])
 
         return logP
 
@@ -160,6 +164,7 @@ if __name__=='__main__':
     parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing. It works only with reduced_catalog=0')
+    parser.add_option('--redshift-prior',       default=1,           type='int',    metavar='redshift_prior',     help='apply a redshift prior to each event')
     (opts,args)=parser.parse_args()
     
     em_selection = opts.em_selection
@@ -237,7 +242,8 @@ if __name__=='__main__':
                           em_selection  = em_selection,
                           snr_threshold = opts.snr_threshold,
                           z_threshold   = opts.zhorizon,
-                          event_class   = opts.event_class)
+                          event_class   = opts.event_class,
+                          redshift_prior= opts.redshift_prior)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
     if opts.postprocess == 0:

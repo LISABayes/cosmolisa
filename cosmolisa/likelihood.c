@@ -2918,7 +2918,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  *     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
  *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)             # <<<<<<<<<<<<<<
  *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
+ *     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
  */
   __pyx_v_weak_lensing_error = __pyx_f_9cosmolisa_10likelihood_sigma_weak_lensing(__pyx_v_event_redshift, __pyx_v_dl, 0);
 
@@ -2926,7 +2926,7 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
  *     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
  *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
  *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2             # <<<<<<<<<<<<<<
- *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
+ *     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
  */
   __pyx_v_SigmaSquared = (pow(__pyx_v_sigma, 2.0) + pow(__pyx_v_weak_lensing_error, 2.0));
@@ -2934,15 +2934,15 @@ static double __pyx_f_9cosmolisa_10likelihood_logLikelihood_single_event(PyArray
   /* "cosmolisa/likelihood.pyx":53
  *     weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
  *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)             # <<<<<<<<<<<<<<
+ *     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)             # <<<<<<<<<<<<<<
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
  *     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
  */
-  __pyx_v_logSigmaByTwo = (0.5 * log((pow(__pyx_v_sigma, 2.0) + pow(__pyx_v_weak_lensing_error, 2.0))));
+  __pyx_v_logSigmaByTwo = (0.5 * log(__pyx_v_SigmaSquared));
 
   /* "cosmolisa/likelihood.pyx":54
  *     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
- *     cdef double logSigmaByTwo     = 0.5*log(sigma**2+weak_lensing_error**2)
+ *     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
  *     cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead             # <<<<<<<<<<<<<<
  *     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
  *     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
