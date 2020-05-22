@@ -79,11 +79,11 @@ class EMRIDistribution(object):
                 setattr(self, key, value)
     
         try: self.h               = getattr(self,'h')
-        except: self.h            = 0.7
+        except: self.h            = 0.73
         try: self.omega_m         = getattr(self,'omega_m')
-        except: self.omega_m      = 0.3
+        except: self.omega_m      = 0.25
         try: self.omega_lambda    = getattr(self,'omega_lambda')
-        except: self.omega_lambda = 0.7
+        except: self.omega_lambda = 0.75
         try: self.w0              = getattr(self,'w0')
         except: self.w0           = -1.0
         try: self.w1              = getattr(self,'w1')
@@ -207,7 +207,7 @@ class EMRIDistribution(object):
         return self.catalog
     
     def generate_galaxies(self, i):
-        self.n0 = 1.0 # Mpc^{-1}
+        self.n0 = 1.0e-2 # Mpc^{-1}
         if self.galaxy_norm is None:
             self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
         if self.galaxy_pmax is None:
@@ -219,12 +219,13 @@ class EMRIDistribution(object):
         A  = Vc/(dD*D**2)
         N_gal = np.random.poisson(A/(4.0*np.pi)*Vc*self.n0)
 #        print("D = ",D,"dD = ",dD,"Vc = ",Vc, "A = ",A, "N = ", N_gal)
-        if N_gal > 10000:
-            return 0,0,0
+#        if N_gal > 10000:
+#            return 0,0,0
         z_cosmo = [galaxy_redshift_rejection_sampling(self.catalog[i,8], self.catalog[i,9], self.fiducial_O, self.galaxy_pmax, self.galaxy_norm) for _ in range(N_gal-1)]
+#        z_cosmo = []
         z_cosmo.append(self.catalog[i,0])
         z_cosmo = np.array(z_cosmo)
-        z_obs   = z_cosmo + np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
+        z_obs   = z_cosmo #+ np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
 #        logM    = np.random.uniform(10, 13, size = z_cosmo.shape[0])
         dz      = np.ones(N_gal)*0.0015
         W       = np.random.uniform(0.0, 1.0, size = z_cosmo.shape[0])
@@ -298,6 +299,7 @@ class EMRIDistribution(object):
             """
             if np.all(z_cosmo) != 0 and np.all(z_obs) !=0 and np.all(W) !=0:
                 N = len(z_cosmo)
+                print("EVENT_1{:03d} has {} hosts".format(i+1,N))
                 np.savetxt(os.path.join(f,"ERRORBOX.dat"),np.column_stack((self.catalog[i,1]*np.ones(N),
                                                                            z_cosmo,
                                                                            z_obs,
@@ -320,7 +322,7 @@ class EMRIDistribution(object):
         
 if __name__=="__main__":
     np.random.seed(1)
-    h  = 0.7
+    h  = 0.73
     om = 0.25
     ol = 0.75
     r0 = 1e-10 # in Mpc^{-3}yr^{-1}
@@ -329,8 +331,8 @@ if __name__=="__main__":
     Q  = 0.0
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
     C = EMRIDistribution(redshift_max  = 1.0, r0 = r0, W = W, R = R, Q = Q)
-    C.get_catalog(T = 10, SNR_threshold = 20)
-    C.save_catalog_ids("test")
+    C.get_catalog(T = 10, SNR_threshold = 0)
+    C.save_catalog_ids("test_multiple_hosts_exact")
     z  = np.linspace(C.z_min,C.z_max,1000)
     import matplotlib.pyplot as plt
     plt.hist(C.catalog[:,0],bins=100,density=True,alpha=0.5)

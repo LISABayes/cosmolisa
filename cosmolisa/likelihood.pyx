@@ -15,7 +15,6 @@ cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x 
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-
 cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
@@ -41,9 +40,9 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
     cdef double logp_detection    = 0.0
     cdef double logp_nondetection = 0.0
 
-    # p(z_gw|O H I)
-    cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
-    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
+#    # p(z_gw|O H I)
+#    cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
+#    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
 
     # Predict dl from the cosmology O and the redshift z_gw
     dl = omega.LuminosityDistance(event_redshift)
@@ -73,7 +72,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
         logLn             = logp_nondetection
 
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
-    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+log_add(logL,logLn)+logP
+    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+logL#+log_add(logL,logLn)#+logP
     
 cpdef double sigma_weak_lensing(double z, double dl):
     """

@@ -15,9 +15,10 @@ import matplotlib
 import corner
 import subprocess
 import itertools as it
-import cosmology as cs
+import cosmolisa.cosmology as cs
 import numpy as np
-import likelihood as lk
+import cosmolisa.likelihood as lk
+import cosmolisa.prior as pr
 import matplotlib.pyplot as plt
 
 
@@ -99,6 +100,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight) for g in e.potential_galaxy_hosts]) for e in self.data}
 
     def log_prior(self,x):
+    
         logP = super(CosmologicalModel,self).log_prior(x)
         
         if np.isfinite(logP):
@@ -107,23 +109,22 @@ class CosmologicalModel(cpnest.model.Model):
             """
             if self.model == "LambdaCDM":
 
-                z_idx = 2
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
 
             elif self.model == "CLambdaCDM":
 
-                z_idx = 3
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
 
             elif self.model == "LambdaCDMDE":
 
-                z_idx = 5
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             
             elif self.model == "DE":
 
-                z_idx = 2
                 self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
+            
+            log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.z_threshold))
+            logP += np.sum([pr.logprior_redshift_single_event(self.O, x['z%d'%e.ID], log_norm) for e in self.data])
 
         return logP
 
@@ -131,7 +132,7 @@ class CosmologicalModel(cpnest.model.Model):
         
         # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
         logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma,
-                       self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.z_threshold) for j,e in enumerate(self.data)])#self.bounds[2+j][1]
+                       self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.bounds[2+j][1]) for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 
