@@ -2,20 +2,23 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh
+from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI
 cimport cython
 from scipy.special.cython_special cimport erfc, hyp2f1
 from scipy.special import logsumexp
 from scipy.optimize import newton
 from .cosmology cimport CosmologicalParameters
 
-cdef inline double log_add(double x, double y): return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
+cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
+
+def logLikelihood_single_event(double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+cdef double _logLikelihood_single_event(double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -34,7 +37,7 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
     cdef double sigma_z, score_z
     cdef double weak_lensing_error
     cdef unsigned int N           = hosts.shape[0]
-    cdef double logTwoPiByTwo     = 0.5*log(2.0*np.pi)
+    cdef double logTwoPiByTwo     = 0.5*log(2.0*M_PI)
     cdef double logL              = -np.inf
     cdef double logLn             = -np.inf
     cdef double logp_detection    = 0.0
@@ -48,16 +51,16 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
     dl = omega.LuminosityDistance(event_redshift)
 
     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
-    weak_lensing_error            = sigma_weak_lensing(event_redshift, dl)
+    weak_lensing_error            = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
-    cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
+#    cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
     for i in range(N):
-        sigma_z     = hosts_view[i,1]*(1+hosts_view[i,0])
-        score_z     = (event_redshift-hosts_view[i,0])/sigma_z
-        logL_galaxy = -0.5*score_z*score_z+log(hosts_view[i,2])-log(sigma_z)-logTwoPiByTwo
+        sigma_z     = hosts[i,1]*(1+hosts[i,0])
+        score_z     = (event_redshift-hosts[i,0])/sigma_z
+        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
         logL        = log_add(logL,logL_galaxy)
 
     if em_selection == 1:
@@ -73,8 +76,11 @@ cpdef double logLikelihood_single_event(ndarray[double, ndim=2, mode="c"] hosts,
 
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+logL#+log_add(logL,logLn)#+logP
-    
-cpdef double sigma_weak_lensing(double z, double dl):
+
+def sigma_weak_lensing(double z, double dl):
+    return _sigma_weak_lensing(z, dl)
+
+cdef inline double _sigma_weak_lensing(double z, double dl):
     """
     Weak lensing error. From <arXiv:1601.07112v3>
     Parameters:

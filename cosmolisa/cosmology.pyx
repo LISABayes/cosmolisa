@@ -6,7 +6,7 @@ cimport cython
 
 cdef class CosmologicalParameters:
 
-    def __cinit__(self,double h, double om, double ol, double w0, double w1):
+    def __cinit__(self, double h, double om, double ol, double w0, double w1):
         self.h = h
         self.om = om
         self.ol = ol

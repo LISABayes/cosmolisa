@@ -1148,7 +1148,7 @@ struct __pyx_obj_9cosmolisa_9cosmology_CosmologicalParameters {
  * 
  * cdef class CosmologicalParameters:             # <<<<<<<<<<<<<<
  * 
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
+ *     def __cinit__(self, double h, double om, double ol, double w0, double w1):
  */
 
 struct __pyx_vtabstruct_9cosmolisa_9cosmology_CosmologicalParameters {
@@ -1829,7 +1829,7 @@ static PyObject *__pyx_tuple__9;
 /* "cosmolisa/cosmology.pyx":9
  * cdef class CosmologicalParameters:
  * 
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
+ *     def __cinit__(self, double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
  *         self.h = h
  *         self.om = om
  */
@@ -1935,7 +1935,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
 
   /* "cosmolisa/cosmology.pyx":10
  * 
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
+ *     def __cinit__(self, double h, double om, double ol, double w0, double w1):
  *         self.h = h             # <<<<<<<<<<<<<<
  *         self.om = om
  *         self.ol = ol
@@ -1943,7 +1943,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
   __pyx_v_self->h = __pyx_v_h;
 
   /* "cosmolisa/cosmology.pyx":11
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):
+ *     def __cinit__(self, double h, double om, double ol, double w0, double w1):
  *         self.h = h
  *         self.om = om             # <<<<<<<<<<<<<<
  *         self.ol = ol
@@ -1990,7 +1990,7 @@ static int __pyx_pf_9cosmolisa_9cosmology_22CosmologicalParameters___cinit__(str
   /* "cosmolisa/cosmology.pyx":9
  * cdef class CosmologicalParameters:
  * 
- *     def __cinit__(self,double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
+ *     def __cinit__(self, double h, double om, double ol, double w0, double w1):             # <<<<<<<<<<<<<<
  *         self.h = h
  *         self.om = om
  */
