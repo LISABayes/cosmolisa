@@ -85,9 +85,11 @@ class CosmologicalModel(cpnest.model.Model):
             exit()
         
         for e in self.data:
-            self.bounds.append([e.zmin,e.zmax])
             self.names.append('z%d'%e.ID)
+            self.bounds.append([e.zmin,e.zmax])
             
+#        self.names.append('logr0')
+#        self.bounds.append([np.log(1e-12),np.log(1e-9)])
         self._initialise_galaxy_hosts()
         
         print("==================================================")
@@ -254,6 +256,7 @@ if __name__=='__main__':
                            nlive        = opts.nlive,
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
+                           prior_sampling = False,
                            nhamiltonian = 0)
 
         work.run()

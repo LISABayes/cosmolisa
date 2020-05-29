@@ -14,7 +14,6 @@ def logprior_redshift_single_event(CosmologicalParameters omega, double event_re
 cdef inline double _logprior_redshift_single_event(CosmologicalParameters omega, double event_redshift, double log_norm):
     """
     Prior function for a single GW event redshift.
-    Loops over all possible hosts to accumulate the likelihood
     Parameters:
     ===============
 

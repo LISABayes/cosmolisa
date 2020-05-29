@@ -4,7 +4,43 @@ import lal
 import os
 import sys
 import cosmolisa.cosmology as cs
-
+"""
+    file ID.dat:
+    col 1: ID number
+    col 2: luminosity distance (Mpc)
+    col 3: relative error on Dl (delta{Dl}/Dl)
+    col 4: corresponding comoving volume of the errorcube (Mpc^3), fottitene
+    col 5: redshift of the host (true cosmological, not apparent)
+    col 6: z_min assuming true cosmology
+    col 7: z_max assuming true cosmology
+    col 8: z_fiducial from measured Dl assuming true cosmology
+    col 9: z_min assuming cosmology prior
+    col 10: z_max assuming cosmology prior
+    col 11: theta offset of the host compared to lisa best sky location (in sigmas, i.e. theta-theta_best/sigma{theta})
+    col 12: same for phi
+    col 13: same for Dl
+    col 14: theta host (rad)
+    col 15: phi host (rad)
+    col 16: Dl host (Mpc)
+    col 17: SNR
+    col 18: altro SNR
+    
+    ERRORBOX.dat
+    col 1: luminosity distance of true host(Mpc)
+    col 2: cosmological redshift of candidate
+    col 3: observed redshift of candidate (with peculiar velocities)
+    col 4: log10 stellar mass in solar masses
+    col 5: relative probability of candidate (based on sky loc)
+    col 6: theta candidate (rad)
+    col 7: theta host (rad)
+    col 8: (theta_cand-theta_host)/dtheta
+    col 9: phi candidate (rad)
+    col 10: phi host (rad)
+    col 11: (phi_cand-phi_host)/dphi
+    col 12: Dl candidate (rad)
+    col 13: Dl host (rad)
+    col 14: (Dl_cand-Dl_host)/dDl
+"""
 def redshift_rejection_sampling(min, max, p, pmax, norm):
     """
     Samples the cosmologically correct redshift
@@ -62,11 +98,12 @@ class EMRIDistribution(object):
                  dec_min = -np.pi/2.0,
                  dec_max = np.pi/2.0,
                  *args, **kwargs):
-        
-        self.D0       = 169.2
-        self.delta_D0 = 0.001
-        self.V0       = 0.08607
-        self.SNR0     = 1221.6
+        # M101 event 57
+        self.D0       = 1748.50
+        self.A0       = 0.000405736691211125 #in rads^2
+        self.delta_D0 = 0.022
+        self.V0       = 0.1358e5
+        self.SNR0     = 87
         self.ra_min   = ra_min
         self.ra_max   = ra_max
         self.dec_min  = dec_min
@@ -101,7 +138,7 @@ class EMRIDistribution(object):
         except: self.R            = 0.0
         self.rate                 = lal.CreateCosmologicalRateParameters(self.r0, self.W, self.Q, self.R)
         
-        self.fiducial_O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
+        self.fiducial_O = cs.CosmologicalParameters(self.h, self.omega_m, self.omega_lambda, self.w0, self.w1)
         # create a rate and cosmology parameter foir the calculations
         self.p = lal.CreateCosmologicalParametersAndRate()
         # set it up to the values we want
@@ -119,7 +156,7 @@ class EMRIDistribution(object):
         self.p.rate.Q   = self.Q
 
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
-            # find the maximum of the probability for efficiency
+        # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
         self.norm = lal.IntegrateRateWeightedComovingVolumeDensity(self.p, self.z_max)
         self.dist = lambda z: lal.RateWeightedUniformComovingVolumeDensity(z,self.p)/self.norm
@@ -165,6 +202,9 @@ class EMRIDistribution(object):
     def compute_SNR(self, distance):
         return self.SNR0*self.D0/distance
     
+    def compute_area(self, SNR):
+        return self.A0 * (self.SNR0/SNR)**2
+    
     def credible_volume(self, SNR):
         # see https://arxiv.org/pdf/1801.08009.pdf
         return self.V0 * (self.SNR0/SNR)**(6)
@@ -207,7 +247,7 @@ class EMRIDistribution(object):
         return self.catalog
     
     def generate_galaxies(self, i):
-        self.n0 = 0.66/100 # Mpc^{-1}
+        self.n0 = 1000*0.66 # Mpc^{-3}
         if self.galaxy_norm is None:
             self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
         if self.galaxy_pmax is None:
@@ -216,7 +256,7 @@ class EMRIDistribution(object):
         Vc = self.catalog[i,6]
         D  = self.catalog[i,1]
         dD = D*self.catalog[i,5]
-        A  = Vc/(dD*D**2)
+        A  = self.compute_area(self.catalog[i,4])
         N_gal = np.random.poisson(A/(4.0*np.pi)*Vc*self.n0)
 #        print("D = ",D,"dD = ",dD,"Vc = ",Vc, "A = ",A, "N = ", N_gal)
 #        if N_gal > 10000:
@@ -299,7 +339,7 @@ class EMRIDistribution(object):
             """
             if np.all(z_cosmo) != 0 and np.all(z_obs) !=0 and np.all(W) !=0:
                 N = len(z_cosmo)
-                print("EVENT_1{:03d} has {} hosts".format(i+1,N))
+                print("EVENT_1{:03d} at redshift {} has {} hosts".format(i+1,self.catalog[i,0],N))
                 np.savetxt(os.path.join(f,"ERRORBOX.dat"),np.column_stack((self.catalog[i,1]*np.ones(N),
                                                                            z_cosmo,
                                                                            z_obs,
@@ -325,14 +365,16 @@ if __name__=="__main__":
     h  = 0.73
     om = 0.25
     ol = 0.75
-    r0 = 1e-10 # in Mpc^{-3}yr^{-1}
+    w0 = -1.0
+    w1 = 0.0
+    r0 = 1e-9 # in Mpc^{-3}yr^{-1}
     W  = 0.0
     R  = 0.0
     Q  = 0.0
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
-    C = EMRIDistribution(redshift_max  = 1.0, r0 = r0, W = W, R = R, Q = Q)
-    C.get_catalog(T = 10, SNR_threshold = 0)
-    C.save_catalog_ids("test_multiple_hosts_exact_z1")
+    C = EMRIDistribution(redshift_max  = 0.4, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
+    C.get_catalog(T = 10, SNR_threshold = 20)
+    C.save_catalog_ids("test_catalog_for_dummies_short_sighted")
     z  = np.linspace(C.z_min,C.z_max,1000)
     import matplotlib.pyplot as plt
     plt.hist(C.catalog[:,0],bins=100,density=True,alpha=0.5)
