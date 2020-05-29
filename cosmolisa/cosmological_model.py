@@ -256,7 +256,6 @@ if __name__=='__main__':
                            nlive        = opts.nlive,
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
-                           prior_sampling = False,
                            nhamiltonian = 0)
 
         work.run()
