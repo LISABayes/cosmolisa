@@ -159,6 +159,7 @@ if __name__=='__main__':
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',        help='Horizon redshift corresponding to the SNR threshold')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',   help='SNR detection threshold')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',    help='Use EM selection function')
+    parser.add_option('--redshift-prior',    default=1,           type='int',    metavar='redshift_prior',  help='Apply a redshift prior to each event')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
     parser.add_option('-t', '--threads',     default=None,        type='int',    metavar='threads',         help='Number of threads (default = 1/core)')
     parser.add_option('-s', '--seed',        default=0,           type='int',    metavar='seed',            help='Random seed initialisation')
@@ -166,9 +167,18 @@ if __name__=='__main__':
     parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing. It works only with reduced_catalog=0')
-    parser.add_option('--redshift-prior',       default=1,           type='int',    metavar='redshift_prior',     help='apply a redshift prior to each event')
+    parser.add_option('--screen-output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
     (opts,args)=parser.parse_args()
     
+    if not (opts.screen_output):
+        if not (opts.postprocess):
+            directory = opts.out_dir
+            os.system('mkdir -p {0}'.format(directory))
+
+            sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
+            sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
+
+
     em_selection = opts.em_selection
 
     if opts.event_class == "MBH":
