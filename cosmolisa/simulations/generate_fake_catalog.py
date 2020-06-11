@@ -381,4 +381,5 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     plt.hist(C.catalog[:,0],bins=30,density=True,alpha=0.5)
     plt.plot(z,[C.dist(zi) for zi in z])
+    os.system('mkdir -p Figs')
     plt.savefig('Figs/{}.png'.format(catalog_name), bbox_inches='tight')
