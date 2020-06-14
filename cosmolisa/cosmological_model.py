@@ -251,7 +251,6 @@ if __name__=='__main__':
             else:
                 print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
                 exit()
-            exit()
     else:
         events = readdata.read_event(opts.event_class, opts.data, opts.event)
 
