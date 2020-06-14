@@ -122,17 +122,23 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
     """
     The file ID.dat has a single row containing:
     1-event ID
-    2-Luminosity distance (Mpc)
+    2-Luminosity distance dL (Mpc)
     3-relative error on luminosity distance (usually few %)
     4-rough estimate of comoving volume of the errorbox
-    5-observed redshift of the true host
+    5-observed redshift of the true host (true cosmological, not apparent)
     6-minimum redshift assuming the *true cosmology*
     7-maximum redshift assuming the *true cosmology*
     8-fiducial redshift (i.e. the redshift corresponding to the measured distance in the true cosmology)
     9-minimum redshift adding the cosmological prior
     10-maximum redshift adding the cosmological prior
-    11-SNR
-    12-SNR at the true distance
+    11-theta offset of the host compared to LISA best sky location (in sigmas, i.e. theta-theta_best/sigma{theta})
+    12-same for phi
+    13-same for dL
+    14-theta host (rad)
+    15-phi host (rad)
+    16-dL host (Mpc)
+    17-SNR
+    18-SNR at the true distance
     
     The file ERRORBOX.dat has all the info you need to run the inference code. Each row is a possible host within the errorbox. Columns are:
     1-best luminosity distance measured by LISA
@@ -147,19 +153,19 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
     10-best phi measured by LISA
     11-difference between the above two in units of LISA phi error
     12-luminosity distance of the host candidate (in the Millennium cosmology)
-    13-best Dl measured by LISA
+    13-best dL measured by LISA
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
-    pv = 0.0015
+    pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
 
-    if event_number is None:
-        
+    if (event_number is None):
+
         events = []
-        
         for ev in events_list:
             event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
+            # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
             event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
             ID              = np.int(event_id)
             dl              = np.float64(dl)
@@ -171,16 +177,30 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
             z_true          = np.float64(z_true)
             event_file.close()
             try:
+                # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14
                 best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
                 redshifts       = np.atleast_1d(zobs)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)
                 sigma_gw_theta  = np.mean((theta-best_theta)/dtheta)
                 sigma_gw_phi    = np.mean((phi-best_phi)/dphi)
-                if not isinstance(dl_host, type(redshifts)):
+                if not (isinstance(dl_host, type(redshifts))):
                     dl_host = np.atleast_1d(dl_host)
-                events.append(Event(ID,dl,sigma,sigma_gw_theta,sigma_gw_phi,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
-                sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
+                events.append(Event(ID,
+                                    dl,
+                                    sigma,
+                                    sigma_gw_theta,
+                                    sigma_gw_phi,
+                                    redshifts,
+                                    d_redshifts,
+                                    weights,
+                                    zmin,
+                                    zmax,
+                                    snr,
+                                    z_true,
+                                    dl_host,
+                                    VC = VC))
+                sys.stderr.write("Reading event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
                 sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
 
@@ -250,10 +270,10 @@ def read_DEBUG_event(datafile, *args, **kwargs):
     return events
 
 def read_event(event_class,*args,**kwargs):
-    if event_class == "MBH": return read_MBH_event(*args, **kwargs)
-    elif event_class == "EMRI": return read_EMRI_event(*args, **kwargs)
-    elif event_class == "sBH": return read_EMRI_event(*args, **kwargs)
-    elif event_class == "DEBUG": return read_DEBUG_event(*args, **kwargs)
+    if   (event_class == "MBH"): return read_MBH_event(*args, **kwargs)
+    elif (event_class == "EMRI"): return read_EMRI_event(*args, **kwargs)
+    elif (event_class == "sBH"): return read_EMRI_event(*args, **kwargs)
+    elif (event_class == "DEBUG"): return read_DEBUG_event(*args, **kwargs)
     else:
         print("I do not know the class %s, exiting\n"%event_class)
         exit(-1)

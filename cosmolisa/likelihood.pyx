@@ -63,7 +63,7 @@ cdef double _logLikelihood_single_event(double[:,::1] hosts, double meandl, doub
         logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
         logL        = log_add(logL,logL_galaxy)
 
-    if em_selection == 1:
+    if (em_selection == 1):
         # Define the 'completeness function' as a weight f(dL),
         # entering the probability p(G| dL z_gw O H I) that the event
         # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
@@ -90,14 +90,15 @@ cdef inline double _sigma_weak_lensing(double z, double dl):
     """
     return 0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
 
-# Completeness function f(dL) currently in use
+# Completeness function f(dL) currently available in the code
 @cython.cdivision(True)
 @cython.boundscheck(False)
 cpdef double em_selection_function(double dl):
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
-#############
-# UNUSED CODE
+#################
+## UNUSED CODE ##
+#################
 
 @cython.cdivision(True)
 @cython.boundscheck(False)

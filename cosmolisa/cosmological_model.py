@@ -14,7 +14,7 @@ import readdata
 import matplotlib
 import corner
 import subprocess
-import itertools as it
+#import itertools as it
 import cosmolisa.cosmology as cs
 import numpy as np
 import cosmolisa.likelihood as lk
@@ -108,37 +108,41 @@ class CosmologicalModel(cpnest.model.Model):
         logP = super(CosmologicalModel,self).log_prior(x)
         
         if np.isfinite(logP):
+        
+            if   (self.model == "LambdaCDM"):
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
+            elif (self.model == "CLambdaCDM"):
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
+            elif (self.model == "LambdaCDMDE"):
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
+            elif (self.model == "DE"):
+                self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
+            
             """
             apply a uniform in comoving volume density redshift prior
             """
-            if self.model == "LambdaCDM":
-
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
-
-            elif self.model == "CLambdaCDM":
-
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
-
-            elif self.model == "LambdaCDMDE":
-
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
-            
-            elif self.model == "DE":
-
-                self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
-            
-            
-            if self.redshift_prior == 1:
+            if (self.redshift_prior == 1):
+                # Compute p(z_gw|...)
                 log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.z_threshold))
-                logP += np.sum([pr.logprior_redshift_single_event(self.O, x['z%d'%e.ID], log_norm) for e in self.data])
+                logP += np.sum([pr.logprior_redshift_single_event(self.O,
+                                                                  x['z%d'%e.ID],
+                                                                  log_norm)
+                                                                  for e in self.data])
 
         return logP
 
     def log_likelihood(self,x):
         
         # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
-        logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID], e.dl, e.sigma,
-                       self.O, x['z%d'%e.ID], em_selection = self.em_selection, zmin = self.bounds[2+j][0], zmax = self.bounds[2+j][1]) for j,e in enumerate(self.data)])
+        logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
+                                                     e.dl,
+                                                     e.sigma,
+                                                     self.O,
+                                                     x['z%d'%e.ID],
+                                                     em_selection = self.em_selection,
+                                                     zmin = self.bounds[2+j][0],
+                                                     zmax = self.bounds[2+j][1])
+                                                     for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 
@@ -151,15 +155,16 @@ if __name__=='__main__':
 
     parser = OptionParser(usage)
     parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',            help='Galaxy data location')
-    parser.add_option('-o', '--out-dir',     default=None,        type='string', metavar='DIR',             help='Directory for output')
-    parser.add_option('-c', '--event-class', default=None,        type='string', metavar='event_class',     help='Class of the event(s) [MBH, EMRI, sBH]')
+    parser.add_option('-o', '--out_dir',     default=None,        type='string', metavar='DIR',             help='Directory for output')
+    parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',     help='Class of the event(s) [MBH, EMRI, sBH]')
     parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',           help='Event number')
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',           help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',           help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',        help='Horizon redshift corresponding to the SNR threshold')
+    parser.add_option('--dl_cutoff',         default=None,        type='int',    metavar='dl_cutoff',       help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',   help='SNR detection threshold')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',    help='Use EM selection function')
-    parser.add_option('--redshift-prior',    default=1,           type='int',    metavar='redshift_prior',  help='Apply a redshift prior to each event')
+    parser.add_option('--redshift_prior',    default=1,           type='int',    metavar='redshift_prior',  help='Apply a redshift prior to each event')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',         help='Number of threads (default = 1/core)')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',            help='Random seed initialisation')
@@ -167,9 +172,13 @@ if __name__=='__main__':
     parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing. It works only with reduced_catalog=0')
-    parser.add_option('--screen-output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
+    parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
     (opts,args)=parser.parse_args()
-    
+
+    em_selection = opts.em_selection
+    dl_cutoff = opts.dl_cutoff
+    model = opts.model
+
     if not (opts.screen_output):
         if not (opts.postprocess):
             directory = opts.out_dir
@@ -179,70 +188,72 @@ if __name__=='__main__':
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
 
-    em_selection = opts.em_selection
-
-    if opts.event_class == "MBH":
+    if (opts.event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
 
-    if opts.event_class == "EMRI" and opts.joint !=0:
+    if (opts.event_class == "EMRI") and (opts.joint !=0):
 #        np.random.seed(opts.seed)
-        events = readdata.read_event(opts.event_class, opts.data, None)
-        if len(events) == 0:
-            print("The passed catalog is empty.\n")
+        if dl_cutoff is not None:
+            events = readdata.read_event(opts.event_class, opts.data, None, max_distance=dl_cutoff)
+            print("\nUsing only {} event within dL cutoff ({} Mpc).\n".format(len(events), dl_cutoff))
             exit()
-        if opts.reduced_catalog != 0:
-            N = np.int(np.random.poisson(len(events)*4./10.))
         else:
-            N = opts.joint
-        if N > len(events):
-            N = len(events)
-        print("==================================================")
-        print("Will select a random catalog of (max) {0} events for joint analysis:".format(N))
-        print("==================================================")
-        selected_events = []
-        if opts.reduced_catalog == 0:
-            while len(selected_events) < N and not(len(events) == 0):
-                while True:
-                    if len(events) > 0:
-                        idx = np.random.randint(len(events))
-                        selected_event = events.pop(idx)
-                    else:
-                        break
+            events = readdata.read_event(opts.event_class, opts.data, None)
+            if (len(events) == 0):
+                print("The passed catalog is empty.\n")
+                exit()
+            if (opts.reduced_catalog):
+                N = np.int(np.random.poisson(len(events)*4./10.))
+            else:
+                N = opts.joint
+                if (N > len(events)):
+                    N = len(events)
+            print("==================================================")
+            print("Will select a random catalog of (max) {0} events for joint analysis:".format(N))
+            print("==================================================")
+            selected_events = []
+            if not (opts.reduced_catalog):
+                while len(selected_events) < N and not(len(events) == 0):
+                    while True:
+                        if (len(events) > 0):
+                            idx = np.random.randint(len(events))
+                            selected_event = events.pop(idx)
+                        else:
+                            break
+                        if (selected_event.z_true < opts.zhorizon):
+                            print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, opts.zhorizon))
+                            selected_events.append(selected_event)
+                            break
+                print("==================================================")
+                print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(opts.zhorizon, len(selected_events),N))
+            else:
+                k = 0
+                while k < N and not(len(events) == 0):
+                    idx = np.random.randint(len(events))
+                    selected_event = events.pop(idx)
+                    print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, opts.zhorizon))
                     if selected_event.z_true < opts.zhorizon:
-                        print("Drawn event: {0} - True redshift: z={1:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true))
                         selected_events.append(selected_event)
-                        break
+                    else: pass
+                    k += 1
+                print("==================================================")
+                print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
+    #        else:
+    #            events = np.random.choice(events, size = N, replace = False)
+    #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(opts.zhorizon, N))
             print("==================================================")
-            print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(opts.zhorizon, len(selected_events),N))
-        else:
-            k = 0
-            while k < N and not(len(events) == 0):
-                idx = np.random.randint(len(events))
-                selected_event = events.pop(idx)
-                print("Drawn event: {0} - True redshift: z={1:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true))
-                if selected_event.z_true < opts.zhorizon:
-                    selected_events.append(selected_event)
-                else: pass
-                k += 1
-            print("==================================================")
-            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
-#        else:
-#            events = np.random.choice(events, size = N, replace = False)
-#            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(opts.zhorizon, N))
-        print("==================================================")
-        events = np.copy(selected_events)
-        if not(len(events) == 0):
-            for e in events:
-                print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
-            print("==================================================")
-        else:
-            print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
+            events = np.copy(selected_events)
+            if not(len(events) == 0):
+                for e in events:
+                    print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
+                print("==================================================")
+            else:
+                print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
+                exit()
             exit()
     else:
         events = readdata.read_event(opts.event_class, opts.data, opts.event)
-
-    model = opts.model
 
     if opts.out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
@@ -251,14 +262,14 @@ if __name__=='__main__':
     
     C = CosmologicalModel(model,
                           events,
-                          em_selection  = em_selection,
-                          snr_threshold = opts.snr_threshold,
-                          z_threshold   = opts.zhorizon,
-                          event_class   = opts.event_class,
-                          redshift_prior= opts.redshift_prior)
+                          em_selection   = em_selection,
+                          snr_threshold  = opts.snr_threshold,
+                          z_threshold    = opts.zhorizon,
+                          event_class    = opts.event_class,
+                          redshift_prior = opts.redshift_prior)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
-    if opts.postprocess == 0:
+    if (opts.postprocess == 0):
         work=cpnest.CPNest(C,
                            verbose      = 2,
                            poolsize     = opts.poolsize,
@@ -281,34 +292,37 @@ if __name__=='__main__':
         from cpnest import nest2pos
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
-    # Make plots
-    if opts.event_class == "EMRI":
+    ################
+    ## Make plots ##
+    ################
+    
+    if (opts.event_class == "EMRI"):
         for e in C.data:
             fig = plt.figure()
             ax  = fig.add_subplot(111)
             z   = np.linspace(e.zmin,e.zmax, 100)
 
-            if em_selection:
+            if (em_selection):
                 ax2 = ax.twinx()
                 
-                if model == "DE": normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-                else:             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+                if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+                else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
                 # choose a colormap
                 c_m = matplotlib.cm.cool
                 # create a ScalarMappable and initialize a data structure
                 s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
                 s_m.set_array([])
                 for i in range(x.shape[0])[::10]:
-                    if model == "LambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-                    elif model == "CLambdaCDM": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-                    elif model == "LambdaCDMDE": O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-                    elif model == "DE": O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                    if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                    elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+                    elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                    elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
                     distances = np.array([O.LuminosityDistance(zi) for zi in z])
-                    if model == "DE":  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+                    if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
                     else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
                     O.DestroyCosmologicalParameters()
                 CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-                if model == "DE": CB.set_label('w_0')
+                if (model == "DE"): CB.set_label('w_0')
                 else: CB.set_label('h')
                 ax2.set_ylim(0.0,1.0)
                 ax2.set_ylabel('selection function')
@@ -325,7 +339,7 @@ if __name__=='__main__':
             plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
             plt.close()
     
-    if opts.event_class == "MBH":
+    if (opts.event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
         dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
@@ -343,32 +357,32 @@ if __name__=='__main__':
         models = []
         
         for k in range(x.shape[0]):
-            if opts.model == "LambdaCDM":
+            if (model == "LambdaCDM"):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                1.0-x['om'][k],
                                                -1.0,
                                                0.0)
-            elif opts.model == "CLambdaCDM":
+            elif (model == "CLambdaCDM"):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
                                                -1.0,
                                                0.0)
-            elif opts.model == "LambdaCDMDE":
+            elif (model == "LambdaCDMDE"):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
                                                x['w0'][k],
                                                x['w1'][k])
-            elif opts.model == "DE":
+            elif (model == "DE"):
                 omega = cs.CosmologicalParameters(0.73,
                                                0.25,
                                                0.75,
                                                x['w0'][k],
                                                x['w1'][k])
             else:
-                print(opts.model,"is unknown")
+                print(opts.model,"is unknown. Exiting.")
                 exit()
             models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
             omega.DestroyCosmologicalParameters()
@@ -393,7 +407,7 @@ if __name__=='__main__':
         plt.close()
     
     
-    if model == "LambdaCDM":
+    if (model == "LambdaCDM"):
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,
                labels= [r'$h$',
@@ -408,7 +422,7 @@ if __name__=='__main__':
 #        axes[3].set_xlim(0.04, 0.5)
 #        axes[2].set_ylim(0.04, 0.5)
     
-    if model == "CLambdaCDM":
+    if (model == "CLambdaCDM"):
         samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
         fig = corner.corner(samps,
                labels= [r'$h$',
@@ -420,7 +434,7 @@ if __name__=='__main__':
                use_math_text=True, truths=[0.73,0.25,0.75,0.0],
                filename=os.path.join(output,'joint_posterior.pdf'))
                
-    if model == "LambdaCDMDE":
+    if (model == "LambdaCDMDE"):
         samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
         fig = corner.corner(samps,
                         labels= [r'$h$',
@@ -433,7 +447,7 @@ if __name__=='__main__':
                         use_math_text=True, truths=[0.73,0.25,0.75,-1.0,0.0],
                         filename=os.path.join(output,'joint_posterior.pdf'))
 
-    if model == "DE":
+    if (model == "DE"):
         samps = np.column_stack((x['w0'],x['w1']))
         fig = corner.corner(samps,
                         labels= [r'$w_0$',

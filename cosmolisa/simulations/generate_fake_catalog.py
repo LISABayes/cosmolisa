@@ -8,20 +8,20 @@ import cosmolisa.cosmology as cs
     file ID.dat:
     col 1: ID number
     col 2: luminosity distance (Mpc)
-    col 3: relative error on Dl (delta{Dl}/Dl)
+    col 3: relative error on dL (delta{dL}/dL)
     col 4: corresponding comoving volume of the errorcube (Mpc^3), fottitene
     col 5: redshift of the host (true cosmological, not apparent)
     col 6: z_min assuming true cosmology
     col 7: z_max assuming true cosmology
-    col 8: z_fiducial from measured Dl assuming true cosmology
+    col 8: z_fiducial from measured dL assuming true cosmology
     col 9: z_min assuming cosmology prior
     col 10: z_max assuming cosmology prior
     col 11: theta offset of the host compared to lisa best sky location (in sigmas, i.e. theta-theta_best/sigma{theta})
     col 12: same for phi
-    col 13: same for Dl
+    col 13: same for dL
     col 14: theta host (rad)
     col 15: phi host (rad)
-    col 16: Dl host (Mpc)
+    col 16: dL host (Mpc)
     col 17: SNR
     col 18: altro SNR
     
@@ -37,9 +37,9 @@ import cosmolisa.cosmology as cs
     col 9: phi candidate (rad)
     col 10: phi host (rad)
     col 11: (phi_cand-phi_host)/dphi
-    col 12: Dl candidate (rad)
-    col 13: Dl host (rad)
-    col 14: (Dl_cand-Dl_host)/dDl
+    col 12: dL candidate (rad)
+    col 13: dL host (rad)
+    col 14: (dL_cand-dL_host)/ddL
 """
 def redshift_rejection_sampling(min, max, p, pmax, norm):
     """
