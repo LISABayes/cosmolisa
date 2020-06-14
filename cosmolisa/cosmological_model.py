@@ -59,22 +59,22 @@ class CosmologicalModel(cpnest.model.Model):
         self.redshift_prior = kwargs['redshift_prior']
         self.O              = None
         
-        if self.model == "LambdaCDM":
+        if (self.model == "LambdaCDM"):
             
             self.names  = ['h','om']
             self.bounds = [[0.5,1.0],[0.04,0.5]]
         
-        elif self.model == "LambdaCDMDE":
+        elif (self.model == "LambdaCDMDE"):
             
             self.names  = ['h','om','ol','w0','w1']
             self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
             
-        elif self.model == "CLambdaCDM":
+        elif (self.model == "CLambdaCDM"):
             
             self.names  = ['h','om','ol']
             self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0]]
             
-        elif self.model == "DE":
+        elif (self.model == "DE"):
             
             self.names  = ['w0','w1']
             self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
@@ -175,35 +175,37 @@ if __name__=='__main__':
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
     (opts,args)=parser.parse_args()
 
-    em_selection = opts.em_selection
-    dl_cutoff = opts.dl_cutoff
-    model = opts.model
+    em_selection    = opts.em_selection
+    dl_cutoff       = opts.dl_cutoff
+    model           = opts.model
+    event_class     = opts.event_class
+    reduced_catalog = opts.reduced_catalog
+    postprocess     = opts.postprocess
 
     if not (opts.screen_output):
-        if not (opts.postprocess):
+        if not (postprocess):
             directory = opts.out_dir
             os.system('mkdir -p {0}'.format(directory))
 
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
-
-    if (opts.event_class == "MBH"):
+    if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
 
-    if (opts.event_class == "EMRI") and (opts.joint !=0):
+    if (event_class == "EMRI") and (opts.joint !=0):
 #        np.random.seed(opts.seed)
         if dl_cutoff is not None:
-            events = readdata.read_event(opts.event_class, opts.data, None, max_distance=dl_cutoff)
+            events = readdata.read_event(event_class, opts.data, None, max_distance=dl_cutoff)
             print("\nUsing only {} event within dL cutoff ({} Mpc).\n".format(len(events), dl_cutoff))
             exit()
         else:
-            events = readdata.read_event(opts.event_class, opts.data, None)
+            events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
                 print("The passed catalog is empty.\n")
                 exit()
-            if (opts.reduced_catalog):
+            if (reduced_catalog):
                 N = np.int(np.random.poisson(len(events)*4./10.))
             else:
                 N = opts.joint
@@ -213,7 +215,7 @@ if __name__=='__main__':
             print("Will select a random catalog of (max) {0} events for joint analysis:".format(N))
             print("==================================================")
             selected_events = []
-            if not (opts.reduced_catalog):
+            if not (reduced_catalog):
                 while len(selected_events) < N and not(len(events) == 0):
                     while True:
                         if (len(events) > 0):
@@ -252,7 +254,7 @@ if __name__=='__main__':
                 print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
                 exit()
     else:
-        events = readdata.read_event(opts.event_class, opts.data, opts.event)
+        events = readdata.read_event(event_class, opts.data, opts.event)
 
     if opts.out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
@@ -264,11 +266,11 @@ if __name__=='__main__':
                           em_selection   = em_selection,
                           snr_threshold  = opts.snr_threshold,
                           z_threshold    = opts.zhorizon,
-                          event_class    = opts.event_class,
+                          event_class    = event_class,
                           redshift_prior = opts.redshift_prior)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
-    if (opts.postprocess == 0):
+    if (postprocess == 0):
         work=cpnest.CPNest(C,
                            verbose      = 2,
                            poolsize     = opts.poolsize,
@@ -295,7 +297,7 @@ if __name__=='__main__':
     ## Make plots ##
     ################
     
-    if (opts.event_class == "EMRI"):
+    if (event_class == "EMRI"):
         for e in C.data:
             fig = plt.figure()
             ax  = fig.add_subplot(111)
@@ -338,7 +340,7 @@ if __name__=='__main__':
             plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
             plt.close()
     
-    if (opts.event_class == "MBH"):
+    if (event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
         dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
