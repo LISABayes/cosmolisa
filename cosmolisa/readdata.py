@@ -210,7 +210,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
             distance_limited_events = [e for e in events]
 
         if max_hosts is not None:
-             analysis_events = [e for e in distance_limited_events if len(e.n_hosts) < max_hosts]
+            analysis_events = [e for e in distance_limited_events if len(e.n_hosts) < max_hosts]
         else:
             analysis_events = [e for e in distance_limited_events]
 

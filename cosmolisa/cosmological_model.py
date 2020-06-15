@@ -57,6 +57,8 @@ class CosmologicalModel(cpnest.model.Model):
         self.snr_threshold  = kwargs['snr_threshold']
         self.event_class    = kwargs['event_class']
         self.redshift_prior = kwargs['redshift_prior']
+        self.time_redshifting = kwargs['time_redshifting']
+        self.vc_normalization = kwargs['vc_normalization']
         self.O              = None
         
         if (self.model == "LambdaCDM"):
@@ -98,6 +100,8 @@ class CosmologicalModel(cpnest.model.Model):
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_selection))
         print("Redshift prior: {0}".format(self.redshift_prior))
+        print("Time redshifting: {0}".format(self.time_redshifting))
+        print("Vc normalization: {0}".format(self.vc_normalization))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -123,11 +127,17 @@ class CosmologicalModel(cpnest.model.Model):
             """
             if (self.redshift_prior == 1):
                 # Compute p(z_gw|...)
-                log_norm = np.log(self.O.IntegrateComovingVolumeDensity(self.z_threshold))
                 logP += np.sum([pr.logprior_redshift_single_event(self.O,
                                                                   x['z%d'%e.ID],
-                                                                  log_norm)
-                                                                  for e in self.data])
+                                                                  zmax = self.bounds[2+j][1])
+                                                                  for j,e in enumerate(self.data)])
+                                                                  
+            if (self.time_redshifting == 1) and (self.redshift_prior == 0):
+                logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
+
+                if (self.vc_normalization == 1) and (self.redshift_prior == 0):
+                    logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
+                                    for j,e in enumerate(self.data)])
 
         return logP
 
@@ -165,6 +175,8 @@ if __name__=='__main__':
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',   help='SNR detection threshold')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',    help='Use EM selection function')
     parser.add_option('--redshift_prior',    default=1,           type='int',    metavar='redshift_prior',  help='Apply a redshift prior to each event')
+    parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting',  help='Apply a redshift prior to each event')
+    parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization',  help='Apply a redshift prior to each event')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',         help='Number of threads (default = 1/core)')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',            help='Random seed initialisation')
@@ -177,6 +189,7 @@ if __name__=='__main__':
 
     em_selection    = opts.em_selection
     dl_cutoff       = opts.dl_cutoff
+    zhorizon        = opts.zhorizon
     model           = opts.model
     event_class     = opts.event_class
     reduced_catalog = opts.reduced_catalog
@@ -223,27 +236,27 @@ if __name__=='__main__':
                             selected_event = events.pop(idx)
                         else:
                             break
-                        if (selected_event.z_true < opts.zhorizon):
-                            print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, opts.zhorizon))
+                        if (selected_event.z_true < zhorizon):
+                            print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
                             selected_events.append(selected_event)
                             break
                 print("==================================================")
-                print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(opts.zhorizon, len(selected_events),N))
+                print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(zhorizon, len(selected_events),N))
             else:
                 k = 0
                 while k < N and not(len(events) == 0):
                     idx = np.random.randint(len(events))
                     selected_event = events.pop(idx)
-                    print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, opts.zhorizon))
-                    if selected_event.z_true < opts.zhorizon:
+                    print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
+                    if selected_event.z_true < zhorizon:
                         selected_events.append(selected_event)
                     else: pass
                     k += 1
                 print("==================================================")
-                print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(opts.zhorizon, len(selected_events),N))
+                print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(zhorizon, len(selected_events),N))
     #        else:
     #            events = np.random.choice(events, size = N, replace = False)
-    #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(opts.zhorizon, N))
+    #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(zhorizon, N))
             print("==================================================")
             events = np.copy(selected_events)
             if not(len(events) == 0):
@@ -251,7 +264,7 @@ if __name__=='__main__':
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
                 print("==================================================")
             else:
-                print("None of the drawn events has z<{0}. No data to analyse.\n".format(opts.zhorizon))
+                print("None of the drawn events has z<{0}. No data to analyse.\n".format(zhorizon))
                 exit()
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
@@ -263,11 +276,13 @@ if __name__=='__main__':
     
     C = CosmologicalModel(model,
                           events,
-                          em_selection   = em_selection,
-                          snr_threshold  = opts.snr_threshold,
-                          z_threshold    = opts.zhorizon,
-                          event_class    = event_class,
-                          redshift_prior = opts.redshift_prior)
+                          em_selection     = em_selection,
+                          snr_threshold    = opts.snr_threshold,
+                          z_threshold      = zhorizon,
+                          event_class      = event_class,
+                          redshift_prior   = opts.redshift_prior,
+                          time_redshifting = opts.time_redshifting,
+                          vc_normalization = opts.vc_normalization)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
     if (postprocess == 0):
