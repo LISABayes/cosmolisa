@@ -187,17 +187,24 @@ if __name__=='__main__':
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
     (opts,args)=parser.parse_args()
 
-    em_selection    = opts.em_selection
-    dl_cutoff       = opts.dl_cutoff
-    zhorizon        = opts.zhorizon
-    model           = opts.model
-    event_class     = opts.event_class
-    reduced_catalog = opts.reduced_catalog
-    postprocess     = opts.postprocess
+    em_selection     = opts.em_selection
+    dl_cutoff        = opts.dl_cutoff
+    zhorizon         = opts.zhorizon
+    snr_threshold    = opts.snr_threshold
+    redshift_prior   = opts.redshift_prior
+    time_redshifting = opts.time_redshifting
+    vc_normalization = opts.vc_normalization
+    model            = opts.model
+    joint            = opts.joint
+    event_class      = opts.event_class
+    reduced_catalog  = opts.reduced_catalog
+    postprocess      = opts.postprocess
+    screen_output    = opts.screen_output
+    out_dir          = opts.out_dir
 
-    if not (opts.screen_output):
+    if not (screen_output):
         if not (postprocess):
-            directory = opts.out_dir
+            directory = out_dir
             os.system('mkdir -p {0}'.format(directory))
 
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
@@ -207,12 +214,11 @@ if __name__=='__main__':
         # if running on SMBH override the selection functions
         em_selection = 0
 
-    if (event_class == "EMRI") and (opts.joint !=0):
+    if (event_class == "EMRI") and (joint !=0):
 #        np.random.seed(opts.seed)
-        if dl_cutoff is not None:
+        if (dl_cutoff is not None) and (zhorizon == 1000):
             events = readdata.read_event(event_class, opts.data, None, max_distance=dl_cutoff)
-            print("\nUsing only {} event within dL cutoff ({} Mpc).\n".format(len(events), dl_cutoff))
-            exit()
+            print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events), ))
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
@@ -221,11 +227,11 @@ if __name__=='__main__':
             if (reduced_catalog):
                 N = np.int(np.random.poisson(len(events)*4./10.))
             else:
-                N = opts.joint
+                N = joint
                 if (N > len(events)):
                     N = len(events)
             print("==================================================")
-            print("Will select a random catalog of (max) {0} events for joint analysis:".format(N))
+            print("Selecting a random catalog of (max) {0} events for joint analysis:".format(N))
             print("==================================================")
             selected_events = []
             if not (reduced_catalog):
@@ -269,20 +275,20 @@ if __name__=='__main__':
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
 
-    if opts.out_dir is None:
+    if out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
     else:
-        output = opts.out_dir
+        output = out_dir
     
     C = CosmologicalModel(model,
                           events,
                           em_selection     = em_selection,
-                          snr_threshold    = opts.snr_threshold,
+                          snr_threshold    = snr_threshold,
                           z_threshold      = zhorizon,
                           event_class      = event_class,
-                          redshift_prior   = opts.redshift_prior,
-                          time_redshifting = opts.time_redshifting,
-                          vc_normalization = opts.vc_normalization)
+                          redshift_prior   = redshift_prior,
+                          time_redshifting = time_redshifting,
+                          vc_normalization = vc_normalization)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
     if (postprocess == 0):
@@ -300,7 +306,7 @@ if __name__=='__main__':
         x = work.posterior_samples.ravel()
 
         # Save git info
-        with open("{}/git_info.txt".format(opts.out_dir), "w+") as fileout:
+        with open("{}/git_info.txt".format(out_dir), "w+") as fileout:
             subprocess.call(["git", "diff"], stdout=fileout);
 
     else:

@@ -43,7 +43,7 @@ cdef double _logLikelihood_single_event(double[:,::1] hosts, double meandl, doub
     cdef double logp_detection    = 0.0
     cdef double logp_nondetection = 0.0
 
-#    # p(z_gw|O H I)
+#    # p(z_gw|O H I) #currently implemented in prior.pyx
 #    cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
 #    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
 
@@ -55,6 +55,7 @@ cdef double _logLikelihood_single_event(double[:,::1] hosts, double meandl, doub
     cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
     cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
 #    cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
+
     # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
     for i in range(N):
