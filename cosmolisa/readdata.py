@@ -123,7 +123,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
     The file ID.dat has a single row containing:
     1-event ID
     2-Luminosity distance dL (Mpc)
-    3-relative error on luminosity distance (usually few %)
+    3-relative error on luminosity distance delta{dL}/dL (usually few %)
     4-rough estimate of comoving volume of the errorbox
     5-observed redshift of the true host (true cosmological, not apparent)
     6-minimum redshift assuming the *true cosmology*
@@ -141,7 +141,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
     18-SNR at the true distance
     
     The file ERRORBOX.dat has all the info you need to run the inference code. Each row is a possible host within the errorbox. Columns are:
-    1-best luminosity distance measured by LISA
+    1-best luminosity distance measured by LISA (the same as col 1 in ID.dat)
     2-redshift of the host candidate (without peculiar velocity)
     3-redshift of the host candidate (with peculiar velocity)
     4-log_10 of the host candidate mass in solar masses
