@@ -48,17 +48,17 @@ class CosmologicalModel(cpnest.model.Model):
 
         super(CosmologicalModel,self).__init__()
         # Set up the data
-        self.data           = data
-        self.N              = len(self.data)
-        self.model          = model
-        self.em_selection   = kwargs['em_selection']
-        self.z_threshold    = kwargs['z_threshold']
-        self.snr_threshold  = kwargs['snr_threshold']
-        self.event_class    = kwargs['event_class']
-        self.redshift_prior = kwargs['redshift_prior']
+        self.data             = data
+        self.N                = len(self.data)
+        self.model            = model
+        self.em_selection     = kwargs['em_selection']
+        self.z_threshold      = kwargs['z_threshold']
+        self.snr_threshold    = kwargs['snr_threshold']
+        self.event_class      = kwargs['event_class']
+        self.redshift_prior   = kwargs['redshift_prior']
         self.time_redshifting = kwargs['time_redshifting']
         self.vc_normalization = kwargs['vc_normalization']
-        self.O              = None
+        self.O                = None
         
         if (self.model == "LambdaCDM"):
             
@@ -345,7 +345,7 @@ if __name__=='__main__':
                 CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
                 if (model == "DE"): CB.set_label('w_0')
                 else: CB.set_label('h')
-                ax2.set_ylim(0.0,1.0)
+                ax2.set_ylim(0.0, 1.0)
                 ax2.set_ylabel('selection function')
             ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
             ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
@@ -354,7 +354,7 @@ if __name__=='__main__':
             for g in e.potential_galaxy_hosts:
                 zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
                 pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
-                ax.plot(zg, pg, lw=0.5,color='k')
+                ax.plot(zg, pg, lw=0.5, color='k')
             ax.set_xlabel('$z_{%d}$'%e.ID)
             ax.set_ylabel('probability density')
             plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
