@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 from optparse import OptionParser
 from scipy.special import logsumexp
-from functools import reduce
 from scipy.stats import norm
 import lal
 import cpnest.model
@@ -18,7 +17,6 @@ import matplotlib.pyplot as plt
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.prior as pr
-
 
 
 """
@@ -42,7 +40,7 @@ Alternative formulation with em_selection = 1
 class CosmologicalModel(cpnest.model.Model):
 
     names  = [] #'h','om','ol','w0','w1']
-    bounds = [] #[0.5,1.0],[0.04,1.0],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
+    bounds = [] #[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
     def __init__(self, model, data, *args, **kwargs):
 
@@ -58,6 +56,8 @@ class CosmologicalModel(cpnest.model.Model):
         self.redshift_prior   = kwargs['redshift_prior']
         self.time_redshifting = kwargs['time_redshifting']
         self.vc_normalization = kwargs['vc_normalization']
+        self.lk_sel_fun       = kwargs['lk_sel_fun']
+        self.time_red_sel_fun = kwargs['time_red_sel_fun']
         self.O                = None
         
         if (self.model == "LambdaCDM"):
@@ -65,15 +65,15 @@ class CosmologicalModel(cpnest.model.Model):
             self.names  = ['h','om']
             self.bounds = [[0.5,1.0],[0.04,0.5]]
         
-        elif (self.model == "LambdaCDMDE"):
-            
-            self.names  = ['h','om','ol','w0','w1']
-            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-2.0,0.0],[-3.0,3.0]]
-            
         elif (self.model == "CLambdaCDM"):
             
             self.names  = ['h','om','ol']
             self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0]]
+
+        elif (self.model == "LambdaCDMDE"):
+            
+            self.names  = ['h','om','ol','w0','w1']
+            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
             
         elif (self.model == "DE"):
             
@@ -101,6 +101,8 @@ class CosmologicalModel(cpnest.model.Model):
         print("Redshift prior: {0}".format(self.redshift_prior))
         print("Time redshifting: {0}".format(self.time_redshifting))
         print("Vc normalization: {0}".format(self.vc_normalization))
+        print("lk_sel_fun: {0}".format(self.lk_sel_fun))
+        print("time_red_sel_fun: {0}".format(self.time_red_sel_fun))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -113,45 +115,58 @@ class CosmologicalModel(cpnest.model.Model):
         if np.isfinite(logP):
         
             if   (self.model == "LambdaCDM"):
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],-1.0,0.0)
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])
             elif (self.model == "CLambdaCDM"):
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],-1.0,0.0)
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],truths['w0'],truths['w1'])
             elif (self.model == "LambdaCDMDE"):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             elif (self.model == "DE"):
-                self.O = cs.CosmologicalParameters(0.73,0.25,0.75,x['w0'],x['w1'])
-            
-            """
-            apply a uniform in comoving volume density redshift prior
-            """
-            if (self.redshift_prior == 1):
-                # Compute p(z_gw|...)
-                logP += np.sum([pr.logprior_redshift_single_event(self.O,
-                                                                  x['z%d'%e.ID],
-                                                                  zmax = self.bounds[2+j][1])
-                                                                  for j,e in enumerate(self.data)])
-                                                                  
-            if (self.time_redshifting == 1) and (self.redshift_prior == 0):
-                logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
+                self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'],x['w1'])
 
-                if (self.vc_normalization == 1) and (self.redshift_prior == 0):
-                    logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
-                                    for j,e in enumerate(self.data)])
+            if not (lk_sel_fun):         
+                """
+                Apply a uniform in comoving volume density redshift prior
+                """
+                if (self.redshift_prior == 1):
+                    # Compute p(z_gw|...)
+                    logP += np.sum([pr.logprior_redshift_single_event(self.O,
+                                                                    x['z%d'%e.ID],
+                                                                    zmax = self.bounds[2+j][1])
+                                                                    for j,e in enumerate(self.data)])
+                                                                    
+                if (self.time_redshifting == 1) and (self.redshift_prior == 0):
+                    logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
+
+                    if (self.vc_normalization == 1) and (self.redshift_prior == 0):
+                        logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
+                                        for j,e in enumerate(self.data)])
 
         return logP
 
     def log_likelihood(self,x):
         
-        # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
-        logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
-                                                     e.dl,
-                                                     e.sigma,
-                                                     self.O,
-                                                     x['z%d'%e.ID],
-                                                     em_selection = self.em_selection,
-                                                     zmin = self.bounds[2+j][0],
-                                                     zmax = self.bounds[2+j][1])
-                                                     for j,e in enumerate(self.data)])
+        if (lk_sel_fun == 1):
+            logL = np.sum([lk.logLikelihood_single_event_sel_fun(self.hosts[e.ID],
+                                                                 e.dl,
+                                                                 e.sigma,
+                                                                 self.O,
+                                                                 x['z%d'%e.ID],
+                                                                 time_red_sel_fun = self.time_red_sel_fun,
+                                                                 zmin = self.bounds[2+j][0],
+                                                                 zmax = self.bounds[2+j][1])
+                                                                 for j,e in enumerate(self.data)])
+
+        else:   
+            # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
+            logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
+                                                        e.dl,
+                                                        e.sigma,
+                                                        self.O,
+                                                        x['z%d'%e.ID],
+                                                        em_selection = self.em_selection,
+                                                        zmin = self.bounds[2+j][0],
+                                                        zmax = self.bounds[2+j][1])
+                                                        for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 
@@ -163,27 +178,29 @@ usage=""" %prog (options)"""
 if __name__=='__main__':
 
     parser = OptionParser(usage)
-    parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',            help='Galaxy data location')
-    parser.add_option('-o', '--out_dir',     default=None,        type='string', metavar='DIR',             help='Directory for output')
-    parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',     help='Class of the event(s) [MBH, EMRI, sBH]')
-    parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',           help='Event number')
-    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',           help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
-    parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',           help='Run a joint analysis for N events, randomly selected (EMRI only).')
-    parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',        help='Horizon redshift corresponding to the SNR threshold')
-    parser.add_option('--dl_cutoff',         default=None,        type='int',    metavar='dl_cutoff',       help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
-    parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',   help='SNR detection threshold')
-    parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',    help='Use EM selection function')
-    parser.add_option('--redshift_prior',    default=1,           type='int',    metavar='redshift_prior',  help='Apply a redshift prior to each event')
-    parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting',  help='Apply a redshift prior to each event')
-    parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization',  help='Apply a redshift prior to each event')
-    parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog', help='Select randomly only a fraction of the catalog')
-    parser.add_option('--threads',           default=None,        type='int',    metavar='threads',         help='Number of threads (default = 1/core)')
-    parser.add_option('--seed',              default=0,           type='int',    metavar='seed',            help='Random seed initialisation')
-    parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',           help='Number of live points')
-    parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',        help='Poolsize for the samplers')
-    parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',         help='Maximum number of mcmc steps')
-    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',     help='Run only the postprocessing. It works only with reduced_catalog=0')
-    parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',   help='Print the output on screen or save it into a file')
+    parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',             help='Galaxy data location.')
+    parser.add_option('-o', '--out_dir',     default=None,        type='string', metavar='DIR',              help='Directory for output.')
+    parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',      help='Class of the event(s) [MBH, EMRI, sBH].')
+    parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',            help='Event number.')
+    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
+    parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
+    parser.add_option('--dl_cutoff',         default=None,        type='int',    metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
+    parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
+    parser.add_option('--redshift_prior',    default=0,           type='int',    metavar='redshift_prior',   help='Adopt a redshift prior with comoving volume factor.')
+    parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting', help='Add a factor 1/1+z_gw as redshift prior.')
+    parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
+    parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
+    parser.add_option('--time_red_sel_fun',  default=0,           type='int',    metavar='time_red_sel_fun', help='Subtract the time-redshift factor from the lk_sel_fun.')
+    parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
+    parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
+    parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
+    parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',            help='Number of live points.')
+    parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
+    parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
+    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
+    parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
     (opts,args)=parser.parse_args()
 
     em_selection     = opts.em_selection
@@ -193,6 +210,8 @@ if __name__=='__main__':
     redshift_prior   = opts.redshift_prior
     time_redshifting = opts.time_redshifting
     vc_normalization = opts.vc_normalization
+    lk_sel_fun       = opts.lk_sel_fun
+    time_red_sel_fun = opts.time_red_sel_fun
     model            = opts.model
     joint            = opts.joint
     event_class      = opts.event_class
@@ -213,11 +232,11 @@ if __name__=='__main__':
         # if running on SMBH override the selection functions
         em_selection = 0
 
-    if (event_class == "EMRI") and (joint !=0):
+    if (event_class == "EMRI") and (joint != 0):
 #        np.random.seed(opts.seed)
         if (dl_cutoff is not None) and (zhorizon == 1000):
             events = readdata.read_event(event_class, opts.data, None, max_distance=dl_cutoff)
-            print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events), ))
+            print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events)))
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
@@ -287,9 +306,11 @@ if __name__=='__main__':
                           event_class      = event_class,
                           redshift_prior   = redshift_prior,
                           time_redshifting = time_redshifting,
-                          vc_normalization = vc_normalization)
+                          vc_normalization = vc_normalization,
+                          lk_sel_fun       = lk_sel_fun,
+                          time_red_sel_fun = time_red_sel_fun)
 
-    #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read in the chain.txt file
+    #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
         work=cpnest.CPNest(C,
                            verbose      = 2,
@@ -313,9 +334,9 @@ if __name__=='__main__':
         from cpnest import nest2pos
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
-    ################
-    ## Make plots ##
-    ################
+    ##############
+    # Make plots #
+    ##############
     
     if (event_class == "EMRI"):
         for e in C.data:
@@ -369,9 +390,9 @@ if __name__=='__main__':
         deltaz = [2*np.std(x['z%d'%e.ID]) for e in C.data]
         
         # injected cosmology
-        omega_true = cs.CosmologicalParameters(0.73,0.25,0.75,-1,0)
+        omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
         redshift = np.logspace(-3,1.0,100)
-        
+
         # loop over the posterior samples to get all models to then average
         # for the plot
         
@@ -382,14 +403,14 @@ if __name__=='__main__':
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                1.0-x['om'][k],
-                                               -1.0,
-                                               0.0)
+                                               truths['w0'],
+                                               truths['w1'])
             elif (model == "CLambdaCDM"):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
-                                               -1.0,
-                                               0.0)
+                                               truths['w0'],
+                                               truths['w1'])
             elif (model == "LambdaCDMDE"):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
@@ -397,9 +418,9 @@ if __name__=='__main__':
                                                x['w0'][k],
                                                x['w1'][k])
             elif (model == "DE"):
-                omega = cs.CosmologicalParameters(0.73,
-                                               0.25,
-                                               0.75,
+                omega = cs.CosmologicalParameters(truths['h'],
+                                               truths['om'],
+                                               truths['ol'],
                                                x['w0'][k],
                                                x['w1'][k])
             else:
@@ -435,7 +456,7 @@ if __name__=='__main__':
                         r'$\Omega_m$'],
                quantiles=[0.05, 0.5, 0.95],
                show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-               use_math_text=True, truths=[0.73,0.25],
+               use_math_text=True, truths=[truths['h'],truths['om']],
                filename=os.path.join(output,'joint_posterior.pdf'))
 #        axes = fig.get_axes()
 #        axes[0].set_xlim(0.69, 0.77)
@@ -452,7 +473,7 @@ if __name__=='__main__':
                         r'$\Omega_k$'],
                quantiles=[0.05, 0.5, 0.95],
                show_titles=True, title_kwargs={"fontsize": 12},
-               use_math_text=True, truths=[0.73,0.25,0.75,0.0],
+               use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
                filename=os.path.join(output,'joint_posterior.pdf'))
                
     if (model == "LambdaCDMDE"):
@@ -465,7 +486,7 @@ if __name__=='__main__':
                                  r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[0.73,0.25,0.75,-1.0,0.0],
+                        use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
                         filename=os.path.join(output,'joint_posterior.pdf'))
 
     if (model == "DE"):
@@ -475,7 +496,7 @@ if __name__=='__main__':
                                  r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                        use_math_text=True, truths=[-1.0,0.0],
+                        use_math_text=True, truths=[truths['w0'],truths['w1']],
                         filename=os.path.join(output,'joint_posterior.pdf'))
 #        axes = fig.get_axes()
 #        axes[0].set_xlim(-1.22, -0.53)

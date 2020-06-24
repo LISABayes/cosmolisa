@@ -97,6 +97,78 @@ cdef inline double _sigma_weak_lensing(double z, double dl):
 cpdef double em_selection_function(double dl):
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
+
+
+def logLikelihood_single_event_sel_fun(double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int time_red_sel_fun = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, event_redshift, time_red_sel_fun = time_red_sel_fun, zmin = zmin, zmax = zmax)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _logLikelihood_single_event_sel_fun(double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int time_red_sel_fun = 0, double zmin = 0.0, double zmax = 1.0):
+    """
+    Single-event likelihood function enforcing the selection function.
+
+    Parameters:
+    ===============
+    hosts:            :obj: 'numpy.array'.               Shape Nx3. The columns are redshift, redshift_error, angular_weight
+    meandl:           :obj: 'numpy.double'.              Mean of the DL marginal likelihood
+    sigmadl:          :obj: 'numpy.double'.              Standard deviation of the DL marginal likelihood
+    omega:            :obj: 'lal.CosmologicalParameter'. Cosmological parameter structure
+    event_redshift:   :obj: 'numpy.double'.              Redshift of the GW event
+    time_red_sel_fun: :obj: 'numpy.int'.                 Flag to add a multiplying factor to the comoving volume term
+    zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
+    """
+    cdef double dl, logL_galaxy, sigma_z, score_z, weak_lensing_error
+    cdef unsigned int i
+    cdef unsigned int N           = hosts.shape[0]
+    cdef double logTwoPiByTwo     = 0.5*log(2.0*M_PI)
+    cdef double log_in_cat        = -np.inf
+    cdef double log_out_cat       = -np.inf
+    cdef double logp_detection    = 0.0
+    cdef double logp_nondetection = 0.0
+
+    # p(Di | dL z_gw O H I)
+    dl = omega.LuminosityDistance(event_redshift)
+
+    weak_lensing_error            = _sigma_weak_lensing(event_redshift, dl)
+    cdef double SigmaSquared      = sigmadl**2 + weak_lensing_error**2
+    cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
+    log_dL = -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared - logTwoPiByTwo - logSigmaByTwo
+
+    # p(z_gw | O H I) = in-catalogue term + out-catalog term
+
+    # in-catalogue term
+    # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
+    for i in range(N):
+        sigma_z     = hosts[i,1]*(1+hosts[i,0]) # check this formula (again)
+        score_z     = (event_redshift - hosts[i,0])/sigma_z
+        logL_galaxy = -0.5*score_z*score_z - log(sigma_z) - logTwoPiByTwo + log(hosts[i,2])
+        log_in_cat  = log_add(log_in_cat, logL_galaxy)
+
+    #FIXME: this term is the approximation of an integral
+    logp_detection = log(em_selection_function(dl))
+    log_in_cat    += logp_detection
+
+    # out-catalogue term
+    cdef double log_Vc_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
+    cdef double log_Vc      = log(omega.UniformComovingVolumeDensity(event_redshift))
+    log_com_vol             = log_Vc - log_Vc_norm
+    if (time_red_sel_fun == 1):
+        log_com_vol += log(1.0+event_redshift)
+    logp_nondetection       = logsumexp([0.0,logp_detection], b = [1,-1])
+    log_out_cat             = logp_nondetection + log_com_vol
+
+    # p(Di | dL z_gw O H I) * p(z_gw | O H I)
+    return log_dL + log_add(log_in_cat, log_out_cat)
+
+
+
+
+
+
+
 #################
 ## UNUSED CODE ##
 #################
