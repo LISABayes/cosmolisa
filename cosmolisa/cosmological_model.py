@@ -13,11 +13,12 @@ import readdata
 import matplotlib
 import corner
 import subprocess
-import cosmolisa.cosmology as cs
 import numpy as np
+import matplotlib.pyplot as plt
+import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.prior as pr
-import matplotlib.pyplot as plt
+
 
 
 """
@@ -131,11 +132,9 @@ class CosmologicalModel(cpnest.model.Model):
                                                                   for j,e in enumerate(self.data)])
                                                                   
             if (self.time_redshifting == 1) and (self.redshift_prior == 0):
-                print("first quantity")
                 logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
 
                 if (self.vc_normalization == 1) and (self.redshift_prior == 0):
-                    print("second quantity")
                     logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
                                     for j,e in enumerate(self.data)])
 
