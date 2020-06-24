@@ -5,7 +5,6 @@ from optparse import OptionParser
 from scipy.special import logsumexp
 from functools import reduce
 from scipy.stats import norm
-import unittest
 import lal
 import cpnest.model
 import sys
@@ -14,7 +13,6 @@ import readdata
 import matplotlib
 import corner
 import subprocess
-#import itertools as it
 import cosmolisa.cosmology as cs
 import numpy as np
 import cosmolisa.likelihood as lk
@@ -133,9 +131,11 @@ class CosmologicalModel(cpnest.model.Model):
                                                                   for j,e in enumerate(self.data)])
                                                                   
             if (self.time_redshifting == 1) and (self.redshift_prior == 0):
+                print("first quantity")
                 logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
 
                 if (self.vc_normalization == 1) and (self.redshift_prior == 0):
+                    print("second quantity")
                     logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
                                     for j,e in enumerate(self.data)])
 
@@ -307,7 +307,7 @@ if __name__=='__main__':
 
         # Save git info
         with open("{}/git_info.txt".format(out_dir), "w+") as fileout:
-            subprocess.call(["git", "diff"], stdout=fileout);
+            subprocess.call(["git", "diff"], stdout=fileout)
 
     else:
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
