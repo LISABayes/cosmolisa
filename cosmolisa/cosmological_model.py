@@ -352,48 +352,48 @@ if __name__=='__main__':
     # Make plots #
     ##############
     
-    # if (event_class == "EMRI"):
-    #     for e in C.data:
-    #         fig = plt.figure()
-    #         ax  = fig.add_subplot(111)
-    #         z   = np.linspace(e.zmin,e.zmax, 100)
+    if (event_class == "EMRI"):
+        for e in C.data:
+            fig = plt.figure()
+            ax  = fig.add_subplot(111)
+            z   = np.linspace(e.zmin,e.zmax, 100)
 
-    #         if (em_selection):
-    #             ax2 = ax.twinx()
+            if (em_selection):
+                ax2 = ax.twinx()
                 
-    #             if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-    #             else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-    #             # choose a colormap
-    #             c_m = matplotlib.cm.cool
-    #             # create a ScalarMappable and initialize a data structure
-    #             s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-    #             s_m.set_array([])
-    #             for i in range(x.shape[0])[::10]:
-    #                 if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-    #                 elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-    #                 elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-    #                 elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-    #                 distances = np.array([O.LuminosityDistance(zi) for zi in z])
-    #                 if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
-    #                 else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
-    #                 O.DestroyCosmologicalParameters()
-    #             CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-    #             if (model == "DE"): CB.set_label('w_0')
-    #             else: CB.set_label('h')
-    #             ax2.set_ylim(0.0, 1.0)
-    #             ax2.set_ylabel('selection function')
-    #         ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
-    #         ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
-    #         ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+                if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+                else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+                # choose a colormap
+                c_m = matplotlib.cm.cool
+                # create a ScalarMappable and initialize a data structure
+                s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+                s_m.set_array([])
+                for i in range(x.shape[0])[::10]:
+                    if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                    elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+                    elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                    elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                    distances = np.array([O.LuminosityDistance(zi) for zi in z])
+                    if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+                    else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+                    O.DestroyCosmologicalParameters()
+                CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+                if (model == "DE"): CB.set_label('w_0')
+                else: CB.set_label('h')
+                ax2.set_ylim(0.0, 1.0)
+                ax2.set_ylabel('selection function')
+            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
 
-    #         for g in e.potential_galaxy_hosts:
-    #             zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
-    #             pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
-    #             ax.plot(zg, pg, lw=0.5, color='k')
-    #         ax.set_xlabel('$z_{%d}$'%e.ID)
-    #         ax.set_ylabel('probability density')
-    #         plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
-    #         plt.close()
+            for g in e.potential_galaxy_hosts:
+                zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
+                pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
+                ax.plot(zg, pg, lw=0.5, color='k')
+            ax.set_xlabel('$z_{%d}$'%e.ID)
+            ax.set_ylabel('probability density')
+            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
+            plt.close()
     
     if (event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
@@ -462,7 +462,7 @@ if __name__=='__main__':
         fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
-    print("To the joint plot")
+    
     if (model == "LambdaCDM"):
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,
