@@ -57,7 +57,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.time_redshifting = kwargs['time_redshifting']
         self.vc_normalization = kwargs['vc_normalization']
         self.lk_sel_fun       = kwargs['lk_sel_fun']
-        self.time_red_sel_fun = kwargs['time_red_sel_fun']
+        self.approx_int       = kwargs['approx_int']
         self.O                = None
         
         if (self.model == "LambdaCDM"):
@@ -102,7 +102,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("Time redshifting: {0}".format(self.time_redshifting))
         print("Vc normalization: {0}".format(self.vc_normalization))
         print("lk_sel_fun: {0}".format(self.lk_sel_fun))
-        print("time_red_sel_fun: {0}".format(self.time_red_sel_fun))
+        print("approx_int: {0}".format(self.approx_int))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -151,7 +151,7 @@ class CosmologicalModel(cpnest.model.Model):
                                                                  e.sigma,
                                                                  self.O,
                                                                  x['z%d'%e.ID],
-                                                                 time_red_sel_fun = self.time_red_sel_fun,
+                                                                 approx_int = self.approx_int,
                                                                  zmin = self.bounds[2+j][0],
                                                                  zmax = self.bounds[2+j][1])
                                                                  for j,e in enumerate(self.data)])
@@ -186,13 +186,14 @@ if __name__=='__main__':
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
     parser.add_option('--dl_cutoff',         default=None,        type='int',    metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
     parser.add_option('--redshift_prior',    default=0,           type='int',    metavar='redshift_prior',   help='Adopt a redshift prior with comoving volume factor.')
     parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting', help='Add a factor 1/1+z_gw as redshift prior.')
     parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
     parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
-    parser.add_option('--time_red_sel_fun',  default=0,           type='int',    metavar='time_red_sel_fun', help='Subtract the time-redshift factor from the lk_sel_fun.')
+    parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
@@ -205,13 +206,14 @@ if __name__=='__main__':
 
     em_selection     = opts.em_selection
     dl_cutoff        = opts.dl_cutoff
+    z_selection      = opts.z_selection
     zhorizon         = opts.zhorizon
     snr_threshold    = opts.snr_threshold
     redshift_prior   = opts.redshift_prior
     time_redshifting = opts.time_redshifting
     vc_normalization = opts.vc_normalization
     lk_sel_fun       = opts.lk_sel_fun
-    time_red_sel_fun = opts.time_red_sel_fun
+    approx_int       = opts.approx_int
     model            = opts.model
     joint            = opts.joint
     event_class      = opts.event_class
@@ -237,6 +239,16 @@ if __name__=='__main__':
         if (dl_cutoff is not None) and (zhorizon == 1000):
             events = readdata.read_event(event_class, opts.data, None, max_distance=dl_cutoff)
             print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events)))
+        elif (z_selection is not None):
+            events = readdata.read_event(event_class, opts.data, None)
+            new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
+            if (z_selection > 0):
+                events = new_list[:z_selection]
+            elif (z_selection < 0):
+                events = new_list[z_selection:]
+            for e in events:
+                print("ID:",e.ID,"z_true:",e.z_true)
+            print("Selected {} events from z={} to z={}.".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
@@ -308,7 +320,7 @@ if __name__=='__main__':
                           time_redshifting = time_redshifting,
                           vc_normalization = vc_normalization,
                           lk_sel_fun       = lk_sel_fun,
-                          time_red_sel_fun = time_red_sel_fun)
+                          approx_int       = approx_int)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
@@ -330,56 +342,58 @@ if __name__=='__main__':
             subprocess.call(["git", "diff"], stdout=fileout)
 
     else:
+        print("Reading the chain...")
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
         from cpnest import nest2pos
+        print("Drawing posterior samples...")
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
     ##############
     # Make plots #
     ##############
     
-    if (event_class == "EMRI"):
-        for e in C.data:
-            fig = plt.figure()
-            ax  = fig.add_subplot(111)
-            z   = np.linspace(e.zmin,e.zmax, 100)
+    # if (event_class == "EMRI"):
+    #     for e in C.data:
+    #         fig = plt.figure()
+    #         ax  = fig.add_subplot(111)
+    #         z   = np.linspace(e.zmin,e.zmax, 100)
 
-            if (em_selection):
-                ax2 = ax.twinx()
+    #         if (em_selection):
+    #             ax2 = ax.twinx()
                 
-                if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-                else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-                # choose a colormap
-                c_m = matplotlib.cm.cool
-                # create a ScalarMappable and initialize a data structure
-                s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-                s_m.set_array([])
-                for i in range(x.shape[0])[::10]:
-                    if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-                    elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-                    elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-                    elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-                    distances = np.array([O.LuminosityDistance(zi) for zi in z])
-                    if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
-                    else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
-                    O.DestroyCosmologicalParameters()
-                CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-                if (model == "DE"): CB.set_label('w_0')
-                else: CB.set_label('h')
-                ax2.set_ylim(0.0, 1.0)
-                ax2.set_ylabel('selection function')
-            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
-            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
-            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+    #             if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+    #             else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+    #             # choose a colormap
+    #             c_m = matplotlib.cm.cool
+    #             # create a ScalarMappable and initialize a data structure
+    #             s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+    #             s_m.set_array([])
+    #             for i in range(x.shape[0])[::10]:
+    #                 if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+    #                 elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+    #                 elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+    #                 elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+    #                 distances = np.array([O.LuminosityDistance(zi) for zi in z])
+    #                 if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+    #                 else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+    #                 O.DestroyCosmologicalParameters()
+    #             CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+    #             if (model == "DE"): CB.set_label('w_0')
+    #             else: CB.set_label('h')
+    #             ax2.set_ylim(0.0, 1.0)
+    #             ax2.set_ylabel('selection function')
+    #         ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+    #         ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+    #         ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
 
-            for g in e.potential_galaxy_hosts:
-                zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
-                pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
-                ax.plot(zg, pg, lw=0.5, color='k')
-            ax.set_xlabel('$z_{%d}$'%e.ID)
-            ax.set_ylabel('probability density')
-            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
-            plt.close()
+    #         for g in e.potential_galaxy_hosts:
+    #             zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
+    #             pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
+    #             ax.plot(zg, pg, lw=0.5, color='k')
+    #         ax.set_xlabel('$z_{%d}$'%e.ID)
+    #         ax.set_ylabel('probability density')
+    #         plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
+    #         plt.close()
     
     if (event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
@@ -448,7 +462,7 @@ if __name__=='__main__':
         fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
-    
+    print("To the joint plot")
     if (model == "LambdaCDM"):
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,
