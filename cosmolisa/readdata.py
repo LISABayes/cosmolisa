@@ -38,7 +38,7 @@ class Event(object):
                  dl_host,
                  snr_threshold = 8.0,
                  VC = None):
-        
+
         self.potential_galaxy_hosts = [Galaxy(r,dr,w,dl) for r,dr,w,dl in zip(redshifts,dredshifts,weights,dl_host)]
         self.n_hosts                = len(self.potential_galaxy_hosts)
         self.ID                     = ID
@@ -47,7 +47,7 @@ class Event(object):
         self.sigma_gw_theta         = sigma_gw_theta
         self.sigma_gw_phi           = sigma_gw_phi
         self.dmax                   = (self.dl+3.0*self.sigma)
-        self.dmin                   = self.dl-3.0*self.sigma
+        self.dmin                   = (self.dl-3.0*self.sigma)
         self.zmin                   = zmin
         self.zmax                   = zmax
         self.snr                    = snr
@@ -80,10 +80,23 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                 weights                 = np.ones(len(redshifts))
                 zmin                    = np.maximum(redshifts - 5.0*d_redshifts, 0.0)
                 zmax                    = redshifts + 5.0*d_redshifts
-                events.append(Event(ID,dl,sigma,1,1,redshifts,d_redshifts,weights,zmin,zmax,-1,-1))
+                events.append(Event(ID,
+                                    dl,
+                                    sigma,
+                                    1,
+                                    1,
+                                    redshifts,
+                                    d_redshifts,
+                                    weights,
+                                    zmin,
+                                    zmax,
+                                    -1,
+                                    -1,
+                                    [0]))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
-                sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
+                if (TypeError, NameError): raise
+                else: sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
 
         if max_distance is not None:
             distance_limited_events = [e for e in events if e.dl < max_distance]
@@ -109,7 +122,19 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
             weights                 = np.atleast_1d(len(redshifts))
             zmin                    = np.maximum(redshifts - 10.0*d_redshifts, 0.0)
             zmax                    = redshifts + 10.0*d_redshifts
-            analysis_events         = [Event(ID,dl,sigma,redshifts,d_redshifts,weights,zmin,zmax,-1)]
+            analysis_events         = [Event(ID,
+                                            dl,
+                                            sigma,
+                                            1,
+                                            1,
+                                            redshifts,
+                                            d_redshifts,
+                                            weights,
+                                            zmin,
+                                            zmax,
+                                            -1,
+                                            -1,
+                                            [0])]
             sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
         except:
             sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
