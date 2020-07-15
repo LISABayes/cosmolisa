@@ -4,6 +4,8 @@ import lal
 import os
 import sys
 import cosmolisa.cosmology as cs
+import matplotlib.pyplot as plt
+
 """
     file ID.dat:
     col 1: ID number
@@ -97,7 +99,8 @@ class EMRIDistribution(object):
                  ra_max  = 2.0*np.pi,
                  dec_min = -np.pi/2.0,
                  dec_max = np.pi/2.0,
-                 *args, **kwargs):
+                 *args, 
+                 **kwargs):
         # M101 event 57
         self.D0       = 1748.50
         self.A0       = 0.000405736691211125 #in rads^2
@@ -139,7 +142,7 @@ class EMRIDistribution(object):
         self.rate                 = lal.CreateCosmologicalRateParameters(self.r0, self.W, self.Q, self.R)
         
         self.fiducial_O = cs.CosmologicalParameters(self.h, self.omega_m, self.omega_lambda, self.w0, self.w1)
-        # create a rate and cosmology parameter foir the calculations
+        # create a rate and cosmology parameter for the calculations
         self.p = lal.CreateCosmologicalParametersAndRate()
         # set it up to the values we want
         self.p.omega.h  = self.h
@@ -247,7 +250,7 @@ class EMRIDistribution(object):
         return self.catalog
     
     def generate_galaxies(self, i):
-        self.n0 = 1000*0.66 # Mpc^{-3}
+        self.n0 = 10*0.66 # Mpc^{-3}. Increase it to augment the # of possible hosts per event 
         if self.galaxy_norm is None:
             self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
         if self.galaxy_pmax is None:
@@ -362,23 +365,25 @@ class EMRIDistribution(object):
         
 if __name__=="__main__":
     np.random.seed(1)
-    h  = 0.73
-    om = 0.25
-    ol = 0.75
-    w0 = -1.0
-    w1 = 0.0
+    h  = 0.73 # 0.73
+    om = 0.25 # 0.25
+    ol = 1.0 - om
+    w0 = -1.0 # -1.0
+    w1 = 0.0 # 0.0
     r0 = 1e-9 # in Mpc^{-3}yr^{-1}
     W  = 0.0
     R  = 0.0
     Q  = 0.0
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
-    redshift_max = 0.3
-    catalog_name = "test_catalog_z_03"
+
+    # EDITABLE
+    redshift_max = 0.7
+    catalog_name = "test_catalog_z_07_h_073_SNR_20"
+    
     C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
     C.get_catalog(T = 10, SNR_threshold = 20)
     C.save_catalog_ids(catalog_name)
     z  = np.linspace(C.z_min,C.z_max,1000)
-    import matplotlib.pyplot as plt
     plt.hist(C.catalog[:,0],bins=30,density=True,alpha=0.5)
     plt.plot(z,[C.dist(zi) for zi in z])
     os.system('mkdir -p Figs')
