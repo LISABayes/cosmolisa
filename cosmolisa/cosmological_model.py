@@ -58,6 +58,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.vc_normalization = kwargs['vc_normalization']
         self.lk_sel_fun       = kwargs['lk_sel_fun']
         self.approx_int       = kwargs['approx_int']
+        self.dl_cutoff        = kwargs['dl_cutoff']
         self.O                = None
         
         if (self.model == "LambdaCDM"):
@@ -123,7 +124,7 @@ class CosmologicalModel(cpnest.model.Model):
             elif (self.model == "DE"):
                 self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'],x['w1'])
 
-            if not (lk_sel_fun):         
+            if not (self.lk_sel_fun):         
                 """
                 Apply a uniform in comoving volume density redshift prior
                 """
@@ -131,10 +132,11 @@ class CosmologicalModel(cpnest.model.Model):
                     # Compute p(z_gw|...)
                     logP += np.sum([pr.logprior_redshift_single_event(self.O,
                                                                     x['z%d'%e.ID],
-                                                                    zmax = self.bounds[2+j][1])
+                                                                    zmax = self.bounds[2+j][1],
+                                                                    dl_cutoff = self.dl_cutoff)
                                                                     for j,e in enumerate(self.data)])
                                                                     
-                if (self.time_redshifting == 1) and (self.redshift_prior == 0):
+                elif (self.redshift_prior == 0) and (self.time_redshifting == 1):
                     logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
 
                     if (self.vc_normalization == 1) and (self.redshift_prior == 0):
@@ -145,7 +147,7 @@ class CosmologicalModel(cpnest.model.Model):
 
     def log_likelihood(self,x):
         
-        if (lk_sel_fun == 1):
+        if (self.lk_sel_fun == 1):
             logL = np.sum([lk.logLikelihood_single_event_sel_fun(self.hosts[e.ID],
                                                                  e.dl,
                                                                  e.sigma,
@@ -172,7 +174,7 @@ class CosmologicalModel(cpnest.model.Model):
 
         return logL
 
-truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0}
+truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0} # 0.73, 0.25, 0.75, -1.0, 0.0
 usage=""" %prog (options)"""
 
 if __name__=='__main__':
@@ -185,7 +187,7 @@ if __name__=='__main__':
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
-    parser.add_option('--dl_cutoff',         default=None,        type='int',    metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
@@ -230,15 +232,21 @@ if __name__=='__main__':
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
+    omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+
     if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
 
     if (event_class == "EMRI") and (joint != 0):
-#        np.random.seed(opts.seed)
-        if (dl_cutoff is not None) and (zhorizon == 1000):
-            events = readdata.read_event(event_class, opts.data, None, max_distance=dl_cutoff)
-            print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events)))
+        # injected cosmology
+        #FIXME: test dl_cutoff with CPNest master (not the 'ray' branch)
+        if (dl_cutoff > 0) and (zhorizon == 1000):
+            events = readdata.read_event(event_class, opts.data, None)
+            # for e in events:
+            #     if (omega_true.LuminosityDistance(e.zmax) >= dl_cutoff):
+            #         events.remove(e) 
+            # print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events)))
         elif (z_selection is not None):
             events = readdata.read_event(event_class, opts.data, None)
             new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
@@ -320,7 +328,8 @@ if __name__=='__main__':
                           time_redshifting = time_redshifting,
                           vc_normalization = vc_normalization,
                           lk_sel_fun       = lk_sel_fun,
-                          approx_int       = approx_int)
+                          approx_int       = approx_int,
+                          dl_cutoff        = dl_cutoff)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
@@ -403,8 +412,6 @@ if __name__=='__main__':
         z = [np.median(x['z%d'%e.ID]) for e in C.data]
         deltaz = [2*np.std(x['z%d'%e.ID]) for e in C.data]
         
-        # injected cosmology
-        omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
         redshift = np.logspace(-3,1.0,100)
 
         # loop over the posterior samples to get all models to then average
@@ -462,7 +469,7 @@ if __name__=='__main__':
         fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
-    
+
     if (model == "LambdaCDM"):
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,

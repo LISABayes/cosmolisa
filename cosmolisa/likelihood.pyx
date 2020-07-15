@@ -7,18 +7,20 @@ cimport cython
 from scipy.special.cython_special cimport erfc, hyp2f1
 from scipy.special import logsumexp
 from scipy.optimize import newton
+from scipy.integrate import quad
 from .cosmology cimport CosmologicalParameters
+from libc.math cimport isfinite
 
 cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
 
-def logLikelihood_single_event(double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+def logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event(double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -98,15 +100,14 @@ cpdef double em_selection_function(double dl):
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
 
-
-def logLikelihood_single_event_sel_fun(double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int time_red_sel_fun = 0, double zmin = 0.0, double zmax = 1.0):
-    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, event_redshift, time_red_sel_fun = time_red_sel_fun, zmin = zmin, zmax = zmax)
+def logLikelihood_single_event_sel_fun(const double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int approx_int = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, event_redshift, approx_int = approx_int, zmin = zmin, zmax = zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event_sel_fun(double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int time_red_sel_fun = 0, double zmin = 0.0, double zmax = 1.0):
+cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, double event_redshift, int approx_int = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Single-event likelihood function enforcing the selection function.
 
@@ -117,7 +118,7 @@ cdef double _logLikelihood_single_event_sel_fun(double[:,::1] hosts, double mean
     sigmadl:          :obj: 'numpy.double'.              Standard deviation of the DL marginal likelihood
     omega:            :obj: 'lal.CosmologicalParameter'. Cosmological parameter structure
     event_redshift:   :obj: 'numpy.double'.              Redshift of the GW event
-    time_red_sel_fun: :obj: 'numpy.int'.                 Flag to add a multiplying factor to the comoving volume term
+    approx_int:       :obj: 'numpy.int'.                 Flag to choose whether or not to approximate the in-catalogue integral
     zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
     """
     cdef double dl, logL_galaxy, sigma_z, score_z, weak_lensing_error
@@ -147,25 +148,31 @@ cdef double _logLikelihood_single_event_sel_fun(double[:,::1] hosts, double mean
         logL_galaxy = -0.5*score_z*score_z - log(sigma_z) - logTwoPiByTwo + log(hosts[i,2])
         log_in_cat  = log_add(log_in_cat, logL_galaxy)
 
-    #FIXME: this term is the approximation of an integral
-    logp_detection = log(em_selection_function(dl))
+    cdef double log_Vc_norm = log(omega.IntegrateComovingVolume(zmax))
+
+    if (approx_int == 1):
+        logp_detection = log(em_selection_function(dl))
+    else:
+        logp_detection = log(quad(_integrand, 0, zmax, args=(omega))[0]) - log_Vc_norm
     log_in_cat    += logp_detection
 
+    # IntegrateComovingVolume without 1+z
+    
     # out-catalogue term
-    cdef double log_Vc_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
-    cdef double log_Vc      = log(omega.UniformComovingVolumeDensity(event_redshift))
+    cdef double log_Vc      = log(omega.ComovingVolumeElement(event_redshift))
     log_com_vol             = log_Vc - log_Vc_norm
-    if (time_red_sel_fun == 1):
-        log_com_vol += log(1.0+event_redshift)
     logp_nondetection       = logsumexp([0.0,logp_detection], b = [1,-1])
     log_out_cat             = logp_nondetection + log_com_vol
 
     # p(Di | dL z_gw O H I) * p(z_gw | O H I)
+    # if not(isfinite(log_out_cat)):
+    #     return -np.inf
+    # else:
     return log_dL + log_add(log_in_cat, log_out_cat)
 
-
-
-
+cpdef double _integrand(double z, CosmologicalParameters omega):
+    cdef double dl = omega.LuminosityDistance(z)
+    return em_selection_function(dl)*omega.ComovingVolumeElement(z)
 
 
 
