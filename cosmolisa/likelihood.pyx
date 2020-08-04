@@ -143,11 +143,12 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
     # in-catalogue term
     # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
     for i in range(N):
-        sigma_z     = hosts[i,1]*(1+hosts[i,0]) # check this formula (again)
+        sigma_z     = hosts[i,1]*(1+hosts[i,0]) 
         score_z     = (event_redshift - hosts[i,0])/sigma_z
         logL_galaxy = -0.5*score_z*score_z - log(sigma_z) - logTwoPiByTwo + log(hosts[i,2])
         log_in_cat  = log_add(log_in_cat, logL_galaxy)
 
+    # IntegrateComovingVolume (without 1+z factor): https://lscsoft.docs.ligo.org/lalsuite/lal/_l_a_l_cosmology_calculator_8h.html#a2803b9093568dcba15ca8921b2bece79
     cdef double log_Vc_norm = log(omega.IntegrateComovingVolume(zmax))
 
     if (approx_int == 1):
@@ -155,13 +156,11 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
     else:
         logp_detection = log(quad(_integrand, 0, zmax, args=(omega))[0]) - log_Vc_norm
     log_in_cat    += logp_detection
-
-    # IntegrateComovingVolume without 1+z
     
     # out-catalogue term
     cdef double log_Vc      = log(omega.ComovingVolumeElement(event_redshift))
     log_com_vol             = log_Vc - log_Vc_norm
-    logp_nondetection       = logsumexp([0.0,logp_detection], b = [1,-1])
+    logp_nondetection       = logsumexp([0.0, log(em_selection_function(dl))], b = [1,-1])
     log_out_cat             = logp_nondetection + log_com_vol
 
     # p(Di | dL z_gw O H I) * p(z_gw | O H I)
@@ -170,6 +169,7 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
     # else:
     return log_dL + log_add(log_in_cat, log_out_cat)
 
+# ComovingVolumeElement (without 1+z factor): https://lscsoft.docs.ligo.org/lalsuite/lal/_l_a_l_cosmology_calculator_8h.html#a846d4df0118b0687b9b31f777679b5d3
 cpdef double _integrand(double z, CosmologicalParameters omega):
     cdef double dl = omega.LuminosityDistance(z)
     return em_selection_function(dl)*omega.ComovingVolumeElement(z)
