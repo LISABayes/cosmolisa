@@ -20,8 +20,8 @@ cdef inline double _logprior_redshift_single_event(CosmologicalParameters omega,
 
     """
     # p(z_gw|O H I)
-    if dl_cutoff > 0:
-        if omega.LuminosityDistance(zmax) >= dl_cutoff:
+    if (dl_cutoff > 0):
+        if (omega.LuminosityDistance(zmax) >= dl_cutoff):
             return -np.inf
     log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
     return log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
