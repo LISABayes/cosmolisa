@@ -139,7 +139,7 @@ class CosmologicalModel(cpnest.model.Model):
                 elif (self.redshift_prior == 0) and (self.time_redshifting == 1):
                     logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
 
-                    if (self.vc_normalization == 1) and (self.redshift_prior == 0):
+                    if (self.vc_normalization == 1):
                         logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
                                         for j,e in enumerate(self.data)])
 
@@ -189,6 +189,7 @@ if __name__=='__main__':
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
+    parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
     parser.add_option('--redshift_prior',    default=0,           type='int',    metavar='redshift_prior',   help='Adopt a redshift prior with comoving volume factor.')
@@ -209,6 +210,7 @@ if __name__=='__main__':
     em_selection     = opts.em_selection
     dl_cutoff        = opts.dl_cutoff
     z_selection      = opts.z_selection
+    snr_selection    = opts.snr_selection
     zhorizon         = opts.zhorizon
     snr_threshold    = opts.snr_threshold
     redshift_prior   = opts.redshift_prior
@@ -239,14 +241,21 @@ if __name__=='__main__':
         em_selection = 0
 
     if (event_class == "EMRI") and (joint != 0):
-        # injected cosmology
-        #FIXME: test dl_cutoff with CPNest master (not the 'ray' branch)
         if (dl_cutoff > 0) and (zhorizon == 1000):
-            events = readdata.read_event(event_class, opts.data, None)
+            # events = readdata.read_event(event_class, opts.data, event_number=None)
+            events = readdata.read_event(event_class, opts.data, event_number=None, max_distance=dl_cutoff)
+            # print("\nAll the events:", len(events))
+            # events_selected = []
             # for e in events:
-            #     if (omega_true.LuminosityDistance(e.zmax) >= dl_cutoff):
-            #         events.remove(e) 
-            # print("\nAfter dL-selection (dL<{0} Mpc), will run a joint analysis on {1} events.\n".format(dl_cutoff, len(events)))
+            #     print(e.ID)
+            #     if (omega_true.LuminosityDistance(e.zmax) > dl_cutoff):
+            #         events_selected.append(e) 
+            #     else:
+            #         print("Event {} removed (z={}).".format(e.ID))
+            # events = events_selected
+            for e in events:
+                print("ID: {}, z_true: {}, dl: {}".format(e.ID.ljust(3), e.z_true.ljust(7), e.dl.ljust(7)))
+            exit()
         elif (z_selection is not None):
             events = readdata.read_event(event_class, opts.data, None)
             new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
@@ -257,6 +266,34 @@ if __name__=='__main__':
             for e in events:
                 print("ID:",e.ID,"z_true:",e.z_true)
             print("Selected {} events from z={} to z={}.".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
+        elif (snr_selection is not None):
+            events = readdata.read_event(event_class, opts.data, None)
+            new_list = sorted(events, key=lambda x: getattr(x, 'snr'))
+            if (snr_selection > 0):
+                events = new_list[:snr_selection]
+            elif (snr_selection < 0):
+                events = new_list[snr_selection:]
+            for e in events:
+                print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
+                str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
+                str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+            print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
+            # CHECK BLOCK
+            # events_selected = []
+            # for e in events:
+            #     print(e.ID)
+            #     if (e.z_true > 0.3):
+            #         events_selected.append(e) 
+            #     else:
+            #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
+            # events = events_selected
+            # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
+            # for e in events:
+            #     print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
+            #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
+            #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
+
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
