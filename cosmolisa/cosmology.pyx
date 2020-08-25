@@ -56,3 +56,33 @@ cdef class CosmologicalParameters:
     cpdef void DestroyCosmologicalParameters(self):
         XLALDestroyCosmologicalParameters(self._LALCosmologicalParameters)
         return
+
+cdef class CosmologicalRateParameters:
+
+    def __cinit__(self, double r0, double W, double R, double Q):
+        self.r0 = r0
+        self.W = W
+        self.R = R
+        self.Q = Q
+        
+    cpdef double StarFormationDensity(self, double z):
+        return self.r0*(1.0+self.W)*exp(self.Q*z)/(exp(self.R*z)+self.W)
+
+cpdef double RateWeightedUniformComovingVolumeDensity(double z, CosmologicalParameters omega, CosmologicalRateParameters rate):
+    return omega.UniformComovingVolumeDensity(z)*rate.StarFormationDensity(z)
+
+cpdef double IntegrateRateWeightedComovingVolumeDensity(double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate):
+    cdef int i = 0
+    cdef int N = 100
+    cdef double I = 0
+    cdef double dz = (zmax-zmin)/N
+    cdef double z  = zmin
+    for i in range(N):
+        I += RateWeightedUniformComovingVolumeDensity(z, omega, rate)*dz
+        z += dz
+    return I
+
+cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation):
+    if normalisation < 0.0:
+        normalisation = IntegrateRateWeightedComovingVolumeDensity(zmin, zmax, omega, rate)
+    return RateWeightedUniformComovingVolumeDensity(z, omega, rate)/normalisation

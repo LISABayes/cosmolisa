@@ -57,6 +57,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.time_redshifting = kwargs['time_redshifting']
         self.vc_normalization = kwargs['vc_normalization']
         self.lk_sel_fun       = kwargs['lk_sel_fun']
+        self.detection_corr   = kwargs['detection_corr']
         self.approx_int       = kwargs['approx_int']
         self.dl_cutoff        = kwargs['dl_cutoff']
         self.O                = None
@@ -103,6 +104,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("Time redshifting: {0}".format(self.time_redshifting))
         print("Vc normalization: {0}".format(self.vc_normalization))
         print("lk_sel_fun: {0}".format(self.lk_sel_fun))
+        print("detection_corr: {0}".format(self.detection_corr))
         print("approx_int: {0}".format(self.approx_int))
         print("==================================================")
 
@@ -158,7 +160,19 @@ class CosmologicalModel(cpnest.model.Model):
                                                                  zmax = self.bounds[2+j][1])
                                                                  for j,e in enumerate(self.data)])
 
-        else:   
+        elif (self.detection_corr == 1):
+            logL = np.sum([lk.logLikelihood_single_event_snr_threshold(self.hosts[e.ID],
+                                                        e.dl,
+                                                        e.sigma,
+                                                        e.snr,
+                                                        self.O,
+                                                        x['z%d'%e.ID],
+                                                        em_selection = self.em_selection,
+                                                        zmin = self.bounds[2+j][0],
+                                                        zmax = self.bounds[2+j][1],
+                                                        SNR_threshold = 20.0)
+                                                        for j,e in enumerate(self.data)])
+        else:
             # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
             logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
                                                         e.dl,
@@ -196,6 +210,7 @@ if __name__=='__main__':
     parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting', help='Add a factor 1/1+z_gw as redshift prior.')
     parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
     parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
+    parser.add_option('--detection_corr',    default=0,           type='int',    metavar='detection_corr',   help='Single-event likelihood including detection correction')
     parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
@@ -217,6 +232,7 @@ if __name__=='__main__':
     time_redshifting = opts.time_redshifting
     vc_normalization = opts.vc_normalization
     lk_sel_fun       = opts.lk_sel_fun
+    detection_corr   = opts.detection_corr
     approx_int       = opts.approx_int
     model            = opts.model
     joint            = opts.joint
@@ -365,6 +381,7 @@ if __name__=='__main__':
                           time_redshifting = time_redshifting,
                           vc_normalization = vc_normalization,
                           lk_sel_fun       = lk_sel_fun,
+                          detection_corr   = detection_corr,
                           approx_int       = approx_int,
                           dl_cutoff        = dl_cutoff)
 

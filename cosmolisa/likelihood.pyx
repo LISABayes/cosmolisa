@@ -2,9 +2,8 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI
+from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erfc
 cimport cython
-from scipy.special.cython_special cimport erfc, hyp2f1
 from scipy.special import logsumexp
 from scipy.optimize import newton
 from scipy.integrate import quad
@@ -202,3 +201,52 @@ cpdef double find_redshift(CosmologicalParameters omega, double dl):
 
 cdef double objective(double z, CosmologicalParameters omega, double dl):
     return dl - omega.LuminosityDistance(z)
+
+def likelihood_normalisation(double zmin, double zmax, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
+    return _likelihood_normalisation(zmin, zmax, hosts, sigma, SNR, SNR_threshold, omega)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _likelihood_normalisation(double zmin, double zmax, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
+    cdef int i
+    cdef int N = 10
+    cdef double normalisation = 0.0
+    cdef double dz = (zmax-zmin)/N
+    cdef double z  = zmin
+    for i in range(N):
+        normalisation += _likelihood_normalisation_integrand(z, hosts, sigma, SNR, SNR_threshold, omega)
+        z += dz
+    return normalisation
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef _likelihood_normalisation_integrand(double event_redshift, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
+    
+    cdef unsigned int i
+    cdef unsigned int N           = hosts.shape[0]
+    cdef double dl                = omega.LuminosityDistance(event_redshift)
+    cdef double erfc_arg          = dl*(SNR_threshold/SNR-1.0)/(sqrt(2.)*sigma)
+    cdef double integrand         = 0.0
+    for i in range(N):
+        sigma_z     = hosts[i,1]*(1+hosts[i,0])
+        score_z     = (event_redshift - hosts[i,0])/sigma_z
+        integrand  += hosts[i,2]*exp(-0.5*score_z*score_z)/sqrt(2.0*M_PI*sigma_z*sigma_z)
+    integrand *= sqrt(M_PI/2.0)*sigma*erfc(erfc_arg)
+    return integrand
+
+def logLikelihood_single_event_snr_threshold(const double[:,::1] hosts, double meandl, double sigma, double SNR, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0, double SNR_threshold = 20.0):
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)-log(_likelihood_normalisation(zmin, zmax, hosts,  sigma, SNR, SNR_threshold, omega))
+
+#def total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+#    return _total_number_of_events(r0, W, Q, R, omega, zmin = zmin, zmax = zmax)
+#
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#@cython.nonecheck(False)
+#@cython.cdivision(True)
+#cdef double _total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+#    return IntegrateRateWeightedComovingVolumeDensity(LALCosmologicalParametersAndRate *p, double z)

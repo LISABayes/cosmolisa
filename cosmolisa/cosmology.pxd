@@ -1,4 +1,5 @@
 cdef extern from "lal/LALCosmologyCalculator.h" nogil:
+    # cosmological parameters structure
     ctypedef struct LALCosmologicalParameters:
         double h;
         double om;
@@ -68,7 +69,7 @@ cdef extern from "lal/LALCosmologyCalculator.h" nogil:
     cdef double XLALGetW1(LALCosmologicalParameters *omega)
 
     cdef double XLALGetW2(LALCosmologicalParameters *omega)
-
+    
 cdef class CosmologicalParameters:
     cdef LALCosmologicalParameters* _LALCosmologicalParameters
     cdef public double h
@@ -89,3 +90,16 @@ cdef class CosmologicalParameters:
     cpdef double ComovingVolumeElement(self,double z)
     cpdef double ComovingVolume(self,double z)
     cpdef void DestroyCosmologicalParameters(self)
+
+cdef class CosmologicalRateParameters:
+    cdef public double r0
+    cdef public double W
+    cdef public double Q
+    cdef public double R
+    cpdef double StarFormationDensity(self, double z)
+
+cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation)
+
+cpdef double IntegrateRateWeightedComovingVolumeDensity(double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate)
+
+cpdef double RateWeightedUniformComovingVolumeDensity(double z, CosmologicalParameters omega, CosmologicalRateParameters rate)
