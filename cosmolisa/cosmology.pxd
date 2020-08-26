@@ -77,19 +77,16 @@ cdef class CosmologicalParameters:
     cdef public double ol
     cdef public double w0
     cdef public double w1
-    cpdef void SetH(self, double h)
-    cpdef void SetOM(self, double om)
-    cpdef void SetOL(self, double ol)
-    cpdef double HubbleParameter(self,double z)
-    cpdef double LuminosityDistance(self, double z)
-    cpdef double HubbleDistance(self)
-    cpdef double IntegrateComovingVolumeDensity(self, double zmax)
-    cpdef double IntegrateComovingVolume(self, double zmax)
-    cpdef double UniformComovingVolumeDensity(self, double z)
-    cpdef double UniformComovingVolumeDistribution(self, double z, double zmax)
-    cpdef double ComovingVolumeElement(self,double z)
-    cpdef double ComovingVolume(self,double z)
-    cpdef void DestroyCosmologicalParameters(self)
+    cdef public double _HubbleParameter(self,double z) nogil
+    cdef public double _LuminosityDistance(self, double z) nogil
+    cdef public double _HubbleDistance(self) nogil
+    cdef public double _IntegrateComovingVolumeDensity(self, double zmax) nogil
+    cdef public double _IntegrateComovingVolume(self, double zmax) nogil
+    cdef public double _UniformComovingVolumeDensity(self, double z) nogil
+    cdef public double _UniformComovingVolumeDistribution(self, double z, double zmax) nogil
+    cdef public double _ComovingVolumeElement(self,double z) nogil
+    cdef public double _ComovingVolume(self,double z) nogil
+    cdef void _DestroyCosmologicalParameters(self) nogil
 
 cdef class CosmologicalRateParameters:
     cdef public double r0

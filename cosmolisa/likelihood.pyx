@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erfc
+from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erfc,HUGE_VAL
 cimport cython
 from scipy.special import logsumexp
 from scipy.optimize import newton
@@ -39,8 +39,8 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
     cdef double weak_lensing_error
     cdef unsigned int N           = hosts.shape[0]
     cdef double logTwoPiByTwo     = 0.5*log(2.0*M_PI)
-    cdef double logL              = -np.inf
-    cdef double logLn             = -np.inf
+    cdef double logL              = -HUGE_VAL
+    cdef double logLn             = -HUGE_VAL
     cdef double logp_detection    = 0.0
     cdef double logp_nondetection = 0.0
 
@@ -49,7 +49,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
 #    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
 
     # Predict dl from the cosmology O and the redshift z_gw
-    dl = omega.LuminosityDistance(event_redshift)
+    dl = omega._LuminosityDistance(event_redshift)
 
     # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
     weak_lensing_error            = _sigma_weak_lensing(event_redshift, dl)
@@ -69,7 +69,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
         # Define the 'completeness function' as a weight f(dL),
         # entering the probability p(G| dL z_gw O H I) that the event
         # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
-        logp_detection    = log(em_selection_function(dl))
+        logp_detection    = log(_em_selection_function(dl))
         logL             += logp_detection
         # Compute the probability p(notG| dL z_gw O H I) that the event
         # is located in a non-detected galaxy as 1-p(G| dL z_gw O H I)
@@ -92,10 +92,13 @@ cdef inline double _sigma_weak_lensing(double z, double dl):
     """
     return 0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
 
+def em_selection_function(double dl):
+    return _em_selection_function(dl)
+
 # Completeness function f(dL) currently available in the code
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cpdef double em_selection_function(double dl):
+cdef double _em_selection_function(double dl) nogil:
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
 
@@ -124,13 +127,13 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
     cdef unsigned int i
     cdef unsigned int N           = hosts.shape[0]
     cdef double logTwoPiByTwo     = 0.5*log(2.0*M_PI)
-    cdef double log_in_cat        = -np.inf
-    cdef double log_out_cat       = -np.inf
+    cdef double log_in_cat        = -HUGE_VAL
+    cdef double log_out_cat       = -HUGE_VAL
     cdef double logp_detection    = 0.0
     cdef double logp_nondetection = 0.0
 
     # p(Di | dL z_gw O H I)
-    dl = omega.LuminosityDistance(event_redshift)
+    dl = omega._LuminosityDistance(event_redshift)
 
     weak_lensing_error            = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared      = sigmadl**2 + weak_lensing_error**2
@@ -148,18 +151,18 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
         log_in_cat  = log_add(log_in_cat, logL_galaxy)
 
     # IntegrateComovingVolume (without 1+z factor): https://lscsoft.docs.ligo.org/lalsuite/lal/_l_a_l_cosmology_calculator_8h.html#a2803b9093568dcba15ca8921b2bece79
-    cdef double log_Vc_norm = log(omega.IntegrateComovingVolume(zmax))
+    cdef double log_Vc_norm = log(omega._IntegrateComovingVolume(zmax))
 
     if (approx_int == 1):
-        logp_detection = log(em_selection_function(dl))
+        logp_detection = log(_em_selection_function(dl))
     else:
         logp_detection = log(quad(_integrand, 0, zmax, args=(omega))[0]) - log_Vc_norm
     log_in_cat    += logp_detection
     
     # out-catalogue term
-    cdef double log_Vc      = log(omega.ComovingVolumeElement(event_redshift))
+    cdef double log_Vc      = log(omega._ComovingVolumeElement(event_redshift))
     log_com_vol             = log_Vc - log_Vc_norm
-    logp_nondetection       = logsumexp([0.0, log(em_selection_function(dl))], b = [1,-1])
+    logp_nondetection       = logsumexp([0.0, log(_em_selection_function(dl))], b = [1,-1])
     log_out_cat             = logp_nondetection + log_com_vol
 
     # p(Di | dL z_gw O H I) * p(z_gw | O H I)
@@ -170,8 +173,8 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts, doubl
 
 # ComovingVolumeElement (without 1+z factor): https://lscsoft.docs.ligo.org/lalsuite/lal/_l_a_l_cosmology_calculator_8h.html#a846d4df0118b0687b9b31f777679b5d3
 cpdef double _integrand(double z, CosmologicalParameters omega):
-    cdef double dl = omega.LuminosityDistance(z)
-    return em_selection_function(dl)*omega.ComovingVolumeElement(z)
+    cdef double dl = omega._LuminosityDistance(z)
+    return _em_selection_function(dl)*omega._ComovingVolumeElement(z)
 
 
 
@@ -188,10 +191,10 @@ cpdef double em_selection_function_normalisation(double zmin, double zmax, Cosmo
     cdef double tmp
     cdef int i      = 0
     cdef double z   = zmin, dz = (zmax-zmin)/100.
-    cdef double res = -np.inf
+    cdef double res = -HUGE_VAL
     for i in range(0,100):
         dl  = omega.LuminosityDistance(z)
-        tmp = N*(log(1.0-em_selection_function(dl))+log(omega.ComovingVolumeElement(z)))#
+        tmp = N*(log(1.0-_em_selection_function(dl))+log(omega._ComovingVolumeElement(z)))#
         res = log_add(res,tmp)
         z  += dz
     return res+log(dz)
@@ -200,7 +203,7 @@ cpdef double find_redshift(CosmologicalParameters omega, double dl):
     return newton(objective,1.0,args=(omega,dl))
 
 cdef double objective(double z, CosmologicalParameters omega, double dl):
-    return dl - omega.LuminosityDistance(z)
+    return dl - omega._LuminosityDistance(z)
 
 def likelihood_normalisation(double zmin, double zmax, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
     return _likelihood_normalisation(zmin, zmax, hosts, sigma, SNR, SNR_threshold, omega)
@@ -224,13 +227,14 @@ cdef double _likelihood_normalisation(double zmin, double zmax, const double[:,:
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef _likelihood_normalisation_integrand(double event_redshift, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
+cdef double _likelihood_normalisation_integrand(double event_redshift, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
     
     cdef unsigned int i
     cdef unsigned int N           = hosts.shape[0]
-    cdef double dl                = omega.LuminosityDistance(event_redshift)
+    cdef double dl                = omega._LuminosityDistance(event_redshift)
     cdef double erfc_arg          = dl*(SNR_threshold/SNR-1.0)/(sqrt(2.)*sigma)
     cdef double integrand         = 0.0
+    cdef double sigma_z, score_z
     for i in range(N):
         sigma_z     = hosts[i,1]*(1+hosts[i,0])
         score_z     = (event_redshift - hosts[i,0])/sigma_z
