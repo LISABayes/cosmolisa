@@ -40,7 +40,7 @@ Alternative formulation with em_selection = 1
 class CosmologicalModel(cpnest.model.Model):
 
     names  = [] #'h','om','ol','w0','w1']
-    bounds = [] #[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+    bounds = [] #[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
     def __init__(self, model, data, *args, **kwargs):
 
@@ -65,17 +65,17 @@ class CosmologicalModel(cpnest.model.Model):
         if (self.model == "LambdaCDM"):
             
             self.names  = ['h','om']
-            self.bounds = [[0.5,1.0],[0.04,0.5]]
+            self.bounds = [[0.6,0.86],[0.04,0.5]]
         
         elif (self.model == "CLambdaCDM"):
             
             self.names  = ['h','om','ol']
-            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0]]
+            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
 
         elif (self.model == "LambdaCDMDE"):
             
             self.names  = ['h','om','ol','w0','w1']
-            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
             
         elif (self.model == "DE"):
             
@@ -309,6 +309,22 @@ if __name__=='__main__':
             #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
             #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
             # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
+            # for e in events:
+            #     print("\nEvent", e.ID)
+            #     galaxy_selected = []
+            #     print("Original galaxy hosts:",len(e.potential_galaxy_hosts))
+            #     for gal in e.potential_galaxy_hosts: 
+            #         if (gal.redshift > 0.3):
+            #             galaxy_selected.append(gal) 
+            #         else:
+            #             print("Galaxy host {} removed (z={}).".format(gal, gal.redshift))
+            #     e.potential_galaxy_hosts = galaxy_selected
+            #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
+            # for e in events:
+            #     print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
+            #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
+            #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
 
         else:
             events = readdata.read_event(event_class, opts.data, None)
@@ -395,6 +411,7 @@ if __name__=='__main__':
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
                            nhamiltonian = 0)
+# To plot prior&posterior: verbose =3, or prior-sampling = True
 
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
