@@ -7,7 +7,7 @@ cimport cython
 from scipy.special import logsumexp
 from scipy.optimize import newton
 from scipy.integrate import quad
-from .cosmology cimport CosmologicalParameters
+from .cosmology cimport CosmologicalParameters, _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
 from libc.math cimport isfinite
 
 cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
@@ -219,7 +219,7 @@ cdef double _likelihood_normalisation(double zmin, double zmax, const double[:,:
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        normalisation += _likelihood_normalisation_integrand(z, hosts, sigma, SNR, SNR_threshold, omega)
+        normalisation += _likelihood_normalisation_integrand(z, hosts, sigma, SNR, SNR_threshold, omega)*dz
         z += dz
     return normalisation
 
@@ -242,15 +242,70 @@ cdef double _likelihood_normalisation_integrand(double event_redshift, const dou
     integrand *= sqrt(M_PI/2.0)*sigma*erfc(erfc_arg)
     return integrand
 
-def logLikelihood_single_event_snr_threshold(const double[:,::1] hosts, double meandl, double sigma, double SNR, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0, double SNR_threshold = 20.0):
-    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)-log(_likelihood_normalisation(zmin, zmax, hosts,  sigma, SNR, SNR_threshold, omega))
+def logLikelihood_single_event_snr_threshold(const double[:,::1] hosts, double meandl, double sigma, double SNR, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0, double z_threshold = 1.0, double SNR_threshold = 20.0):
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)-log(_likelihood_normalisation(0.0, z_threshold, hosts,  sigma, SNR, SNR_threshold, omega))
 
-#def total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
-#    return _total_number_of_events(r0, W, Q, R, omega, zmin = zmin, zmax = zmax)
+def logLikelihood_single_event_sfr(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, double r0, double W, double Q, double R, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)+log(_StarFormationDensity(event_redshift, r0, W, R, Q))
+
+def total_number_of_events(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+    return _total_number_of_events(r0, W, Q, R, omega, zmin, zmax)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
+    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, Q, R, omega, zmin, zmax)
+
+
+def logLikelihood_single_event_sfr_non_det(CosmologicalParameters O, double dl_non_det, double z_non_det, double r0, double W, double Q, double R, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event_sfr_non_det(O, dl_non_det, z_non_det, r0, W, Q, R, zmin, zmax)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _logLikelihood_single_event_sfr_non_det(CosmologicalParameters O, double dl_non_det, double z_non_det, double r0, double W, double Q, double R, double zmin = 0.0, double zmax = 1.0) nogil:
+    
+#    cdef double dl = O._LuminosityDistance(z_non_det)
+#    cdef double logL = -0.5*(dl-dl_non_det)*(dl-dl_non_det)
+    return log(_StarFormationDensity(z_non_det, r0, W, R, Q))+log(O._UniformComovingVolumeDensity(z_non_det))
+
+
+##########################################################
 #
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
-#cdef double _total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
-#    return IntegrateRateWeightedComovingVolumeDensity(LALCosmologicalParametersAndRate *p, double z)
+#               Selection probability functions
+#
+##########################################################
+
+def gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
+    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, sigma, SNR, SNR_threshold, omega)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+    
+    cdef int i
+    cdef int N = 10
+    cdef double normalisation = 0.0
+    cdef double dz = (zmax-zmin)/N
+    cdef double z  = zmin
+    for i in range(N):
+        normalisation += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, sigma, SNR, SNR_threshold, omega)*dz
+        z += dz
+    return normalisation
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _gw_selection_probability_integrand_sfr(double z, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+
+    cdef double dl                = omega._LuminosityDistance(z)
+    cdef double erfc_arg          = dl*(SNR_threshold/SNR-1.0)/(sqrt(2.)*sigma)
+    cdef double integrand         = sqrt(M_PI/2.0)*sigma*erfc(erfc_arg)*_StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
+    return integrand

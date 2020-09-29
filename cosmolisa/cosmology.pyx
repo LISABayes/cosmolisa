@@ -87,25 +87,31 @@ cdef class CosmologicalRateParameters:
     cpdef double StarFormationDensity(self, double z):
         return self.r0*(1.0+self.W)*exp(self.Q*z)/(exp(self.R*z)+self.W)
 
-cpdef double RateWeightedUniformComovingVolumeDensity(double z, CosmologicalParameters omega, CosmologicalRateParameters rate):
-    return omega.UniformComovingVolumeDensity(z)*rate.StarFormationDensity(z)
+def StarFormationDensity(double z, double r0, double W, double R, double Q):
+    return _StarFormationDensity(z, r0, W, R, Q)
+
+cdef double _StarFormationDensity(double z, double r0, double W, double R, double Q) nogil:
+    return r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
+
+def IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, Q, R, omega, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cpdef double IntegrateRateWeightedComovingVolumeDensity(double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate):
+cdef double _IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
     cdef int i = 0
     cdef int N = 100
     cdef double I = 0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        I += RateWeightedUniformComovingVolumeDensity(z, omega, rate)*dz
+        I += _StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)*dz
         z += dz
     return I
 
-cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation):
-    if normalisation < 0.0:
-        normalisation = IntegrateRateWeightedComovingVolumeDensity(zmin, zmax, omega, rate)
-    return RateWeightedUniformComovingVolumeDensity(z, omega, rate)/normalisation
+#cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation):
+#    if normalisation < 0.0:
+#        normalisation = IntegrateRateWeightedComovingVolumeDensity(zmin, zmax, omega, rate)
+#    return RateWeightedUniformComovingVolumeDensity(z, omega, rate)/normalisation

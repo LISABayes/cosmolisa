@@ -60,22 +60,23 @@ class CosmologicalModel(cpnest.model.Model):
         self.detection_corr   = kwargs['detection_corr']
         self.approx_int       = kwargs['approx_int']
         self.dl_cutoff        = kwargs['dl_cutoff']
+        self.sfr              = kwargs['sfr']
         self.O                = None
         
         if (self.model == "LambdaCDM"):
             
             self.names  = ['h','om']
-            self.bounds = [[0.5,1.0],[0.04,0.5]]
+            self.bounds = [[0.6,0.86],[0.04,0.5]]
         
         elif (self.model == "CLambdaCDM"):
             
             self.names  = ['h','om','ol']
-            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0]]
+            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
 
         elif (self.model == "LambdaCDMDE"):
             
             self.names  = ['h','om','ol','w0','w1']
-            self.bounds = [[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
             
         elif (self.model == "DE"):
             
@@ -90,9 +91,17 @@ class CosmologicalModel(cpnest.model.Model):
         for e in self.data:
             self.names.append('z%d'%e.ID)
             self.bounds.append([e.zmin,e.zmax])
-            
-#        self.names.append('logr0')
-#        self.bounds.append([np.log(1e-12),np.log(1e-9)])
+        
+        if self.sfr == 1:
+            self.names.append('logr0')
+            self.bounds.append([np.log(1e-12),np.log(1e-5)])
+            self.names.append('W')
+            self.bounds.append([0.0,100.0])
+            self.names.append('Q')
+            self.bounds.append([-10.0,10.0])
+            self.names.append('R')
+            self.bounds.append([0.0,5.0])
+    
         self._initialise_galaxy_hosts()
         
         print("==================================================")
@@ -106,6 +115,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("lk_sel_fun: {0}".format(self.lk_sel_fun))
         print("detection_corr: {0}".format(self.detection_corr))
         print("approx_int: {0}".format(self.approx_int))
+        print("SFR: {0}".format(self.sfr))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -170,8 +180,51 @@ class CosmologicalModel(cpnest.model.Model):
                                                         em_selection = self.em_selection,
                                                         zmin = self.bounds[2+j][0],
                                                         zmax = self.bounds[2+j][1],
+                                                        z_threshold  = self.z_threshold,
                                                         SNR_threshold = 20.0)
                                                         for j,e in enumerate(self.data)])
+            
+        elif (self.sfr == 1):
+            W   = x['W']
+            r0  = np.exp(x['logr0'])
+            Q   = x['Q']
+            R   = x['R']
+            obsT = 10.0*self.N/180. #FIXME: this needs to be replaced with the correct expression
+            N    = lk.total_number_of_events(r0, W, Q, R, self.O, 0.0, self.z_threshold)*obsT
+            if N < self.N:return -np.inf
+            Ndet    = N*np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.sigma, e.snr, 20.0, self.O)])
+            logL = np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
+                                                             e.dl,
+                                                             e.sigma,
+                                                             self.O,
+                                                             x['z%d'%e.ID],
+                                                             r0,
+                                                             W,
+                                                             Q,
+                                                             R,
+                                                             em_selection = self.em_selection,
+                                                             zmin = self.bounds[2+j][0],
+                                                             zmax = self.bounds[2+j][1])
+                                                             for j,e in enumerate(self.data)])
+#            print(N,M,self.N,lk.logLikelihood_single_event_sfr_non_det(self.O,
+#                                                                x['dl_non_det'],
+#                                                                x['z_non_det'],
+#                                                                r0,
+#                                                                W,
+#                                                                Q,
+#                                                                R,
+#                                                                zmin = 0.0,
+#                                                                zmax = self.z_threshold))
+#            logL += M*(lk.logLikelihood_single_event_sfr_non_det(self.O,
+#                                                                x['dl_non_det'],
+#                                                                x['z_non_det'],
+#                                                                r0,
+#                                                                W,
+#                                                                Q,
+#                                                                R,
+#                                                                zmin = 0.0,
+#                                                                zmax = self.z_threshold)-np.log(N))
+            logL += -Ndet
         else:
             # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
             logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
@@ -211,6 +264,7 @@ if __name__=='__main__':
     parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
     parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
     parser.add_option('--detection_corr',    default=0,           type='int',    metavar='detection_corr',   help='Single-event likelihood including detection correction')
+    parser.add_option('--sfr',    default=0,           type='int',    metavar='sfr',   help='fit the sfr parameters too')
     parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
@@ -241,6 +295,7 @@ if __name__=='__main__':
     postprocess      = opts.postprocess
     screen_output    = opts.screen_output
     out_dir          = opts.out_dir
+    sfr              = opts.sfr
 
     if not (screen_output):
         if not (postprocess):
@@ -383,7 +438,8 @@ if __name__=='__main__':
                           lk_sel_fun       = lk_sel_fun,
                           detection_corr   = detection_corr,
                           approx_int       = approx_int,
-                          dl_cutoff        = dl_cutoff)
+                          dl_cutoff        = dl_cutoff,
+                          sfr              = sfr)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
@@ -581,7 +637,21 @@ if __name__=='__main__':
 
     fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
 
-
+    if opts.sfr == 1:
+        z   = np.linspace(0.0,C.z_threshold,100)
+        fig = plt.figure()
+        ax  = fig.add_subplot(111)
+        sfr = []
+        for i in range(x.shape[0]):
+            sfr.append(np.array([cs.StarFormationDensity(zi, np.exp(x['logr0'][i]), x['W'][i], x['R'][i], x['W'][i]) for zi in z]))
+        sfr   = np.array(sfr)
+        l,m,h = np.percentile(sfr,[5,50,95],axis=0)
+        ax.plot(z,m,color='k', linewidth=.7)
+        ax.fill_between(z,l,h,facecolor='lightgray')
+        ax.set_xlabel('redshift')
+        ax.set_ylabel('merger rate')
+        ax.set_yscale('log')
+        fig.savefig(os.path.join(output,'merger_rate.pdf'), bbox_inches='tight')
 ############################################################
 ############################################################
 # UNUSED CODE

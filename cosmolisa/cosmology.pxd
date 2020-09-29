@@ -95,8 +95,12 @@ cdef class CosmologicalRateParameters:
     cdef public double R
     cpdef double StarFormationDensity(self, double z)
 
-cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation)
+cdef double _StarFormationDensity(double z, double r0, double W, double R, double Q) nogil
 
-cpdef double IntegrateRateWeightedComovingVolumeDensity(double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate)
+#cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation)
 
-cpdef double RateWeightedUniformComovingVolumeDensity(double z, CosmologicalParameters omega, CosmologicalRateParameters rate)
+#cpdef double IntegrateRateWeightedComovingVolumeDensity(double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate)
+
+#cpdef double RateWeightedUniformComovingVolumeDensity(double z, CosmologicalParameters omega, CosmologicalRateParameters rate)
+
+cdef double _IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin, double zmax) nogil

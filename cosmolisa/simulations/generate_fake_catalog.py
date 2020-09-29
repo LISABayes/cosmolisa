@@ -250,7 +250,7 @@ class EMRIDistribution(object):
         return self.catalog
     
     def generate_galaxies(self, i):
-        self.n0 = 10*0.66 # Mpc^{-3}. Increase it to augment the # of possible hosts per event 
+        self.n0 = 0.66 # Mpc^{-3}. Increase it to augment the # of possible hosts per event 
         if self.galaxy_norm is None:
             self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
         if self.galaxy_pmax is None:
@@ -370,15 +370,15 @@ if __name__=="__main__":
     ol = 1.0 - om
     w0 = -1.0 # -1.0
     w1 = 0.0 # 0.0
-    r0 = 1e-9 # in Mpc^{-3}yr^{-1}
+    r0 = 1e-10 # in Mpc^{-3}yr^{-1}
     W  = 0.0
     R  = 0.0
     Q  = 0.0
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
 
     # EDITABLE
-    redshift_max = 0.7
-    catalog_name = "test_catalog_z_07_h_073_SNR_20"
+    redshift_max = 1.0
+    catalog_name = "test_catalog_z_1_h_073_SNR_20"
     
     C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
     C.get_catalog(T = 10, SNR_threshold = 20)
