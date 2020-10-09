@@ -4,7 +4,9 @@ import lal
 import os
 import sys
 import cosmolisa.cosmology as cs
+import cosmolisa.likelihood as lk
 import matplotlib.pyplot as plt
+from optparse import OptionParser
 
 """
     file ID.dat:
@@ -43,7 +45,7 @@ import matplotlib.pyplot as plt
     col 13: dL host (rad)
     col 14: (dL_cand-dL_host)/ddL
 """
-def redshift_rejection_sampling(min, max, p, pmax, norm):
+def redshift_rejection_sampling(zmin, zmax, omega, r0, W, R, Q, distribution, pmax):
     """
     Samples the cosmologically correct redshift
     distribution
@@ -52,7 +54,7 @@ def redshift_rejection_sampling(min, max, p, pmax, norm):
     ===========
     min ::`obj`: `float`
     max ::`obj`: `float`
-    omega ::`obj`: `lal.CosmologicalParameter`
+    omega ::`obj`: `CosmologicalParameter`
     pmax ::`obj`: `float`
     norm ::`obj`: `float`
     
@@ -62,8 +64,8 @@ def redshift_rejection_sampling(min, max, p, pmax, norm):
     """
     while True:
         test = pmax * np.random.uniform(0,1)
-        z = np.random.uniform(min,max)
-        prob = lal.RateWeightedUniformComovingVolumeDensity(z,p)/norm
+        z = np.random.uniform(zmin,zmax)
+        prob = distribution(z)
         if (test < prob): break
     return z
 
@@ -161,8 +163,8 @@ class EMRIDistribution(object):
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
-        self.norm = lal.IntegrateRateWeightedComovingVolumeDensity(self.p, self.z_max)
-        self.dist = lambda z: lal.RateWeightedUniformComovingVolumeDensity(z,self.p)/self.norm
+        self.norm = cs.IntegrateRateWeightedComovingVolumeDensity(self.r0, self.W, self.Q, self.R, self.fiducial_O, zmin = self.z_min, zmax = self.z_max)
+        self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm
         self.pmax = np.max([self.dist(zi) for zi in zt])
             
         self.ra_pdf     = scipy.stats.uniform(loc = self.ra_min, scale = self.ra_max-self.ra_min)
@@ -177,7 +179,7 @@ class EMRIDistribution(object):
     def get_sample(self, *args, **kwargs):
         ra    = self.ra_pdf.rvs()
         dec   = np.arcsin(self.sindec_pdf.rvs())
-        z     = redshift_rejection_sampling(self.z_min, self.z_max, self.p, self.pmax, self.norm)
+        z     = redshift_rejection_sampling(self.z_min, self.z_max, self.fiducial_O, self.r0, self.W, self.R, self.Q, self.dist, self.pmax)
         d     = lal.LuminosityDistance(self.omega,z)
         return z,d,ra,dec
     
@@ -264,8 +266,8 @@ class EMRIDistribution(object):
 #        print("D = ",D,"dD = ",dD,"Vc = ",Vc, "A = ",A, "N = ", N_gal)
 #        if N_gal > 10000:
 #            return 0,0,0
-        z_cosmo = [galaxy_redshift_rejection_sampling(self.catalog[i,8], self.catalog[i,9], self.fiducial_O, self.galaxy_pmax, self.galaxy_norm) for _ in range(N_gal-1)]
-#        z_cosmo = []
+#        z_cosmo = [galaxy_redshift_rejection_sampling(self.catalog[i,8], self.catalog[i,9], self.fiducial_O, self.galaxy_pmax, self.galaxy_norm) for _ in range(N_gal-1)]
+        z_cosmo = []
         z_cosmo.append(self.catalog[i,0])
         z_cosmo = np.array(z_cosmo)
         z_obs   = z_cosmo #+ np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
@@ -363,28 +365,70 @@ class EMRIDistribution(object):
         
         
         
-if __name__=="__main__":
-    np.random.seed(1)
-    h  = 0.73 # 0.73
-    om = 0.25 # 0.25
-    ol = 1.0 - om
-    w0 = -1.0 # -1.0
-    w1 = 0.0 # 0.0
-    r0 = 1e-10 # in Mpc^{-3}yr^{-1}
-    W  = 0.0
-    R  = 0.0
-    Q  = 0.0
+usage=""" %prog (options)"""
+
+if __name__=='__main__':
+
+    parser = OptionParser(usage)
+    parser.add_option('--r0', default=1e-12, type='float', metavar='r0', help='local merger rate in Mpc^{-3}yr^{-1}')
+    parser.add_option('--W', default=0.0, type='float', metavar='W', help='merger rate parameter W')
+    parser.add_option('--R', default=0.0, type='float', metavar='R', help='merger rate parameter R')
+    parser.add_option('--Q', default=0.0, type='float', metavar='Q', help='merger rate parameter Q')
+    parser.add_option('--h', default=0.73, type='float', metavar='h', help='h')
+    parser.add_option('--om', default=0.25, type='float', metavar='om', help='om')
+    parser.add_option('--ol', default=0.75, type='float', metavar='ol', help='ol')
+    parser.add_option('--w0', default=-1.0, type='float', metavar='w0', help='w0')
+    parser.add_option('--w1', default=0.0, type='float', metavar='w1', help='w1')
+    parser.add_option('--zmax', default=1.0, type='float', metavar='zmax', help='maximum redshift')
+    parser.add_option('--seed', default=1, type='float', metavar='seed', help='seed initialisation')
+    parser.add_option('--snrmin', default=20, type='float', metavar='snrmin', help='snr threshold')
+    parser.add_option('--output', default = './', metavar='DIR', help='Directory for output.')
+    (opts,args)=parser.parse_args()
+    
+    np.random.seed(opts.seed)
+    h  = opts.h # 0.73
+    om = opts.om # 0.25
+    ol = opts.ol
+    w0 = opts.w0
+    w1 = opts.w1 # 0.0
+    r0 = opts.r0 # in Mpc^{-3}yr^{-1}
+    W  = opts.W
+    R  = opts.R
+    Q  = opts.Q
+    snr_th = opts.snrmin
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
 
     # EDITABLE
-    redshift_max = 1.0
-    catalog_name = "test_catalog_z_1_h_073_SNR_20"
-    
+    redshift_max = opts.zmax
+    catalog_name = opts.output
+    os.system('mkdir -p {0}'.format(catalog_name))
     C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
-    C.get_catalog(T = 10, SNR_threshold = 20)
+    C.get_catalog(T = 10, SNR_threshold = snr_th)
     C.save_catalog_ids(catalog_name)
     z  = np.linspace(C.z_min,C.z_max,1000)
-    plt.hist(C.catalog[:,0],bins=30,density=True,alpha=0.5)
-    plt.plot(z,[C.dist(zi) for zi in z])
-    os.system('mkdir -p Figs')
-    plt.savefig('Figs/{}.png'.format(catalog_name), bbox_inches='tight')
+    
+    os.system('mkdir -p {0}'.format(os.path.join(catalog_name,'figures')))
+    
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111)
+    ax.hist(C.catalog[:,0],bins=32,alpha=0.5)
+    ax.plot(z,[C.dist(zi) for zi in z])
+    ax.set_xlabel('redshift z')
+    ax.set_ylabel('number of events')
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'distribution'), bbox_inches='tight')
+    
+    plt.clf()
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111)
+    ax.plot(z, [cs.StarFormationDensity(zi, C.r0, C.W, C.R, C.Q)/1e-12 for zi in z])
+    ax.set_xlabel('redshift z')
+    ax.set_ylabel('merger rate [10$^{-12}$ Mpc$^{-3}$ yr$^{-1}$]')
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'merger_rate'), bbox_inches='tight')
+
+    plt.clf()
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111)
+    ax.hist(C.catalog[:,4],bins=32,alpha=0.5)
+    ax.set_xlabel('SNR')
+    ax.set_ylabel('number of events')
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'snr'), bbox_inches='tight')

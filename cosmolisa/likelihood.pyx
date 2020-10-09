@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erfc,HUGE_VAL
+from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL
 cimport cython
 from scipy.special import logsumexp
 from scipy.optimize import newton
@@ -82,7 +82,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
 def sigma_weak_lensing(double z, double dl):
     return _sigma_weak_lensing(z, dl)
 
-cdef inline double _sigma_weak_lensing(double z, double dl):
+cdef inline double _sigma_weak_lensing(double z, double dl) nogil:
     """
     Weak lensing error. From <arXiv:1601.07112v3>
     Parameters:
@@ -245,17 +245,17 @@ cdef double _likelihood_normalisation_integrand(double event_redshift, const dou
 def logLikelihood_single_event_snr_threshold(const double[:,::1] hosts, double meandl, double sigma, double SNR, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0, double z_threshold = 1.0, double SNR_threshold = 20.0):
     return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)-log(_likelihood_normalisation(0.0, z_threshold, hosts,  sigma, SNR, SNR_threshold, omega))
 
-def logLikelihood_single_event_sfr(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, double r0, double W, double Q, double R, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
-    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)+log(_StarFormationDensity(event_redshift, r0, W, R, Q))
+def logLikelihood_single_event_sfr(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, double r0, double W, double Q, double R, double normalisation, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)+log(_StarFormationDensity(event_redshift, r0, W, R, Q))-log(normalisation)
 
-def total_number_of_events(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
-    return _total_number_of_events(r0, W, Q, R, omega, zmin, zmax)
+def integrated_rate(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+    return _integrated_rate(r0, W, Q, R, omega, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _total_number_of_events(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
+cdef double _integrated_rate(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
     return _IntegrateRateWeightedComovingVolumeDensity(r0, W, Q, R, omega, zmin, zmax)
 
 
@@ -279,33 +279,37 @@ cdef double _logLikelihood_single_event_sfr_non_det(CosmologicalParameters O, do
 #
 ##########################################################
 
-def gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
-    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, sigma, SNR, SNR_threshold, omega)
+def gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega, double norm):
+    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, Dmean, sigma, SNR, SNR_threshold, omega)/norm
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+cdef double _gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
     
     cdef int i
-    cdef int N = 10
+    cdef int N = 32
     cdef double normalisation = 0.0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        normalisation += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, sigma, SNR, SNR_threshold, omega)*dz
+        normalisation += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, Dmean, sigma, SNR, SNR_threshold, omega)
         z += dz
-    return normalisation
+    return normalisation*dz
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_integrand_sfr(double z, double r0, double W, double R, double Q, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+cdef double _gw_selection_probability_integrand_sfr(double z, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
 
     cdef double dl                = omega._LuminosityDistance(z)
-    cdef double erfc_arg          = dl*(SNR_threshold/SNR-1.0)/(sqrt(2.)*sigma)
-    cdef double integrand         = sqrt(M_PI/2.0)*sigma*erfc(erfc_arg)*_StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
+    cdef double sigma_total       = sqrt(_sigma_weak_lensing(z, dl)**2+sigma**2)
+    # this is the distance threshold assuming a simple scaling law for the SNR
+    cdef double Dthreshold        = (SNR/SNR_threshold)*Dmean
+    cdef double A                 = 0.5*_StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
+    cdef double denominator      = sqrt(2.0)*sigma_total
+    cdef double integrand         = A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
     return integrand

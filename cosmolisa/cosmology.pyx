@@ -102,14 +102,14 @@ def IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, do
 @cython.cdivision(True)
 cdef double _IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
     cdef int i = 0
-    cdef int N = 100
+    cdef int N = 32
     cdef double I = 0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        I += _StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)*dz
+        I += _StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
         z += dz
-    return I
+    return I*dz
 
 #cpdef double RateWeightedComovingVolumeDistribution(double z, double zmin, double zmax, CosmologicalParameters omega, CosmologicalRateParameters rate, double normalisation):
 #    if normalisation < 0.0:
