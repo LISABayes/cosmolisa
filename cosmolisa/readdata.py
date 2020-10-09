@@ -189,9 +189,14 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
 
         events = []
         for ev in events_list:
-            event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-            # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
-            event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+            try:
+                event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
+                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+            except (ValueError):
+                event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
+                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
             ID              = np.int(event_id)
             dl              = np.float64(dl)
             sigma           = np.float64(sigma)*dl
@@ -202,8 +207,12 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
             z_true          = np.float64(z_true)
             event_file.close()
             try:
-                # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14
-                best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
+                try:
+                    # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14
+                    best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
+                except:
+                    # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14, 15
+                    best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl,_ = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
                 redshifts       = np.atleast_1d(zobs)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)

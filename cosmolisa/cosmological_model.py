@@ -294,7 +294,7 @@ if __name__=='__main__':
                 str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
                 str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
             print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
-            # CHECK BLOCK
+            # CHECK BLOCK - Split in redshift
             # events_selected = []
             # for e in events:
             #     print(e.ID)
@@ -309,6 +309,7 @@ if __name__=='__main__':
             #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
             #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
             # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
+            # CHECK BLOCK - If EMRIs at z>0.3 are selected, remove host galaxies at z<0.3 
             # for e in events:
             #     print("\nEvent", e.ID)
             #     galaxy_selected = []
