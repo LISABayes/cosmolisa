@@ -140,7 +140,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
             sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
             exit()
 
-    sys.stderr.write("Selected %d events\n"%len(analysis_events))
+    sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
 def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts = None):

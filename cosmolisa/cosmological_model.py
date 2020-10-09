@@ -98,14 +98,14 @@ class CosmologicalModel(cpnest.model.Model):
         print("==================================================")
         print("cpnest model initialised with:")
         print("Cosmological model: {0}".format(self.model))
-        print("Number of events: {0}".format(len(self.data)))
-        print("EM correction: {0}".format(self.em_selection))
-        print("Redshift prior: {0}".format(self.redshift_prior))
-        print("Time redshifting: {0}".format(self.time_redshifting))
-        print("Vc normalization: {0}".format(self.vc_normalization))
-        print("lk_sel_fun: {0}".format(self.lk_sel_fun))
-        print("detection_corr: {0}".format(self.detection_corr))
-        print("approx_int: {0}".format(self.approx_int))
+        print("Number of events:   {0}".format(len(self.data)))
+        print("EM correction:      {0}".format(self.em_selection))
+        print("Redshift prior:     {0}".format(self.redshift_prior))
+        print("Time redshifting:   {0}".format(self.time_redshifting))
+        print("Vc normalization:   {0}".format(self.vc_normalization))
+        print("lk_sel_fun:         {0}".format(self.lk_sel_fun))
+        print("detection_corr:     {0}".format(self.detection_corr))
+        print("approx_int:         {0}".format(self.approx_int))
         print("==================================================")
 
     def _initialise_galaxy_hosts(self):
@@ -215,8 +215,8 @@ if __name__=='__main__':
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
-    parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',            help='Number of live points.')
-    parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
+    parser.add_option('--nlive',             default=5000,        type='int',    metavar='nlive',            help='Number of live points.')
+    parser.add_option('--poolsize',          default=256,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
@@ -269,9 +269,6 @@ if __name__=='__main__':
             #     else:
             #         print("Event {} removed (z={}).".format(e.ID))
             # events = events_selected
-            for e in events:
-                print("ID: {}, z_true: {}, dl: {}".format(e.ID.ljust(3), e.z_true.ljust(7), e.dl.ljust(7)))
-            exit()
         elif (z_selection is not None):
             events = readdata.read_event(event_class, opts.data, None)
             new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
@@ -279,8 +276,6 @@ if __name__=='__main__':
                 events = new_list[:z_selection]
             elif (z_selection < 0):
                 events = new_list[z_selection:]
-            for e in events:
-                print("ID:",e.ID,"z_true:",e.z_true)
             print("Selected {} events from z={} to z={}.".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
         elif (snr_selection is not None):
             events = readdata.read_event(event_class, opts.data, None)
@@ -289,11 +284,7 @@ if __name__=='__main__':
                 events = new_list[:snr_selection]
             elif (snr_selection < 0):
                 events = new_list[snr_selection:]
-            for e in events:
-                print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
-                str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-                str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
-            print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
+            print("Selected {} events from SNR={} to SNR={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
             # CHECK BLOCK - Split in redshift
             # events_selected = []
             # for e in events:
@@ -304,10 +295,6 @@ if __name__=='__main__':
             #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
             # events = events_selected
             # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
-            # for e in events:
-            #     print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
-            #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-            #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
             # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
             # CHECK BLOCK - If EMRIs at z>0.3 are selected, remove host galaxies at z<0.3 
             # for e in events:
@@ -321,12 +308,7 @@ if __name__=='__main__':
             #             print("Galaxy host {} removed (z={}).".format(gal, gal.redshift))
             #     e.potential_galaxy_hosts = galaxy_selected
             #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
-            # for e in events:
-            #     print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
-            #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-            #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
             # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
-
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
@@ -383,11 +365,24 @@ if __name__=='__main__':
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
 
+    events = sorted(events, key=lambda x: getattr(x, 'ID'))
+    for e in events:
+        print("ID: {}  |  SNR: {}  |  z_true: {}  |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
+        str(e.ID).ljust(3), str(e.snr).ljust(7), str(e.z_true).ljust(7), 
+        str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+
     if out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
     else:
         output = out_dir
-    
+
+    print("==================================================")
+    print("\nCPNest will be initialised with:")
+    print("poolsize: {0}".format(opts.poolsize))
+    print("nlive:    {0}".format(opts.nlive))
+    print("maxmcmc:  {0}".format(opts.maxmcmc))
+    print("nthreads: {0}".format(opts.threads))
+
     C = CosmologicalModel(model,
                           events,
                           em_selection     = em_selection,
