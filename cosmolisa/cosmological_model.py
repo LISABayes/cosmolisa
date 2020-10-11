@@ -201,7 +201,7 @@ if __name__=='__main__':
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
-    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
@@ -242,6 +242,8 @@ if __name__=='__main__':
     screen_output    = opts.screen_output
     out_dir          = opts.out_dir
 
+    omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+
     if not (screen_output):
         if not (postprocess):
             directory = out_dir
@@ -250,69 +252,31 @@ if __name__=='__main__':
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
-    omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-
     if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
 
     if (event_class == "EMRI") and (joint != 0):
-        if (dl_cutoff > 0) and (zhorizon == 1000):
-            # events = readdata.read_event(event_class, opts.data, event_number=None)
-            events = readdata.read_event(event_class, opts.data, event_number=None, max_distance=dl_cutoff)
-            # print("\nAll the events:", len(events))
-            # events_selected = []
-            # for e in events:
-            #     print(e.ID)
-            #     if (omega_true.LuminosityDistance(e.zmax) > dl_cutoff):
-            #         events_selected.append(e) 
-            #     else:
-            #         print("Event {} removed (z={}).".format(e.ID))
-            # events = events_selected
+        if (snr_selection is not None):
+            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection)
         elif (z_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None)
-            new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
-            if (z_selection > 0):
-                events = new_list[:z_selection]
-            elif (z_selection < 0):
-                events = new_list[z_selection:]
-            print("Selected {} events from z={} to z={}.".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
-        elif (snr_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None)
-            new_list = sorted(events, key=lambda x: getattr(x, 'snr'))
-            if (snr_selection > 0):
-                events = new_list[:snr_selection]
-            elif (snr_selection < 0):
-                events = new_list[snr_selection:]
-            print("Selected {} events from SNR={} to SNR={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
-            # CHECK BLOCK - Split in redshift
-            # events_selected = []
-            # for e in events:
-            #     print(e.ID)
-            #     if (e.z_true > 0.3):
-            #         events_selected.append(e) 
-            #     else:
-            #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
-            # events = events_selected
-            # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
-            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
-            # CHECK BLOCK - If EMRIs at z>0.3 are selected, remove host galaxies at z<0.3 
-            # for e in events:
-            #     print("\nEvent", e.ID)
-            #     galaxy_selected = []
-            #     print("Original galaxy hosts:",len(e.potential_galaxy_hosts))
-            #     for gal in e.potential_galaxy_hosts: 
-            #         if (gal.redshift > 0.3):
-            #             galaxy_selected.append(gal) 
-            #         else:
-            #             print("Galaxy host {} removed (z={}).".format(gal, gal.redshift))
-            #     e.potential_galaxy_hosts = galaxy_selected
-            #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
-            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
+            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection)
+        elif (dl_cutoff > 0) and (zhorizon == 1000):
+            all_events = readdata.read_event(event_class, opts.data, None)
+            events_selected = []
+            print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
+            for e in all_events:
+                if (omega_true.LuminosityDistance(e.zmax) < dl_cutoff):
+                    events_selected.append(e)
+                    print("Event {} selected: dl(z_max)={}.".format(str(e.ID).ljust(3), omega_true.LuminosityDistance(e.zmax)))
+            events = sorted(events_selected, key=lambda x: getattr(x, 'dl'))
+            print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
+            for e in events:
+                print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))            
         else:
             events = readdata.read_event(event_class, opts.data, None)
             if (len(events) == 0):
-                print("The passed catalog is empty.\n")
+                print("The passed catalog is empty. Exiting.\n")
                 exit()
             if (reduced_catalog):
                 N = np.int(np.random.poisson(len(events)*4./10.))
@@ -365,10 +329,11 @@ if __name__=='__main__':
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
 
+    print("\nDetailed list of the %d selected events:\n"%len(events))
     events = sorted(events, key=lambda x: getattr(x, 'ID'))
     for e in events:
-        print("ID: {}  |  SNR: {}  |  z_true: {}  |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
-        str(e.ID).ljust(3), str(e.snr).ljust(7), str(e.z_true).ljust(7), 
+        print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
+        str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
         str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
 
     if out_dir is None:
@@ -407,7 +372,7 @@ if __name__=='__main__':
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
                            nhamiltonian = 0)
-# To plot prior&posterior: verbose =3, or prior-sampling = True
+    # To plot prior&posterior: verbose =3, or prior-sampling = True
 
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
@@ -424,9 +389,9 @@ if __name__=='__main__':
         print("Drawing posterior samples...")
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
-    ##############
-    # Make plots #
-    ##############
+    ###############################################
+    ################# MAKE PLOTS ##################
+    ###############################################
     
     if (event_class == "EMRI"):
         for e in C.data:

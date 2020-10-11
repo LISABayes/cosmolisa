@@ -143,7 +143,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts = None):
+def read_EMRI_event(input_folder, event_number, max_hosts = None, z_selection = None, snr_selection = None):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -189,6 +189,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
 
         events = []
         for ev in events_list:
+            # Some test catalogs have an additional unused column, so a try/except is needed
             try:
                 event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
                 # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
@@ -234,19 +235,58 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
                                     z_true,
                                     dl_host,
                                     VC = VC))
-                sys.stderr.write("Reading event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
+                print("Reading event %s at a distance %s (error %s), hosts %d"%(event_id,dl,sigma,len(redshifts)))
             except:
-                sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
+                print("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
 
-        if max_distance is not None:
-            distance_limited_events = [e for e in events if e.dl < max_distance]
-        else:
-            distance_limited_events = [e for e in events]
+        if (snr_selection is not None):
+            new_list = sorted(events, key=lambda x: getattr(x, 'snr'))
+            if (snr_selection > 0):
+                events = new_list[:snr_selection]
+            elif (snr_selection < 0):
+                events = new_list[snr_selection:]
+            print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))            
+            for e in events:
+                print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(9)))
+            # CHECK BLOCK - Split in redshift
+            # events_selected = []
+            # for e in events:
+            #     print(e.ID)
+            #     if (e.z_true > 0.3):
+            #         events_selected.append(e) 
+            #     else:
+            #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
+            # events = events_selected
+            # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
+            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
+            # CHECK BLOCK - If EMRIs at z>0.3 are selected, remove host galaxies at z<0.3 
+            # for e in events:
+            #     print("\nEvent", e.ID)
+            #     galaxy_selected = []
+            #     print("Original galaxy hosts:",len(e.potential_galaxy_hosts))
+            #     for gal in e.potential_galaxy_hosts: 
+            #         if (gal.redshift > 0.3):
+            #             galaxy_selected.append(gal) 
+            #         else:
+            #             print("Galaxy host {} removed (z={}).".format(gal, gal.redshift))
+            #     e.potential_galaxy_hosts = galaxy_selected
+            #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
+            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
 
-        if max_hosts is not None:
-            analysis_events = [e for e in distance_limited_events if len(e.n_hosts) < max_hosts]
-        else:
-            analysis_events = [e for e in distance_limited_events]
+        if (z_selection is not None):
+            new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
+            if (z_selection > 0):
+                events = new_list[:z_selection]
+            elif (z_selection < 0):
+                events = new_list[z_selection:]
+            print("\nSelected {} events from z={} to z={}:".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
+            for e in events:
+                print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
+
+        if (max_hosts is not None):
+            analysis_events = [e for e in events if len(e.n_hosts) < max_hosts]
+
+        analysis_events = events
 
     else:
         events_list.sort()
@@ -272,7 +312,6 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
 #        except:
 #            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
 
-    sys.stderr.write("Selected %d events\n"%len(analysis_events))
     return analysis_events
 
 def read_DEBUG_event(datafile, *args, **kwargs):
