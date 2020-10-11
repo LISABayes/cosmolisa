@@ -360,7 +360,7 @@ if __name__=='__main__':
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
                 print("==================================================")
             else:
-                print("None of the drawn events has z<{0}. No data to analyse.\n".format(zhorizon))
+                print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
                 exit()
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
