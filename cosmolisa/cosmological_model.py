@@ -203,6 +203,7 @@ if __name__=='__main__':
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
+    parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
@@ -227,6 +228,7 @@ if __name__=='__main__':
     z_selection      = opts.z_selection
     snr_selection    = opts.snr_selection
     zhorizon         = opts.zhorizon
+    max_hosts        = opts.max_hosts
     snr_threshold    = opts.snr_threshold
     redshift_prior   = opts.redshift_prior
     time_redshifting = opts.time_redshifting
@@ -256,7 +258,7 @@ if __name__=='__main__':
         # if running on SMBH override the selection functions
         em_selection = 0
 
-    if (event_class == "EMRI") and (joint != 0):
+    if (event_class == "EMRI"):
         if (snr_selection is not None):
             events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection)
         elif (z_selection is not None):
@@ -272,53 +274,43 @@ if __name__=='__main__':
             events = sorted(events_selected, key=lambda x: getattr(x, 'dl'))
             print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
-                print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))            
+                print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
+        elif (zhorizon < 1000):
+            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon)
+        elif (max_hosts is not None):
+            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts)
         else:
             events = readdata.read_event(event_class, opts.data, None)
-            if (len(events) == 0):
-                print("The passed catalog is empty. Exiting.\n")
-                exit()
-            if (reduced_catalog):
-                N = np.int(np.random.poisson(len(events)*4./10.))
-            else:
-                N = joint
-                if (N > len(events)):
-                    N = len(events)
-            print("==================================================")
-            print("Selecting a random catalog of (max) {0} events for joint analysis:".format(N))
-            print("==================================================")
+
+        if (len(events) == 0):
+            print("The passed catalog is empty. Exiting.\n")
+            exit()
+
+        if (reduced_catalog):
+            N = np.int(np.random.poisson(len(events)*4./10.))
             selected_events = []
-            if not (reduced_catalog):
-                while len(selected_events) < N and not(len(events) == 0):
-                    while True:
-                        if (len(events) > 0):
-                            idx = np.random.randint(len(events))
-                            selected_event = events.pop(idx)
-                        else:
-                            break
-                        if (selected_event.z_true < zhorizon):
-                            print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
-                            selected_events.append(selected_event)
-                            break
-                print("==================================================")
-                print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(zhorizon, len(selected_events),N))
-            else:
-                k = 0
-                while k < N and not(len(events) == 0):
-                    idx = np.random.randint(len(events))
-                    selected_event = events.pop(idx)
-                    print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
-                    if selected_event.z_true < zhorizon:
-                        selected_events.append(selected_event)
-                    else: pass
-                    k += 1
-                print("==================================================")
-                print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(zhorizon, len(selected_events),N))
-    #        else:
-    #            events = np.random.choice(events, size = N, replace = False)
-    #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(zhorizon, N))
+            k = 0
+            while k < N and not(len(events) == 0):
+                idx = np.random.randint(len(events))
+                selected_event = events.pop(idx)
+                print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
+                if selected_event.z_true < zhorizon:
+                    selected_events.append(selected_event)
+                else: pass
+                k += 1
             print("==================================================")
-            events = np.copy(selected_events)
+            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(zhorizon, len(selected_events),N))
+
+        if (joint != 0):
+            N = joint
+            if (N > len(events)):
+                N = len(events)
+                print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {events}".format(N, len(events)))
+            events = np.random.choice(events, size = N, replace = False)
+            print("==================================================")
+            print("Selecting a random catalog of {0} events for joint analysis:".format(N))
+            print("==================================================")
+
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))

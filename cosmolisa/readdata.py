@@ -143,7 +143,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_hosts = None, z_selection = None, snr_selection = None):
+def read_EMRI_event(input_folder, event_number, max_hosts=None, z_selection=None, snr_selection=None, zhorizon=None):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -283,8 +283,19 @@ def read_EMRI_event(input_folder, event_number, max_hosts = None, z_selection = 
             for e in events:
                 print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
 
+        if (zhorizon is not None):
+            events = [e for e in events if e.z_true < zhorizon]
+            events = sorted(events, key=lambda x: getattr(x, 'z_true'))
+            print("\nSelected {} events from z={} to z={} (zhorizon={}):".format(len(events), events[0].z_true, events[len(events)-1].z_true, zhorizon))
+            for e in events:
+                print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
+
         if (max_hosts is not None):
-            analysis_events = [e for e in events if len(e.n_hosts) < max_hosts]
+            events = [e for e in events if e.n_hosts < max_hosts]
+            events = sorted(events, key=lambda x: getattr(x, 'n_hosts'))
+            print("\nSelected {} events having hosts from n={} to n={} (max hosts imposed={}):".format(len(events), events[0].n_hosts, events[len(events)-1].n_hosts, max_hosts))
+            for e in events:
+                print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
 
         analysis_events = events
 
@@ -343,9 +354,9 @@ def read_DEBUG_event(datafile, *args, **kwargs):
     return events
 
 def read_event(event_class,*args,**kwargs):
-    if   (event_class == "MBH"): return read_MBH_event(*args, **kwargs)
-    elif (event_class == "EMRI"): return read_EMRI_event(*args, **kwargs)
-    elif (event_class == "sBH"): return read_EMRI_event(*args, **kwargs)
+    if   (event_class == "MBH"):   return read_MBH_event(*args, **kwargs)
+    elif (event_class == "EMRI"):  return read_EMRI_event(*args, **kwargs)
+    elif (event_class == "sBH"):   return read_EMRI_event(*args, **kwargs)
     elif (event_class == "DEBUG"): return read_DEBUG_event(*args, **kwargs)
     else:
         print("I do not know the class %s, exiting\n"%event_class)
