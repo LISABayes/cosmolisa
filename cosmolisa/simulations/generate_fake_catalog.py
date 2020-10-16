@@ -163,7 +163,7 @@ class EMRIDistribution(object):
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
-        self.norm = cs.IntegrateRateWeightedComovingVolumeDensity(self.r0, self.W, self.Q, self.R, self.fiducial_O, zmin = self.z_min, zmax = self.z_max)
+        self.norm = lk.integrated_rate(self.r0, self.W, self.Q, self.R, self.fiducial_O, self.z_min, self.z_max)
         self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm
         self.pmax = np.max([self.dist(zi) for zi in zt])
             
@@ -219,7 +219,7 @@ class EMRIDistribution(object):
         return self.delta_D0 * self.SNR0/SNR
 
     def find_redshift_limits(self,
-                             h_w  = (0.5,1.0),
+                             h_w  = (0.6,0.86),
                              om_w = (0.04,0.5),
                              w0_w = (-1,-1),
                              w1_w = (0,0)):

@@ -13,13 +13,6 @@ from libc.math cimport isfinite
 cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
 
 def logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
-    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-@cython.cdivision(True)
-cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -31,7 +24,17 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
     omega: :obj:'lal.CosmologicalParameter': cosmological parameter structure
     event_redshift: :obj:'numpy.double': redshift for the the GW event
     em_selection :obj:'numpy.int': apply em selection function. optional. default = 0
+    zmin: :obj:'numpy.double': minimum redshift
+    zmax: :obj:'numpy.double': maximum redshift
     """
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+
     cdef unsigned int i
     cdef double dl
     cdef double logL_galaxy
@@ -214,7 +217,7 @@ def likelihood_normalisation(double zmin, double zmax, const double[:,::1] hosts
 @cython.cdivision(True)
 cdef double _likelihood_normalisation(double zmin, double zmax, const double[:,::1] hosts, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega):
     cdef int i
-    cdef int N = 10
+    cdef int N = 32
     cdef double normalisation = 0.0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
@@ -310,6 +313,6 @@ cdef double _gw_selection_probability_integrand_sfr(double z, double r0, double 
     # this is the distance threshold assuming a simple scaling law for the SNR
     cdef double Dthreshold        = (SNR/SNR_threshold)*Dmean
     cdef double A                 = 0.5*_StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
-    cdef double denominator      = sqrt(2.0)*sigma_total
+    cdef double denominator       = sqrt(2.0)*sigma_total
     cdef double integrand         = A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
     return integrand

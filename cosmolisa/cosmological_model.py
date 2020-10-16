@@ -76,6 +76,7 @@ class CosmologicalModel(cpnest.model.Model):
             self.bounds.append([e.zmin,e.zmax])
         
         if self.sfr == 1:
+#           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.names.append('logr0')
             self.bounds.append([np.log(1e-14),np.log(1e-8)])
             self.names.append('W')
@@ -83,7 +84,7 @@ class CosmologicalModel(cpnest.model.Model):
             self.names.append('Q')
             self.bounds.append([0.0,5.0])
             self.names.append('R')
-            self.bounds.append([0.0,5.0])
+            self.bounds.append([0.0,10.0])
 
         self._initialise_galaxy_hosts()
         
@@ -177,11 +178,7 @@ class CosmologicalModel(cpnest.model.Model):
             # this will also serve as normalisation constant for the individual dR/dz_i
             Rtot = lk.integrated_rate(r0, W, Q, R, self.O, 0.0, self.z_threshold)
             Rdet = Rtot*np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, 20.0, self.O, Rtot) for e in self.data])
-            
-#            for e in self.data:
-#                print(Rtot,Rdet,lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, 20.0, self.O, Rtot))
-#            exit()
-            # loop over the individual events
+            # Poisson likelihood, see also https://arxiv.org/pdf/0805.2946.pdf
             logL = np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
                                                              e.dl,
                                                              e.sigma,
@@ -196,7 +193,8 @@ class CosmologicalModel(cpnest.model.Model):
                                                              zmin = self.bounds[2+j][0],
                                                              zmax = self.bounds[2+j][1])
                                                              for j,e in enumerate(self.data)])
-            logL += -Rdet
+            logL += -Rdet*self.T
+            logL += self.N*np.log(Rtot*self.T)
         else:
             # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
             logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
@@ -623,7 +621,7 @@ if __name__=='__main__':
         l,m,h = np.percentile(sfr,[5,50,95],axis=0)
         ax.plot(z,m,color='k', linewidth=.7)
         ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,[cs.StarFormationDensity(zi, 1e-12, 40.0, 2.1, 5.1) for zi in z],linestyle='dashed',color='red')
+        ax.plot(z,[cs.StarFormationDensity(zi, 1e-10, 25.0, 3.1, 7.1) for zi in z],linestyle='dashed',color='red')
         ax.set_xlabel('redshift')
         ax.set_ylabel('merger rate')
         ax.set_yscale('log')
