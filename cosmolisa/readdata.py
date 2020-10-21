@@ -143,7 +143,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_hosts=None, z_selection=None, snr_selection=None, zhorizon=None):
+def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, zhorizon=None):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -296,6 +296,22 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, z_selection=None
             print("\nSelected {} events having hosts from n={} to n={} (max hosts imposed={}):".format(len(events), events[0].n_hosts, events[len(events)-1].n_hosts, max_hosts))
             for e in events:
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
+
+        if(one_host_selection):
+            for e in events:
+                z_differences = []
+                for gal in e.potential_galaxy_hosts:
+                    z_diff = abs(e.z_true - gal.redshift)
+                    z_differences.append(z_diff)
+                    if (z_diff == min(z_differences)):
+                        selected_gal = gal 
+                e.potential_galaxy_hosts = [selected_gal]
+            print("\nUsing only the nearest host to the EMRI:")
+            events = sorted(events, key=lambda x: getattr(x, 'ID'))
+            for e in events:
+                print("ID: {}  |  SNR: {}  |  dl: {} Mpc  |  z_true: {} |  z_host: {} |  hosts: {}".format(
+                str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.dl).ljust(7), str(e.z_true).ljust(7), 
+                str(e.potential_galaxy_hosts[0].redshift).ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
 
         analysis_events = events
 

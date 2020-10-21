@@ -203,6 +203,7 @@ if __name__=='__main__':
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
+    parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
     parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
@@ -223,26 +224,27 @@ if __name__=='__main__':
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
     (opts,args)=parser.parse_args()
 
-    em_selection     = opts.em_selection
-    dl_cutoff        = opts.dl_cutoff
-    z_selection      = opts.z_selection
-    snr_selection    = opts.snr_selection
-    zhorizon         = opts.zhorizon
-    max_hosts        = opts.max_hosts
-    snr_threshold    = opts.snr_threshold
-    redshift_prior   = opts.redshift_prior
-    time_redshifting = opts.time_redshifting
-    vc_normalization = opts.vc_normalization
-    lk_sel_fun       = opts.lk_sel_fun
-    detection_corr   = opts.detection_corr
-    approx_int       = opts.approx_int
-    model            = opts.model
-    joint            = opts.joint
-    event_class      = opts.event_class
-    reduced_catalog  = opts.reduced_catalog
-    postprocess      = opts.postprocess
-    screen_output    = opts.screen_output
-    out_dir          = opts.out_dir
+    em_selection       = opts.em_selection
+    dl_cutoff          = opts.dl_cutoff
+    z_selection        = opts.z_selection
+    snr_selection      = opts.snr_selection
+    one_host_selection = opts.one_host_sel
+    zhorizon           = opts.zhorizon
+    max_hosts          = opts.max_hosts
+    snr_threshold      = opts.snr_threshold
+    redshift_prior     = opts.redshift_prior
+    time_redshifting   = opts.time_redshifting
+    vc_normalization   = opts.vc_normalization
+    lk_sel_fun         = opts.lk_sel_fun
+    detection_corr     = opts.detection_corr
+    approx_int         = opts.approx_int
+    model              = opts.model
+    joint              = opts.joint
+    event_class        = opts.event_class
+    reduced_catalog    = opts.reduced_catalog
+    postprocess        = opts.postprocess
+    screen_output      = opts.screen_output
+    out_dir            = opts.out_dir
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
 
@@ -260,11 +262,11 @@ if __name__=='__main__':
 
     if (event_class == "EMRI"):
         if (snr_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection)
+            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection)
         elif (z_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection)
+            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection)
         elif (dl_cutoff > 0) and (zhorizon == 1000):
-            all_events = readdata.read_event(event_class, opts.data, None)
+            all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
             events_selected = []
             print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
             for e in all_events:
@@ -276,11 +278,11 @@ if __name__=='__main__':
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif (zhorizon < 1000):
-            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon)
+            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
         elif (max_hosts is not None):
-            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts)
+            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
         else:
-            events = readdata.read_event(event_class, opts.data, None)
+            events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
 
         if (len(events) == 0):
             print("The passed catalog is empty. Exiting.\n")
@@ -305,7 +307,7 @@ if __name__=='__main__':
             N = joint
             if (N > len(events)):
                 N = len(events)
-                print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {events}".format(N, len(events)))
+                print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {}".format(N, len(events)))
             events = np.random.choice(events, size = N, replace = False)
             print("==================================================")
             print("Selecting a random catalog of {0} events for joint analysis:".format(N))
@@ -322,6 +324,7 @@ if __name__=='__main__':
         events = readdata.read_event(event_class, opts.data, opts.event)
 
     print("\nDetailed list of the %d selected events:\n"%len(events))
+    print("==================================================")
     events = sorted(events, key=lambda x: getattr(x, 'ID'))
     for e in events:
         print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
