@@ -7,12 +7,19 @@ cimport cython
 from scipy.special import logsumexp
 from scipy.optimize import newton
 from scipy.integrate import quad
-from .cosmology cimport CosmologicalParameters, _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
+from cosmolisa.cosmology cimport CosmologicalParameters, _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
 from libc.math cimport isfinite
 
 cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
 
-def logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+def logLikelihood_single_event(const double[:,::1] hosts,
+                               const double meandl,
+                               const double sigma,
+                               CosmologicalParameters omega,
+                               const double event_redshift,
+                               const int em_selection = 0,
+                               const double zmin = 0.0,
+                               const double zmax = 1.0):
     """
     Likelihood function for a single GW event.
     Loops over all possible hosts to accumulate the likelihood
@@ -33,7 +40,14 @@ def logLikelihood_single_event(const double[:,::1] hosts, double meandl, double 
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+cdef double _logLikelihood_single_event(const double[:,::1] hosts,
+                                        const double meandl,
+                                        const double sigma,
+                                        CosmologicalParameters omega,
+                                        const double event_redshift,
+                                        int em_selection = 0,
+                                        double zmin = 0.0,
+                                        double zmax = 1.0):
 
     cdef unsigned int i
     cdef double dl
@@ -82,10 +96,10 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts, double meandl
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
     return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+logL#+log_add(logL,logLn)#+logP
 
-def sigma_weak_lensing(double z, double dl):
+def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
 
-cdef inline double _sigma_weak_lensing(double z, double dl) nogil:
+cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
     """
     Weak lensing error. From <arXiv:1601.07112v3>
     Parameters:
@@ -248,18 +262,30 @@ cdef double _likelihood_normalisation_integrand(double event_redshift, const dou
 def logLikelihood_single_event_snr_threshold(const double[:,::1] hosts, double meandl, double sigma, double SNR, CosmologicalParameters omega, double event_redshift, int em_selection = 0, double zmin = 0.0, double zmax = 1.0, double z_threshold = 1.0, double SNR_threshold = 20.0):
     return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)-log(_likelihood_normalisation(0.0, z_threshold, hosts,  sigma, SNR, SNR_threshold, omega))
 
-def logLikelihood_single_event_sfr(const double[:,::1] hosts, double meandl, double sigma, CosmologicalParameters omega, double event_redshift, double r0, double W, double Q, double R, double normalisation, int em_selection = 0, double zmin = 0.0, double zmax = 1.0):
+def logLikelihood_single_event_sfr(const double[:,::1] hosts,
+                                   const double meandl,
+                                   const double sigma,
+                                   CosmologicalParameters omega,
+                                   const double event_redshift,
+                                   const double r0,
+                                   const double W,
+                                   const double R,
+                                   const double Q,
+                                   const double normalisation,
+                                   const int em_selection = 0,
+                                   double zmin = 0.0,
+                                   double zmax = 1.0):
     return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)+log(_StarFormationDensity(event_redshift, r0, W, R, Q))-log(normalisation)
 
-def integrated_rate(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
-    return _integrated_rate(r0, W, Q, R, omega, zmin, zmax)
+def integrated_rate(double r0, double W, double R, double Q, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+    return _integrated_rate(r0, W, R, Q, omega, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _integrated_rate(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
-    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, Q, R, omega, zmin, zmax)
+cdef double _integrated_rate(const double r0, const double W, const double R, const double Q, CosmologicalParameters omega, double zmin, double zmax) nogil:
+    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q, omega, zmin, zmax)
 
 
 def logLikelihood_single_event_sfr_non_det(CosmologicalParameters O, double dl_non_det, double z_non_det, double r0, double W, double Q, double R, double zmin = 0.0, double zmax = 1.0):
@@ -282,14 +308,35 @@ cdef double _logLikelihood_single_event_sfr_non_det(CosmologicalParameters O, do
 #
 ##########################################################
 
-def gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega, double norm):
+def gw_selection_probability_sfr(const double zmin,
+                                 const double zmax,
+                                 const double r0,
+                                 const double W,
+                                 const double R,
+                                 const double Q,
+                                 const double Dmean,
+                                 const double sigma,
+                                 const double SNR,
+                                 const double SNR_threshold,
+                                 CosmologicalParameters omega,
+                                 const double norm):
     return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, Dmean, sigma, SNR, SNR_threshold, omega)/norm
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_sfr(double zmin, double zmax, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+cdef double _gw_selection_probability_sfr(const double zmin,
+                                          const double zmax,
+                                          const double r0,
+                                          const double W,
+                                          const double R,
+                                          const double Q,
+                                          const double Dmean,
+                                          const double sigma,
+                                          const double SNR,
+                                          const double SNR_threshold,
+                                          CosmologicalParameters omega) nogil:
     
     cdef int i
     cdef int N = 32
@@ -306,7 +353,16 @@ cdef double _gw_selection_probability_sfr(double zmin, double zmax, double r0, d
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_integrand_sfr(double z, double r0, double W, double R, double Q, double Dmean, double sigma, double SNR, double SNR_threshold, CosmologicalParameters omega) nogil:
+cdef double _gw_selection_probability_integrand_sfr(const double z,
+                                                    const double r0,
+                                                    const double W,
+                                                    const double R,
+                                                    const double Q,
+                                                    const double Dmean,
+                                                    const double sigma,
+                                                    const double SNR,
+                                                    const double SNR_threshold,
+                                                    CosmologicalParameters omega) nogil:
 
     cdef double dl                = omega._LuminosityDistance(z)
     cdef double sigma_total       = sqrt(_sigma_weak_lensing(z, dl)**2+sigma**2)

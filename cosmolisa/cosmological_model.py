@@ -78,11 +78,11 @@ class CosmologicalModel(cpnest.model.Model):
         if self.sfr == 1:
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.names.append('logr0')
-            self.bounds.append([np.log(1e-14),np.log(1e-8)])
+            self.bounds.append([np.log(1e-20),np.log(1)])
             self.names.append('W')
             self.bounds.append([0.0,100.0])
             self.names.append('Q')
-            self.bounds.append([0.0,5.0])
+            self.bounds.append([0.0,10.0])
             self.names.append('R')
             self.bounds.append([0.0,10.0])
 
@@ -211,7 +211,7 @@ class CosmologicalModel(cpnest.model.Model):
 
         return logL
 
-truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0} # 0.73, 0.25, 0.75, -1.0, 0.0
+truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0,'r0':5e-13,'Q':3.1,'W':45.,'R':4.1} # 0.73, 0.25, 0.75, -1.0, 0.0
 usage=""" %prog (options)"""
 
 if __name__=='__main__':
@@ -230,7 +230,7 @@ if __name__=='__main__':
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
     parser.add_option('--redshift_prior',    default=0,           type='int',    metavar='redshift_prior',   help='Adopt a redshift prior with comoving volume factor.')
-    parser.add_option('--T',  default=10,           type='float',    metavar='T', help='Observation time')
+    parser.add_option('--T',                 default=10,          type='float',    metavar='T', help='Observation time')
     parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting', help='Add a factor 1/1+z_gw as redshift prior.')
     parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
     parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
@@ -268,7 +268,7 @@ if __name__=='__main__':
     out_dir          = opts.out_dir
     sfr              = opts.sfr
     T                = opts.T
-
+    
     if not (screen_output):
         if not (postprocess):
             directory = out_dir
@@ -343,7 +343,7 @@ if __name__=='__main__':
                 print("The passed catalog is empty.\n")
                 exit()
             if (reduced_catalog):
-                N = np.int(np.random.poisson(len(events)*4./10.))
+                N = np.int(np.random.poisson(len(events)*T/10.))
             else:
                 N = joint
                 if (N > len(events)):
@@ -616,16 +616,46 @@ if __name__=='__main__':
         ax  = fig.add_subplot(111)
         sfr = []
         for i in range(x.shape[0]):
-            sfr.append(np.array([cs.StarFormationDensity(zi, np.exp(x['logr0'][i]), x['W'][i], x['Q'][i], x['R'][i]) for zi in z]))
+            r0  = np.exp(x['logr0'][i])
+            W   = x['W'][i]
+            Q   = x['Q'][i]
+            R   = x['R'][i]
+            if (C.model == "LambdaCDM"):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+            elif (C.model == "CLambdaCDM"):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+            elif (C.model == "LambdaCDMDE"):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+            elif (C.model == "DE"):
+                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+            # compute the expected rate parameter integrated to the maximum redshift
+            # this will also serve as normalisation constant for the individual dR/dz_i
+            Rtot = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
+            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot for zi in z])
+#            ax.plot(z,v,color='k', linewidth=.3)
+            sfr.append(v)
         sfr   = np.array(sfr)
         l,m,h = np.percentile(sfr,[5,50,95],axis=0)
         ax.plot(z,m,color='k', linewidth=.7)
         ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,[cs.StarFormationDensity(zi, 1e-10, 25.0, 3.1, 7.1) for zi in z],linestyle='dashed',color='red')
+        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
+        ax.plot(z,[cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z],linestyle='dashed',color='red')
+        ax.set_yscale('log')
         ax.set_xlabel('redshift')
         ax.set_ylabel('merger rate')
-        ax.set_yscale('log')
         fig.savefig(os.path.join(output,'merger_rate.pdf'), bbox_inches='tight')
+        
+        samps = np.column_stack((x['logr0'],x['W'],x['R'],x['Q']))
+        fig = corner.corner(samps,
+                        labels= [r'$\log r_0$',
+                                 r'$W$',
+                                 r'$R$',
+                                 r'$Q$'],
+                        quantiles=[0.05, 0.5, 0.95],
+                        show_titles=True, title_kwargs={"fontsize": 12},
+                        use_math_text=True, truths=[np.log(truths['r0']),truths['W'],truths['R'],truths['Q']],
+                        filename=os.path.join(output,'joint_rate_posterior.pdf'))
+        fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
 ############################################################
 ############################################################
 # UNUSED CODE

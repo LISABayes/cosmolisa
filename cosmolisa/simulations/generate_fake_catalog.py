@@ -5,6 +5,7 @@ import os
 import sys
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
+import cosmolisa.galaxy as gal
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 
@@ -382,6 +383,7 @@ if __name__=='__main__':
     parser.add_option('--zmax', default=1.0, type='float', metavar='zmax', help='maximum redshift')
     parser.add_option('--seed', default=1, type='float', metavar='seed', help='seed initialisation')
     parser.add_option('--snrmin', default=20, type='float', metavar='snrmin', help='snr threshold')
+    parser.add_option('--T', default=10, type='float', metavar='T', help='observation time')
     parser.add_option('--output', default = './', metavar='DIR', help='Directory for output.')
     (opts,args)=parser.parse_args()
     
@@ -395,6 +397,7 @@ if __name__=='__main__':
     W  = opts.W
     R  = opts.R
     Q  = opts.Q
+    T  = opts.T
     snr_th = opts.snrmin
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
 
@@ -403,7 +406,7 @@ if __name__=='__main__':
     catalog_name = opts.output
     os.system('mkdir -p {0}'.format(catalog_name))
     C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
-    C.get_catalog(T = 10, SNR_threshold = snr_th)
+    C.get_catalog(T = T, SNR_threshold = snr_th)
     C.save_catalog_ids(catalog_name)
     z  = np.linspace(C.z_min,C.z_max,1000)
     

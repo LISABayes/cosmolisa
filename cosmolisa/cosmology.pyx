@@ -87,20 +87,36 @@ cdef class CosmologicalRateParameters:
     cpdef double StarFormationDensity(self, double z):
         return self.r0*(1.0+self.W)*exp(self.Q*z)/(exp(self.R*z)+self.W)
 
-def StarFormationDensity(double z, double r0, double W, double R, double Q):
+def StarFormationDensity(const double z, const double r0, const double W, const double R, const double Q):
     return _StarFormationDensity(z, r0, W, R, Q)
 
-cdef double _StarFormationDensity(double z, double r0, double W, double R, double Q) nogil:
+cdef double _StarFormationDensity(const double z,
+                                  const double r0,
+                                  const double W,
+                                  const double R,
+                                  const double Q) nogil:
     return r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
 
-def IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
-    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, Q, R, omega, zmin, zmax)
+def IntegrateRateWeightedComovingVolumeDensity(const double r0,
+                                               const double W,
+                                               const double R,
+                                               const double Q,
+                                               CosmologicalParameters omega,
+                                               const double zmin = 0.0,
+                                               const double zmax = 1.0):
+    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q, omega, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _IntegrateRateWeightedComovingVolumeDensity(double r0, double W, double Q, double R, CosmologicalParameters omega, double zmin, double zmax) nogil:
+cdef double _IntegrateRateWeightedComovingVolumeDensity(const double r0,
+                                                        const double W,
+                                                        const double R,
+                                                        const double Q,
+                                                        CosmologicalParameters omega,
+                                                        const double zmin,
+                                                        const double zmax) nogil:
     cdef int i = 0
     cdef int N = 32
     cdef double I = 0
