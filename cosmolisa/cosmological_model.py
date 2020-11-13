@@ -279,6 +279,8 @@ if __name__=='__main__':
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif (zhorizon < 1000):
             events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
+        elif (snr_threshold > 0.0):
+            events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
         elif (max_hosts is not None):
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
         else:

@@ -143,7 +143,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, zhorizon=None):
+def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, zhorizon=None):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -288,7 +288,7 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
             events = sorted(events, key=lambda x: getattr(x, 'z_true'))
             print("\nSelected {} events from z={} to z={} (zhorizon={}):".format(len(events), events[0].z_true, events[len(events)-1].z_true, zhorizon))
             for e in events:
-                print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
+                print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))           
 
         if (max_hosts is not None):
             events = [e for e in events if e.n_hosts < max_hosts]
@@ -296,6 +296,13 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
             print("\nSelected {} events having hosts from n={} to n={} (max hosts imposed={}):".format(len(events), events[0].n_hosts, events[len(events)-1].n_hosts, max_hosts))
             for e in events:
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
+
+        if (snr_threshold > 0):
+            events = [e for e in events if e.snr >= snr_threshold]
+            events = sorted(events, key=lambda x: getattr(x, 'snr'))
+            print("\nSelected {} events from SNR={} to SNR={} (zhorizon={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
+            for e in events:
+                print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(7)))     
 
         if(one_host_selection):
             for e in events:
