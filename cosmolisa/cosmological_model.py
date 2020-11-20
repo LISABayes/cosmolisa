@@ -279,31 +279,34 @@ if __name__=='__main__':
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif (zhorizon < 1000):
             events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
-        elif (snr_threshold > 0.0):
-            events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
         elif (max_hosts is not None):
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
+        elif (snr_threshold > 0.0):
+            if not reduced_catalog:
+                events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
+            else:
+                events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+                # Draw a number of events in the 4-year scenario
+                N = np.int(np.random.poisson(len(events)*4./10.))
+                print("\nReduced number of events: {}".format(N))
+                selected_events = []
+                k = 0
+                while k < N and not(len(events) == 0):
+                    idx = np.random.randint(len(events))
+                    selected_event = events.pop(idx)
+                    print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
+                    if selected_event.snr > snr_threshold:
+                        print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
+                        selected_events.append(selected_event)
+                    else: pass
+                    k += 1
+                events = selected_events
+                events = sorted(selected_events, key=lambda x: getattr(x, 'snr'))
+                print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[len(events)-1].snr))
+                for e in events:
+                    print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
             events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
-
-        if (len(events) == 0):
-            print("The passed catalog is empty. Exiting.\n")
-            exit()
-
-        if (reduced_catalog):
-            N = np.int(np.random.poisson(len(events)*4./10.))
-            selected_events = []
-            k = 0
-            while k < N and not(len(events) == 0):
-                idx = np.random.randint(len(events))
-                selected_event = events.pop(idx)
-                print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
-                if selected_event.z_true < zhorizon:
-                    selected_events.append(selected_event)
-                else: pass
-                k += 1
-            print("==================================================")
-            print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(zhorizon, len(selected_events),N))
 
         if (joint != 0):
             N = joint
@@ -314,7 +317,6 @@ if __name__=='__main__':
             print("==================================================")
             print("Selecting a random catalog of {0} events for joint analysis:".format(N))
             print("==================================================")
-
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
@@ -324,6 +326,10 @@ if __name__=='__main__':
                 exit()
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
+
+    if (len(events) == 0):
+        print("The passed catalog is empty. Exiting.\n")
+        exit()
 
     print("\nDetailed list of the %d selected events:\n"%len(events))
     print("==================================================")
