@@ -256,6 +256,7 @@ if __name__=='__main__':
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
+    print("The output will be saved in {}".format(out_dir))
     if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
