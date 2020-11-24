@@ -69,9 +69,9 @@ class MassFunctionModel(cpnest.model.Model):
         self.names.append('phistar')
         self.bounds.append([1e-10,1.0])
         self.names.append('phistar_exponent')
-        self.bounds.append([-2.0,2.0])
+        self.bounds.append([-5.0,5.0])
         self.names.append('logMstar')
-        self.bounds.append([9.0,11.0])
+        self.bounds.append([9.0,12.0])
         self.names.append('logMstar_exponent')
         self.bounds.append([-2.0,2.0])
         self.names.append('alpha')
@@ -142,11 +142,11 @@ if __name__ == "__main__":
     slope_model_choice = 1
     cutoff_model_choice = 1
     density_model_choice = 1
-    selection = 1 # 0:full, 1:detected, 2:non detected
+    selection = 0 # 0:full, 1:detected, 2:non detected
 
     plot_labels = {0:'full',1:'detected',2:'non_detected'}
     
-    for i in range(1,10):#260):
+    for i in range(1,260):
         print("reading %d"%i)
         path = '/Users/wdp/repositories/cosmolisa/data/EMRI_SAMPLE_MODEL106_TTOT10yr_SIG2_GAUSS/EVENT_1%03d'%i
         if i == 1:
@@ -156,7 +156,9 @@ if __name__ == "__main__":
             d = np.row_stack((d,np.loadtxt(os.path.join(path,'ERRORBOX.dat'))))
     
     data = np.column_stack((d[:,3],d[:,1]))
-    output_folder = "./full_run/"
+    idx = np.random.choice(np.arange(data.shape[0]), size = 10000, replace=False)
+    data = data[idx,:]
+    output_folder = "./full_run_random/"
     nlive = 2000
     print("total number of galaxies = ", data.shape[0])
 

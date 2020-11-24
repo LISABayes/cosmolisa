@@ -203,7 +203,7 @@ cdef class GalaxyMassDistribution:
 #    @cython.cdivision(True)
 #    cdef double _get_norm(self, int selection = 0):
 #
-#        return dblquad(self,
+#        return dblquad(self, # scipy lowlevelcallable
 #                       self.zmin,
 #                       self.zmax,
 #                       lambda x: self.logMmin,

@@ -47,7 +47,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
                                         const double event_redshift,
                                         int em_selection = 0,
                                         double zmin = 0.0,
-                                        double zmax = 1.0):
+                                        double zmax = 1.0) nogil:
 
     cdef unsigned int i
     cdef double dl
@@ -82,19 +82,19 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
         logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
         logL        = log_add(logL,logL_galaxy)
 
-    if (em_selection == 1):
-        # Define the 'completeness function' as a weight f(dL),
-        # entering the probability p(G| dL z_gw O H I) that the event
-        # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
-        logp_detection    = log(_em_selection_function(dl))
-        logL             += logp_detection
-        # Compute the probability p(notG| dL z_gw O H I) that the event
-        # is located in a non-detected galaxy as 1-p(G| dL z_gw O H I)
-        logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
-        logLn             = logp_nondetection
+#    if (em_selection == 1):
+#        # Define the 'completeness function' as a weight f(dL),
+#        # entering the probability p(G| dL z_gw O H I) that the event
+#        # is located in a detected galaxy and add it to p(G| dL z_gw O H I)
+#        logp_detection    = log(_em_selection_function(dl))
+#        logL             += logp_detection
+#        # Compute the probability p(notG| dL z_gw O H I) that the event
+#        # is located in a non-detected galaxy as 1-p(G| dL z_gw O H I)
+#        logp_nondetection = logsumexp([0.0,logp_detection], b = [1,-1])
+#        logLn             = logp_nondetection
 
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
-    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo)+logL#+log_add(logL,logLn)#+logP
+    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL-log(N)#+log_add(logL,logLn)#+logP
 
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
@@ -275,7 +275,7 @@ def logLikelihood_single_event_sfr(const double[:,::1] hosts,
                                    const int em_selection = 0,
                                    double zmin = 0.0,
                                    double zmax = 1.0):
-    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)+log(_StarFormationDensity(event_redshift, r0, W, R, Q))-log(normalisation)
+    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, em_selection = em_selection, zmin = zmin, zmax = zmax)#+log(_StarFormationDensity(event_redshift, r0, W, R, Q))-log(normalisation)
 
 def integrated_rate(double r0, double W, double R, double Q, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
     return _integrated_rate(r0, W, R, Q, omega, zmin, zmax)
@@ -314,13 +314,10 @@ def gw_selection_probability_sfr(const double zmin,
                                  const double W,
                                  const double R,
                                  const double Q,
-                                 const double Dmean,
-                                 const double sigma,
-                                 const double SNR,
                                  const double SNR_threshold,
                                  CosmologicalParameters omega,
                                  const double norm):
-    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, Dmean, sigma, SNR, SNR_threshold, omega)/norm
+    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, SNR_threshold, omega, norm)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -332,21 +329,40 @@ cdef double _gw_selection_probability_sfr(const double zmin,
                                           const double W,
                                           const double R,
                                           const double Q,
-                                          const double Dmean,
-                                          const double sigma,
-                                          const double SNR,
                                           const double SNR_threshold,
-                                          CosmologicalParameters omega) nogil:
-    
+                                          CosmologicalParameters omega,
+                                          double norm) nogil:
+
     cdef int i
-    cdef int N = 32
-    cdef double normalisation = 0.0
+    cdef int N = 64
+    cdef double I = 0.0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        normalisation += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, Dmean, sigma, SNR, SNR_threshold, omega)
+        I += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, SNR_threshold, omega)
         z += dz
-    return normalisation*dz
+    return I*dz/norm
+
+def snr_vs_distance(double d):
+    return _snr_vs_distance(d)
+
+cdef inline double _snr_vs_distance(double d) nogil:
+    """ from a log-linear regression on M106 """
+    return 23299.606754*d**(-0.741036)
+
+def distance_error_vs_snr(double snr):
+    return _distance_error_vs_snr(snr)
+    
+cdef inline double _distance_error_vs_snr(double snr) nogil:
+    """ from a log-linear regression on M106 """
+    return 23912.196795*snr**(-1.424880 )
+
+def threshold_distance(double SNR_threshold):
+    return _threshold_distance(SNR_threshold)
+    
+cdef inline double _threshold_distance(double SNR_threshold) nogil:
+    # D0       = 1748.50, SNR0     = 87
+    return (SNR_threshold/23299.606754)**(-1./0.741036)
 
 
 @cython.boundscheck(False)
@@ -358,17 +374,26 @@ cdef double _gw_selection_probability_integrand_sfr(const double z,
                                                     const double W,
                                                     const double R,
                                                     const double Q,
-                                                    const double Dmean,
-                                                    const double sigma,
-                                                    const double SNR,
                                                     const double SNR_threshold,
                                                     CosmologicalParameters omega) nogil:
 
     cdef double dl                = omega._LuminosityDistance(z)
+    cdef double sigma             = _distance_error_vs_snr(SNR_threshold)
     cdef double sigma_total       = sqrt(_sigma_weak_lensing(z, dl)**2+sigma**2)
     # this is the distance threshold assuming a simple scaling law for the SNR
-    cdef double Dthreshold        = (SNR/SNR_threshold)*Dmean
-    cdef double A                 = 0.5*_StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
+    cdef double Dthreshold        = _threshold_distance(SNR_threshold)
+    cdef double A                 = _StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
     cdef double denominator       = sqrt(2.0)*sigma_total
-    cdef double integrand         = A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
+    cdef double integrand         = 0.5*A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
     return integrand
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef inline double _log_stirling_approx(double n) nogil:
+    return n*log(n)-n
+    
+def log_stirling_approx(double n):
+    return _log_stirling_approx(n)
+    

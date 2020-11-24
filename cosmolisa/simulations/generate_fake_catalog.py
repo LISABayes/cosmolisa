@@ -46,7 +46,7 @@ from optparse import OptionParser
     col 13: dL host (rad)
     col 14: (dL_cand-dL_host)/ddL
 """
-def redshift_rejection_sampling(zmin, zmax, omega, r0, W, R, Q, distribution, pmax):
+def rejection_sampling(zmin, zmax, distribution, pmax, N):
     """
     Samples the cosmologically correct redshift
     distribution
@@ -55,20 +55,23 @@ def redshift_rejection_sampling(zmin, zmax, omega, r0, W, R, Q, distribution, pm
     ===========
     min ::`obj`: `float`
     max ::`obj`: `float`
-    omega ::`obj`: `CosmologicalParameter`
+    distribution ::`obj`: `lambda`
     pmax ::`obj`: `float`
-    norm ::`obj`: `float`
     
     Returns
     ===========
     z ::`obj`: `float`
     """
-    while True:
-        test = pmax * np.random.uniform(0,1)
+    i = 0
+    redshifts = []
+    while i < 10*N:
+        test = np.log(pmax * np.random.uniform(0,1))
         z = np.random.uniform(zmin,zmax)
-        prob = distribution(z)
-        if (test < prob): break
-    return z
+        prob = np.log(distribution(z))
+        if (test < prob):
+            redshifts.append(z)
+            i += 1
+    return np.random.choice(redshifts, size = N, replace = False)
 
 def galaxy_redshift_rejection_sampling(min, max, O, pmax, norm):
     """
@@ -104,12 +107,9 @@ class EMRIDistribution(object):
                  dec_max = np.pi/2.0,
                  *args, 
                  **kwargs):
-        # M101 event 57
-        self.D0       = 1748.50
         self.A0       = 0.000405736691211125 #in rads^2
-        self.delta_D0 = 0.022
         self.V0       = 0.1358e5
-        self.SNR0     = 87
+        self.SNR0     = 87.
         self.ra_min   = ra_min
         self.ra_max   = ra_max
         self.dec_min  = dec_min
@@ -133,7 +133,6 @@ class EMRIDistribution(object):
         except: self.w1           = 0.0
         try: self.w2              = getattr(self,'w2')
         except: self.w2           = 0.0
-        self.omega                = lal.CreateCosmologicalParameters(self.h,self.omega_m,self.omega_lambda,self.w0,self.w1,self.w2)
         try: self.r0              = getattr(self,'r0')
         except: self.r0           = 1.0
         try: self.W               = getattr(self,'W')
@@ -142,29 +141,15 @@ class EMRIDistribution(object):
         except: self.Q            = 0.0
         try: self.R               = getattr(self,'R')
         except: self.R            = 0.0
-        self.rate                 = lal.CreateCosmologicalRateParameters(self.r0, self.W, self.Q, self.R)
         
         self.fiducial_O = cs.CosmologicalParameters(self.h, self.omega_m, self.omega_lambda, self.w0, self.w1)
-        # create a rate and cosmology parameter for the calculations
-        self.p = lal.CreateCosmologicalParametersAndRate()
-        # set it up to the values we want
-        self.p.omega.h  = self.h
-        self.p.omega.om = self.omega_m
-        self.p.omega.ol = self.omega_lambda
-        self.p.omega.ok = 1.0 - self.omega_m - self.omega_lambda
-        self.p.omega.w0 = self.w0
-        self.p.omega.w1 = self.w1
-        self.p.omega.w2 = self.w2
-        
-        self.p.rate.r0  = self.r0
-        self.p.rate.R   = self.R
-        self.p.rate.W   = self.W
-        self.p.rate.Q   = self.Q
 
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
-        self.norm = lk.integrated_rate(self.r0, self.W, self.Q, self.R, self.fiducial_O, self.z_min, self.z_max)
+        self.norm = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.fiducial_O, self.z_min, self.z_max)
+        print(self.norm)
+        self.rate = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)
         self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm
         self.pmax = np.max([self.dist(zi) for zi in zt])
             
@@ -177,17 +162,17 @@ class EMRIDistribution(object):
         self.galaxy_pmax = None
         self.galaxy_norm = None
         
-    def get_sample(self, *args, **kwargs):
-        ra    = self.ra_pdf.rvs()
-        dec   = np.arcsin(self.sindec_pdf.rvs())
-        z     = redshift_rejection_sampling(self.z_min, self.z_max, self.fiducial_O, self.r0, self.W, self.R, self.Q, self.dist, self.pmax)
-        d     = lal.LuminosityDistance(self.omega,z)
-        return z,d,ra,dec
+    def get_sample(self, N, *args, **kwargs):
+        ra    = self.ra_pdf.rvs(size = N)
+        dec   = np.arcsin(self.sindec_pdf.rvs(size = N))
+        z     = np.array(rejection_sampling(self.z_min, self.z_max, self.dist, self.pmax, N))
+        d     = np.array([self.fiducial_O.LuminosityDistance(zi) for zi in z])
+        return np.column_stack((z,d,ra,dec))
     
     def get_bare_catalog(self, T = 10, *args, **kwargs):
         N = np.random.poisson(self.norm*T)
         print("expected number of sources = ",N)
-        self.samps = np.array([self.get_sample() for _ in range(N)])
+        self.samps = self.get_sample(N)
         return self.samps
     
     def get_catalog(self, T = 10, SNR_threshold = 20, *args, **kwargs):
@@ -198,15 +183,31 @@ class EMRIDistribution(object):
         snrs = self.compute_SNR(self.samps[:,1])
         e_d  = self.credible_distance_error(snrs)
         Vc   = self.credible_volume(snrs)
-        self.catalog = np.column_stack((self.samps,snrs,e_d,Vc))
+        self.catalog = np.column_stack((self.samps,snrs,e_d/self.samps[:,1],Vc))
         self.catalog = self.find_redshift_limits()
         (idx,) = np.where(snrs > SNR_threshold)
+#        idx = []
+        self.p = lk.gw_selection_probability_sfr(0.001,
+                                   self.z_max,
+                                   self.r0,
+                                   self.W,
+                                   self.R,
+                                   self.Q,
+                                   SNR_threshold,
+                                   self.fiducial_O,
+                                   self.norm)
+                                   
+                                   
+        print("d threshold = ", lk.threshold_distance(SNR_threshold))
+#        for i in range(self.catalog.shape[0]):
+#            if p > np.random.uniform(0,1):
+#                idx.append(i)
         print("Effective number of sources = ",len(idx))
         self.catalog = self.catalog[idx,:]
         return self.catalog
     
     def compute_SNR(self, distance):
-        return self.SNR0*self.D0/distance
+        return np.array([lk.snr_vs_distance(d) for d in distance])
     
     def compute_area(self, SNR):
         return self.A0 * (self.SNR0/SNR)**2
@@ -217,7 +218,7 @@ class EMRIDistribution(object):
 
     def credible_distance_error(self, SNR):
         # see https://arxiv.org/pdf/1801.08009.pdf
-        return self.delta_D0 * self.SNR0/SNR
+        return np.array([lk.distance_error_vs_snr(S) for S in SNR])
 
     def find_redshift_limits(self,
                              h_w  = (0.6,0.86),
@@ -277,13 +278,6 @@ class EMRIDistribution(object):
         W       = np.random.uniform(0.0, 1.0, size = z_cosmo.shape[0])
         W      /= W.sum()
         return z_cosmo, z_obs, W
-#        import matplotlib.pyplot as plt
-#        plt.hist(z_cosmo, bins=np.linspace(self.catalog[i,8], self.catalog[i,9],100), density=True, alpha=0.5,facecolor='red')
-#        plt.hist(z_obs, bins=np.linspace(self.catalog[i,8], self.catalog[i,9],100), density=True, alpha=0.5,facecolor='blue')
-#        plt.axvline(self.catalog[i,0],ls='dashed')
-#        plt.axvline(self.catalog[i,8],color='r')
-#        plt.axvline(self.catalog[i,9],color='r')
-#        plt.show()
         
     def save_catalog_ids(self, folder):
         """
@@ -408,18 +402,30 @@ if __name__=='__main__':
     C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
     C.get_catalog(T = T, SNR_threshold = snr_th)
     C.save_catalog_ids(catalog_name)
+    print('fraction of detected events = ',C.p)
     z  = np.linspace(C.z_min,C.z_max,1000)
     
     os.system('mkdir -p {0}'.format(os.path.join(catalog_name,'figures')))
     
     fig = plt.figure(1)
     ax  = fig.add_subplot(111)
-    ax.hist(C.catalog[:,0],bins=32,alpha=0.5)
-    ax.plot(z,[C.dist(zi) for zi in z])
+    ax.hist(C.catalog[:,0],bins=np.linspace(0.0,C.z_max,100),alpha=0.5,cumulative=True)
+    ax.hist(C.samps[:,0],bins=np.linspace(0.0,C.z_max,100),alpha=0.5,facecolor='r',cumulative=True)
+    ax.plot(z,T*C.norm*np.cumsum(np.array([C.dist(zi) for zi in z]))*np.diff(z)[0], lw=1.5, color='k')
     ax.set_xlabel('redshift z')
-    ax.set_ylabel('number of events')
-    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'distribution'), bbox_inches='tight')
+    ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'number_of_events'), bbox_inches='tight')
     
+    plt.clf()
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111)
+    ax.hist(C.catalog[:,0],bins=np.linspace(0.0,C.z_max,100),alpha=0.5,density=True)
+    ax.hist(C.samps[:,0],bins=np.linspace(0.0,C.z_max,100),alpha=0.5,facecolor='r',density=True)
+    ax.plot(z,np.array([C.dist(zi) for zi in z]), lw=1.5, color='k')
+    ax.set_xlabel('redshift z')
+    ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'distribution'), bbox_inches='tight')
+
     plt.clf()
     fig = plt.figure(1)
     ax  = fig.add_subplot(111)

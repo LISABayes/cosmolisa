@@ -18,15 +18,16 @@ import matplotlib.pyplot as plt
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.prior as pr
+import cosmolisa.galaxy as gal
 
-class CosmologicalModel(cpnest.model.Model):
+class UberModel(cpnest.model.Model):
 
     names  = [] #'h','om','ol','w0','w1']
     bounds = [] #[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
     def __init__(self, model, data, *args, **kwargs):
 
-        super(CosmologicalModel,self).__init__()
+        super(UberModel,self).__init__()
         # Set up the data
         self.data             = data
         self.N                = len(self.data)
@@ -50,7 +51,7 @@ class CosmologicalModel(cpnest.model.Model):
             
             self.names  = ['h','om']
             self.bounds = [[0.6,0.86],[0.04,0.5]]
-#            self.bounds = [[0.72,0.74],[0.24,0.26]]
+        
         elif (self.model == "CLambdaCDM"):
             
             self.names  = ['h','om','ol']
@@ -77,8 +78,8 @@ class CosmologicalModel(cpnest.model.Model):
         
         if self.sfr == 1:
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
-            self.names.append('log10r0')
-            self.bounds.append([-20,-9])
+            self.names.append('logr0')
+            self.bounds.append([np.log(1e-20),np.log(1)])
             self.names.append('W')
             self.bounds.append([0.0,100.0])
             self.names.append('Q')
@@ -170,82 +171,31 @@ class CosmologicalModel(cpnest.model.Model):
             
         elif (self.sfr == 1):
             # get the SFR parameters
-            r0  = 10**x['log10r0']
+            r0  = np.exp(x['logr0'])
             W   = x['W']
             Q   = x['Q']
             R   = x['R']
             # compute the expected rate parameter integrated to the maximum redshift
             # this will also serve as normalisation constant for the individual dR/dz_i
-            # p(z)dz = dR/R(\infty)
-            
-            if 0:
-                # compute the normalisation constant for the individual p(z|\Omega,\lambda)
-                Rtot = lk.integrated_rate(r0, W, R, Q, self.O, 1e-5, self.z_threshold)
-                Ntot = Rtot*self.T
-                
-                logL  = lk.log_stirling_approx(Ntot)
-                logL += -lk.log_stirling_approx(self.N)
-                logL += -lk.log_stirling_approx(Ntot-self.N)
-                
-                # compute the probability of observing the events we observed
-                selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                        r0, W, R, Q,
-                                                        self.snr_threshold, self.O, Rtot)
-    #            selection_probability = np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, self.snr_threshold, self.O, Rtot) for j,e in enumerate(self.data)])
-
-                # compute the rate for the observed events
-    #            Rdet = Rtot*selection_probability
-                logL += (Ntot-self.N)*np.log1p(-selection_probability)
-    #            print(Rtot, Rdet, selection_probability)
-                # compute the likelihood for the individual observations
-                if not(np.isfinite(logL)): return -np.inf
-                logL += np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
-                                                                 e.dl,
-                                                                 e.sigma,
-                                                                 self.O,
-                                                                 x['z%d'%e.ID],
-                                                                 r0,
-                                                                 W,
-                                                                 R,
-                                                                 Q,
-                                                                 Rtot,
-                                                                 em_selection = self.em_selection,
-                                                                 zmin = 0.0,#self.bounds[2+j][0],
-                                                                 zmax = self.z_threshold)#self.bounds[2+j][1])
-                                                                 for j,e in enumerate(self.data)])
-#            logL += -Rdet
-            else:
-                # poisson likelihood
-                Rtot = lk.integrated_rate(r0, W, R, Q, self.O, 1e-5, self.z_threshold)
-                Ntot = Rtot*self.T
-                
-                # compute the probability of observing the events we observed
-#                selection_probability = np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, self.snr_threshold, self.O, Rtot) for j,e in enumerate(self.data)])
-                selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                                        r0, W, R, Q,
-                                                                        self.snr_threshold, self.O, Ntot)
-
-                # compute the rate for the observed events
-                Rdet = Rtot*selection_probability
-                Ndet = Rdet*Ntot
-    #            print(Rtot, Rdet, selection_probability)
-                # compute the likelihood for the individual observations
-                logL = np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
-                                                                 e.dl,
-                                                                 e.sigma,
-                                                                 self.O,
-                                                                 x['z%d'%e.ID],
-                                                                 r0,
-                                                                 W,
-                                                                 R,
-                                                                 Q,
-                                                                 Rtot,
-                                                                 em_selection = self.em_selection,
-                                                                 zmin = self.bounds[2+j][0],
-                                                                 zmax = self.bounds[2+j][1])
-                                                                 for j,e in enumerate(self.data)])
-
-                logL += -Ndet+self.N*np.log(Ndet)
+            Rtot = lk.integrated_rate(r0, W, Q, R, self.O, 0.0, self.z_threshold)
+            Rdet = Rtot*np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, 20.0, self.O, Rtot) for e in self.data])
+            # Poisson likelihood, see also https://arxiv.org/pdf/0805.2946.pdf
+            logL = np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
+                                                             e.dl,
+                                                             e.sigma,
+                                                             self.O,
+                                                             x['z%d'%e.ID],
+                                                             r0,
+                                                             W,
+                                                             Q,
+                                                             R,
+                                                             Rtot,
+                                                             em_selection = self.em_selection,
+                                                             zmin = self.bounds[2+j][0],
+                                                             zmax = self.bounds[2+j][1])
+                                                             for j,e in enumerate(self.data)])
+            logL += -Rdet*self.T
+            logL += self.N*np.log(Rtot*self.T)
         else:
             # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
             logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
@@ -261,9 +211,8 @@ class CosmologicalModel(cpnest.model.Model):
         self.O.DestroyCosmologicalParameters()
 
         return logL
-#--r0 5e-11 --W 4. --R 3.2 --Q 0.4
-truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0,'r0':5e-11,'Q':2.4,'W':41.,'R':5.2} # 0.73, 0.25, 0.75, -1.0, 0.0
-#--r0 1e-12 --W 32 --R 3.2 --Q 3.4
+
+truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0,'r0':5e-13,'Q':3.1,'W':45.,'R':4.1} # 0.73, 0.25, 0.75, -1.0, 0.0
 usage=""" %prog (options)"""
 
 if __name__=='__main__':
@@ -293,7 +242,7 @@ if __name__=='__main__':
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
     parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',            help='Number of live points.')
-    parser.add_option('--poolsize',          default=1000,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
+    parser.add_option('--poolsize',          default=100,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
@@ -667,10 +616,8 @@ if __name__=='__main__':
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         sfr = []
-        Rtot = np.zeros(x.shape[0],dtype=np.float64)
-        selection_probability = np.zeros(x.shape[0],dtype=np.float64)
         for i in range(x.shape[0]):
-            r0  = 10**x['log10r0'][i]
+            r0  = np.exp(x['logr0'][i])
             W   = x['W'][i]
             Q   = x['Q'][i]
             R   = x['R'][i]
@@ -684,68 +631,30 @@ if __name__=='__main__':
                 O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
             # compute the expected rate parameter integrated to the maximum redshift
             # this will also serve as normalisation constant for the individual dR/dz_i
-            Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
-            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O, Rtot[i])
-            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
+            Rtot = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
+            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot for zi in z])
 #            ax.plot(z,v,color='k', linewidth=.3)
             sfr.append(v)
-
-        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
         sfr   = np.array(sfr)
-        sfr_true = np.array([cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z])
-        
         l,m,h = np.percentile(sfr,[5,50,95],axis=0)
         ax.plot(z,m,color='k', linewidth=.7)
         ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,sfr_true,linestyle='dashed',color='red')
+        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
+        ax.plot(z,[cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z],linestyle='dashed',color='red')
+        ax.set_yscale('log')
         ax.set_xlabel('redshift')
-        ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
-        fig.savefig(os.path.join(output,'redshift_distribution.pdf'), bbox_inches='tight')
+        ax.set_ylabel('merger rate')
+        fig.savefig(os.path.join(output,'merger_rate.pdf'), bbox_inches='tight')
         
-        tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
-        nevents         = Rtot[:,None]*C.T*tmp
-        nevents_true    = Rtot_true*C.T*np.cumsum(sfr_true)*np.diff(z)[0]
-        l,m,h = np.percentile(nevents,[5,50,95],axis=0)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.plot(z,m,color='k', linewidth=.7)
-        ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,nevents_true, color='r', linestyle='dashed')
-        plt.yscale('log')
-        ax.set_xlabel('redshift z')
-        ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
-        plt.savefig(os.path.join(output,'number_of_events.pdf'), bbox_inches='tight')
-        
-        
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.hist(Rtot, bins = 100, histtype='step')
-        ax.axvline(Rtot_true, linestyle='dashed', color='r')
-        ax.set_xlabel('global rate')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(output,'global_rate.pdf'), bbox_inches='tight')
-        print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
-        
-        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true, Rtot_true)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.hist(selection_probability, bins = 100, histtype='step')
-        ax.axvline(true_selection_prob, linestyle='dashed', color='r')
-        ax.set_xlabel('selection probability')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(output,'selection_probability.pdf'), bbox_inches='tight')
-
-        print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
-
-        samps = np.column_stack((x['log10r0'],x['W'],x['R'],x['Q']))
+        samps = np.column_stack((x['logr0'],x['W'],x['R'],x['Q']))
         fig = corner.corner(samps,
-                        labels= [r'$\log_{10} r_0$',
+                        labels= [r'$\log r_0$',
                                  r'$W$',
                                  r'$R$',
                                  r'$Q$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
+                        use_math_text=True, truths=[np.log(truths['r0']),truths['W'],truths['R'],truths['Q']],
                         filename=os.path.join(output,'joint_rate_posterior.pdf'))
         fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
 ############################################################

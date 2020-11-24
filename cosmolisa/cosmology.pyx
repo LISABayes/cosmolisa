@@ -76,17 +76,6 @@ cdef class CosmologicalParameters:
         self._DestroyCosmologicalParameters()
         return
 
-cdef class CosmologicalRateParameters:
-
-    def __cinit__(self, double r0, double W, double R, double Q):
-        self.r0 = r0
-        self.W = W
-        self.R = R
-        self.Q = Q
-        
-    cpdef double StarFormationDensity(self, double z):
-        return self.r0*(1.0+self.W)*exp(self.Q*z)/(exp(self.R*z)+self.W)
-
 def StarFormationDensity(const double z, const double r0, const double W, const double R, const double Q):
     return _StarFormationDensity(z, r0, W, R, Q)
 
@@ -117,8 +106,8 @@ cdef double _IntegrateRateWeightedComovingVolumeDensity(const double r0,
                                                         CosmologicalParameters omega,
                                                         const double zmin,
                                                         const double zmax) nogil:
-    cdef int i = 0
-    cdef int N = 32
+    cdef unsigned int i = 0
+    cdef unsigned int N = 64
     cdef double I = 0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
