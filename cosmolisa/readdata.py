@@ -182,6 +182,7 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
+    print("Reading {}".format(input_folder))
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
     pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
 
