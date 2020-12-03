@@ -204,6 +204,7 @@ if __name__=='__main__':
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
     parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
+    parser.add_option('--event_ID_list',     default=None,        type='string', metavar='event_ID_list',    help='String of specific ID events to be read.')
     parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
@@ -233,6 +234,7 @@ if __name__=='__main__':
     max_hosts          = opts.max_hosts
     snr_threshold      = opts.snr_threshold
     redshift_prior     = opts.redshift_prior
+    event_ID_list      = opts.event_ID_list
     time_redshifting   = opts.time_redshifting
     vc_normalization   = opts.vc_normalization
     lk_sel_fun         = opts.lk_sel_fun
@@ -282,6 +284,8 @@ if __name__=='__main__':
             events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
         elif (max_hosts is not None):
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
+        elif (event_ID_list is not None):
+            events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection)
         elif (snr_threshold > 0.0):
             if not reduced_catalog:
                 events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)

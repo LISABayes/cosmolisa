@@ -8,7 +8,7 @@ import readdata
 from dpgmm import *
 import multiprocessing as mp
 from scipy.special import logsumexp
-from cosmology import *
+from cosmolisa.cosmology import *
 import matplotlib
 import matplotlib.pyplot as plt
 import dill as pickle
@@ -145,7 +145,7 @@ if __name__=="__main__":
     if options.source == 'SMBH':
         catalogs = [c for c in os.listdir(options.data) if 'cat' in c]
     elif options.source == 'EMRI':
-        catalogs = [c for c in os.listdir(options.data) if 'z_04' in c]
+        catalogs = [c for c in os.listdir(options.data) if ('M106' in c and 'averaged' not in c)]
 
     omega_true = CosmologicalParameters(0.73, 0.25, 0.75, -1.0, 0.0)
     omega_injected = (0.73, 0.25, 0.75, -1.0, 0.0)

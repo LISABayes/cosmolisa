@@ -143,7 +143,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, zhorizon=None):
+def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -304,6 +304,11 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
             print("\nSelected {} events from SNR={} to SNR={} (SNR_threshold={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
             for e in events:
                 print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(7)))     
+
+        if (event_ID_list is not None):
+            event_list = []
+            ID_list = event_ID_list.split(',')
+            events = [e for e in events if str(e.ID) in ID_list]
 
         if(one_host_selection):
             for e in events:
