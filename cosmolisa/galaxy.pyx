@@ -15,9 +15,9 @@ ctypedef double (*model_pointer)(double, double, double)
 cdef double p4log10 = 0.4*log(10.0)
 cdef double ln10 = log(10.0)
 
-cdef class GalaxyMassDistribution:
+cdef class GalaxyDistribution:
     """
-    Returns a Galaxy distribution function in mass and redshift
+    Returns a Galaxy distribution function in magnitude and redshift
     To obtain a pure Schechter function, set zmin = zmax = 0.0 and always evaluate the
     distribution at z = 0
 
@@ -25,32 +25,6 @@ cdef class GalaxyMassDistribution:
     ----------
 
     """
-    cdef public double logMstar0
-    cdef public double alpha0
-    cdef public double phistar0
-    cdef public double logMmin
-    cdef public double logMmax
-    cdef public double logMthreshold
-    cdef public double zmin
-    cdef public double zmax
-    cdef public double ramin
-    cdef public double ramax
-    cdef public double decmin
-    cdef public double decmax
-    cdef public CosmologicalParameters omega
-    cdef public double _pmax
-    cdef public double _normalisation
-    cdef public double _detected_normalisation
-    cdef public double _non_detected_normalisation
-    cdef public int slope_model_choice
-    cdef public int cutoff_model_choice
-    cdef public int density_model_choice
-    cdef public double logMstar_exponent
-    cdef public double alpha_exponent
-    cdef public double phistar_exponent
-#    cdef public slope_model alpha
-#    cdef public cutoff_model logMstar
-#    cdef public density_model phistar
     
     def __cinit__(self,
                   CosmologicalParameters omega,
@@ -88,9 +62,6 @@ cdef class GalaxyMassDistribution:
         self.slope_model_choice             = slope_model_choice
         self.cutoff_model_choice            = cutoff_model_choice
         self.density_model_choice           = density_model_choice
-#        self.alpha                          = slope_model(self.alpha0, self.alpha_exponent, self.slope_model_choice)
-#        self.logMstar                       = cutoff_model(self.logMstar0, self.logMstar_exponent, self.cutoff_model_choice)
-#        self.phistar                        = density_model(self.phistar0, self.phistar_exponent, self.density_model_choice)
         self._pmax                          = -1
         self._normalisation                 = -1
         self._detected_normalisation        = -1
@@ -129,9 +100,9 @@ cdef class GalaxyMassDistribution:
             As = _powerlaw(self.alpha0, self.alpha_exponent, z)
         
         cdef double log_diff = log10M-logMs
-        cdef double p10logdiff = pow(10.0,log_diff)
+        cdef double p10logdiff = pow(10.0,-0.4*log_diff)
         
-        return ln10*phistar*exp(-p10logdiff)*p10logdiff**(As+1)*self.omega._ComovingVolumeElement(z)
+        return ln10*phistar*exp(-p10logdiff)*p10logdiff**(-0.4*(As+1))*self.omega._ComovingVolumeElement(z)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -158,12 +129,12 @@ cdef class GalaxyMassDistribution:
             As = _powerlaw(self.alpha0, self.alpha_exponent, z)
         
         cdef double log_diff = log10M-logMs
-        cdef double p10logdiff = pow(10.0,log_diff)
+        cdef double p10logdiff = pow(10.0,-0.4*log_diff)
         
-        if log10M < self.logMthreshold:
+        if log10M > _absolute_magnitude(self.logMthreshold, self.omega._LuminosityDistance(z)):
             return 0
         else:
-            return ln10*phistar*exp(-p10logdiff)*p10logdiff**(As+1)*self.omega._ComovingVolumeElement(z)
+            return ln10*phistar*exp(-p10logdiff)*p10logdiff**(-0.4*(As+1))*self.omega._ComovingVolumeElement(z)
             
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -190,12 +161,12 @@ cdef class GalaxyMassDistribution:
             As = _powerlaw(self.alpha0, self.alpha_exponent, z)
         
         cdef double log_diff = log10M-logMs
-        cdef double p10logdiff = pow(10.0,log_diff)
+        cdef double p10logdiff = pow(10.0,-0.4*log_diff)
         
-        if log10M > self.logMthreshold:
+        if log10M < _absolute_magnitude(self.logMthreshold, self.omega._LuminosityDistance(z)):
             return 0
         else:
-            return ln10*phistar*exp(-p10logdiff)*p10logdiff**(As+1)*self.omega._ComovingVolumeElement(z)
+            return ln10*phistar*exp(-p10logdiff)*p10logdiff**(-0.4*(As+1))*self.omega._ComovingVolumeElement(z)
 
 #    @cython.boundscheck(False)
 #    @cython.wraparound(False)
@@ -209,18 +180,23 @@ cdef class GalaxyMassDistribution:
 #                       lambda x: self.logMmin,
 #                       lambda x: self.logMmax, args=(selection,))[0]
 
+    def get_norm(self, double zmin, double zmax, int selection):
+        if zmin == -1: zmin = self.zmin
+        if zmax == -1: zmax = self.zmax
+        return self._get_norm(zmin, zmax, selection)
+    
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_norm(self, int selection = 0) nogil:
+    cdef double _get_norm(self, double zmin, double zmax, int selection) nogil:
         
         cdef unsigned int i, j
-        cdef unsigned int N = 100
+        cdef unsigned int N = 32
         cdef double result = 0.0
-        cdef double dz = (self.zmax-self.zmin)/N
+        cdef double dz = (zmax-zmin)/N
         cdef double dm = (self.logMmax-self.logMmin)/N
-        cdef double m, z = self.zmin
+        cdef double m, z = zmin
         for i in range(N):
             
             m = self.logMmin
@@ -238,27 +214,27 @@ cdef class GalaxyMassDistribution:
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_normalisation(self) nogil:
+    cdef double _get_normalisation(self, double zmin, double zmax) nogil:
         if self._normalisation == -1:
-            self._normalisation = self._get_norm(0)
+            self._normalisation = self._get_norm(zmin, zmax, 0)
         return self._normalisation
         
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_detected_normalisation(self) nogil:
+    cdef double _get_detected_normalisation(self, double zmin, double zmax) nogil:
         if self._detected_normalisation == -1:
-            self._detected_normalisation = self._get_norm(1)
+            self._detected_normalisation = self._get_norm(zmin, zmax, 1)
         return self._detected_normalisation
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_non_detected_normalisation(self) nogil:
+    cdef double _get_non_detected_normalisation(self, double zmin, double zmax) nogil:
         if self._non_detected_normalisation == -1:
-            self._non_detected_normalisation = self._get_norm(2)
+            self._non_detected_normalisation = self._get_norm(zmin, zmax, 2)
         return self._non_detected_normalisation
 
     @cython.boundscheck(False)
@@ -266,21 +242,21 @@ cdef class GalaxyMassDistribution:
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef double _pdf(self, double m, double z) nogil:
-        return self._evaluate(m, z)/self._get_normalisation()
+        return self._evaluate(m, z)/self._get_normalisation(self.zmin, self.zmax)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef double _pdf_detected(self, double m, double z) nogil:
-        return self._evaluate_detected(m, z)/self._get_detected_normalisation()
+        return self._evaluate_detected(m, z)/self._get_detected_normalisation(self.zmin, self.zmax)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef double _pdf_non_detected(self, double m, double z) nogil:
-        return self._evaluate_non_detected(m, z)/self._get_non_detected_normalisation()
+        return self._evaluate_non_detected(m, z)/self._get_non_detected_normalisation(self.zmin, self.zmax)
 
     def pdf(self, double logm, double z, int selection = 0):
         if selection == 0:
@@ -294,13 +270,13 @@ cdef class GalaxyMassDistribution:
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_pmax(self):
+    cdef double _get_pmax(self) nogil:
 
         cdef int i, n = 100
         cdef double m, dm, p, z, dz
         if self._pmax == -1:
-            m  = self.Mmin
-            dm = (self.Mmax-self.Mmin)/n
+            m  = self.logMmin
+            dm = (self.logMmax-self.logMmin)/n
             dz = (self.zmax-self.zmin)/n
             for i in range(100):
                 z = self.zmin
@@ -310,14 +286,14 @@ cdef class GalaxyMassDistribution:
                     if p > self._pmax:
                         self._pmax = p
                 m += dm
-        print(self._pmax)
+
         return self._pmax
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef tuple _sample(self):
+    cdef tuple _sample(self, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection):
 
         cdef int i = 0
         cdef double test, prob
@@ -325,35 +301,37 @@ cdef class GalaxyMassDistribution:
         while True:
             test = self._get_pmax() * np.random.uniform(0,1)
             M    = np.random.uniform(self.logMmin,self.logMmax)
-            Z    = np.random.uniform(self.zmin,self.zmax)
-            prob = self._pdf(M,Z)
+            Z    = np.random.uniform(zmin,zmax)
+            RA   = np.random.uniform(ramin,ramax)
+            DEC  = np.arcsin(np.sin(np.random.uniform(decmin,decmax)))
+            prob = self.pdf(M, Z, selection = selection)
             if (test < prob): break
-        return M, Z, prob
+        return M, Z, RA, DEC, prob
 
-    def sample(self, int N):
-        return np.array([self._sample() for _ in range(N)])
+    def sample(self, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int N, int selection = 0):
+        return np.array([self._sample(zmin, zmax, ramin, ramax, decmin, decmax, selection = selection) for _ in range(N)])
     
-    def loglikelihood(self, const double[:,::1] data):
-        return self._loglikelihood(data)
+    def loglikelihood(self, const double[::1] M, const double[::1] Z):
+        return self._loglikelihood(M,Z)
         
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _loglikelihood(self, const double[:,::1] data):
+    cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z) nogil:
         """
         Eq. 10 in https://arxiv.org/pdf/0805.2946.pdf
         we are using the stirling approximation for the log factorial
         """
         cdef unsigned int i
-        cdef double Ntot = self._get_normalisation()
-        cdef unsigned int Ndet = data.shape[0]
-        cdef double logL = log_stirling_approx(Ntot)-log_stirling_approx(Ndet)-log_stirling_approx(Ntot-Ndet)
+        cdef double Ntot = self._get_normalisation(self.zmin, self.zmax)
+        cdef unsigned int Ndet = Z.shape[0]
+        cdef double logL = _log_stirling_approx(Ntot)-_log_stirling_approx(Ndet)-_log_stirling_approx(Ntot-Ndet)
 
         for i in range(Ndet):
-            logL += log(self._pdf(data[i,0], data[i,1]))
-
-        logL += (Ntot-Ndet)*log(self._get_non_detected_normalisation()/Ntot)
+            logL += log(self._pdf(M[i], Z[i]))
+        
+        logL += (Ntot-Ndet)*log(self._get_non_detected_normalisation(self.zmin, self.zmax)/Ntot)
         return logL
         
 
@@ -734,7 +712,7 @@ cdef class GalaxyDistributionLog:
         cdef unsigned int i
         cdef double Ntot = self._get_normalisation()
         cdef unsigned int Ndet = data.shape[0]
-        cdef double logL = log_stirling_approx(Ntot)-log_stirling_approx(Ndet)-log_stirling_approx(Ntot-Ndet)
+        cdef double logL = _log_stirling_approx(Ntot)-_log_stirling_approx(Ndet)-_log_stirling_approx(Ntot-Ndet)
 
         for i in range(Ndet):
             logL += log(self._pdf(data[i,0], data[i,1]))
@@ -866,5 +844,8 @@ cdef inline double _absolute_magnitude(double apparent_magnitude, double dl) nog
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef inline double log_stirling_approx(double n) nogil:
-    return n*log(n)-n
+cdef inline double _log_stirling_approx(double n) nogil:
+    return n*log(n)-n if n > 0 else 0
+    
+def log_stirling_approx(double n):
+    return _log_stirling_approx(n)

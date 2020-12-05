@@ -17,6 +17,7 @@ import scipy.special as ss
 import matplotlib.pyplot as plt
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
+import cosmolisa.galaxy as gal
 import cosmolisa.prior as pr
 
 class CosmologicalModel(cpnest.model.Model):
@@ -24,246 +25,290 @@ class CosmologicalModel(cpnest.model.Model):
     names  = [] #'h','om','ol','w0','w1']
     bounds = [] #[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
-    def __init__(self, model, data, *args, **kwargs):
+    def __init__(self, model, data, corrections, *args, **kwargs):
 
         super(CosmologicalModel,self).__init__()
         # Set up the data
-        self.data             = data
-        self.N                = len(self.data)
-        self.model            = model
-        self.em_selection     = kwargs['em_selection']
-        self.z_threshold      = kwargs['z_threshold']
-        self.snr_threshold    = kwargs['snr_threshold']
-        self.event_class      = kwargs['event_class']
-        self.redshift_prior   = kwargs['redshift_prior']
-        self.time_redshifting = kwargs['time_redshifting']
-        self.vc_normalization = kwargs['vc_normalization']
-        self.lk_sel_fun       = kwargs['lk_sel_fun']
-        self.detection_corr   = kwargs['detection_corr']
-        self.approx_int       = kwargs['approx_int']
-        self.dl_cutoff        = kwargs['dl_cutoff']
-        self.sfr              = kwargs['sfr']
-        self.T                = kwargs['T']
-        self.O                = None
+        self.data               = data
+        self.N                  = len(self.data)
+        self.model              = model.split('+')
+        self.corrections        = corrections.split('+')
+        self.em_selection       = kwargs['em_selection']
+        self.z_threshold        = kwargs['z_threshold']
+        self.snr_threshold      = kwargs['snr_threshold']
+        self.event_class        = kwargs['event_class']
+        self.redshift_prior     = kwargs['redshift_prior']
+        self.time_redshifting   = kwargs['time_redshifting']
+        self.vc_normalization   = kwargs['vc_normalization']
+        self.lk_sel_fun         = kwargs['lk_sel_fun']
+        self.detection_corr     = kwargs['detection_corr']
+        self.approx_int         = kwargs['approx_int']
+        self.dl_cutoff          = kwargs['dl_cutoff']
+        self.sfr                = kwargs['sfr']
+        self.T                  = kwargs['T']
+        self.luminosity_function = kwargs['luminosity_function']
+        self.magnitude_threshold = kwargs['m_threshold']
+        self.O                  = None
         
-        if (self.model == "LambdaCDM"):
+        self.Mmin = -25.0
+        self.Mmax = -15.0
+        self.rate = 0
+        self.luminosity = 0
+        self.gw = 0
+        self.cosmology = 0
+        
+        if ("LambdaCDM" in self.model):
             
+            self.cosmology = 1
             self.names  = ['h','om']
             self.bounds = [[0.6,0.86],[0.04,0.5]]
-#            self.bounds = [[0.72,0.74],[0.24,0.26]]
-        elif (self.model == "CLambdaCDM"):
+
+        if ("CLambdaCDM" in self.model):
             
+            self.cosmology = 1
             self.names  = ['h','om','ol']
             self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
 
-        elif (self.model == "LambdaCDMDE"):
+        if ("LambdaCDMDE" in self.model):
             
+            self.cosmology = 1
             self.names  = ['h','om','ol','w0','w1']
             self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
             
-        elif (self.model == "DE"):
+        if ("DE" in self.model):
             
+            self.cosmology = 1
             self.names  = ['w0','w1']
             self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
         
+        if ("GW" in self.model):
+            self.gw = 1
         else:
-            
-            print("Cosmological model %s not supported. Exiting...\n"%self.model)
-            exit()
+            self.gw = 0
         
-        for e in self.data:
-            self.names.append('z%d'%e.ID)
-            self.bounds.append([e.zmin,e.zmax])
-        
-        if self.sfr == 1:
+        if ("Rate" in self.model):
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
+            self.rate = 1
+            self.gw_correction = 1
             self.names.append('log10r0')
-            self.bounds.append([-20,-9])
+            self.bounds.append([-20,-7])
             self.names.append('W')
             self.bounds.append([0.0,100.0])
             self.names.append('Q')
             self.bounds.append([0.0,10.0])
             self.names.append('R')
             self.bounds.append([0.0,10.0])
+        
+        if ("Luminosity" in self.model):
+        
+            self.luminosity = 1
+            self.em_correction = 1
+            self.names.append('phistar0')
+            self.bounds.append([1e-3,1e-1])
+            self.names.append('phistar_exponent')
+            self.bounds.append([-0.01,0.01])
+            self.names.append('Mstar0')
+            self.bounds.append([-21,-20])
+            self.names.append('Mstar_exponent')
+            self.bounds.append([-0.01,0.01])
+            self.names.append('alpha0')
+            self.bounds.append([-1.3,-1.0])
+            self.names.append('alpha_exponent')
+            self.bounds.append([-0.01,0.01])
 
+        # if we are using GWs, add the relevant redshift parameters
+        if self.gw == 1:
+            for e in self.data:
+                self.names.append('z%d'%e.ID)
+                self.bounds.append([e.zmin,e.zmax])
+        else:
+            self.gw_redshifts = np.array([e.z_true for e in self.data])
+        
         self._initialise_galaxy_hosts()
         
+        if not("Rate" in self.model):
+            if ("GW" in corrections):
+                self.gw_correction = 1
+            else:
+                self.gw_correction = 0
+        
+        if not("Luminosity" in self.model):
+            if ("EM" in corrections):
+                self.em_correction = 1
+            else:
+                self.em_correction = 0
+               
         print("==================================================")
         print("cpnest model initialised with:")
-        print("Cosmological model: {0}".format(self.model))
+        print("Analysis model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
-        print("EM correction: {0}".format(self.em_selection))
-        print("Redshift prior: {0}".format(self.redshift_prior))
-        print("Time redshifting: {0}".format(self.time_redshifting))
-        print("Vc normalization: {0}".format(self.vc_normalization))
-        print("lk_sel_fun: {0}".format(self.lk_sel_fun))
-        print("detection_corr: {0}".format(self.detection_corr))
-        print("approx_int: {0}".format(self.approx_int))
-        print("SFR: {0}".format(self.sfr))
+        print("EM correction: {0}".format(self.em_correction))
+        print("GW correction: {0}".format(self.gw_correction))
+        print("Free parameters: {0}".format(self.names))
         print("==================================================")
-
+        
     def _initialise_galaxy_hosts(self):
-        self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight) for g in e.potential_galaxy_hosts]) for e in self.data}
+        self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
+        self.galaxy_redshifts = np.hstack([self.hosts[e.ID][:,0] for e in self.data]).copy(order='C')
+        self.galaxy_magnitudes = np.hstack([self.hosts[e.ID][:,3] for e in self.data]).copy(order='C')
 
     def log_prior(self,x):
     
         logP = super(CosmologicalModel,self).log_prior(x)
         
         if np.isfinite(logP):
-        
-            if   (self.model == "LambdaCDM"):
+            
+            # check for the cosmological model
+            if  ("LambdaCDM" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])
-            elif (self.model == "CLambdaCDM"):
+            elif ("CLambdaCDM" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],truths['w0'],truths['w1'])
-            elif (self.model == "LambdaCDMDE"):
+            elif ("LambdaCDMDE" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
-            elif (self.model == "DE"):
+            elif ("DE" in self.model):
                 self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'],x['w1'])
-#            self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-            if not (self.lk_sel_fun):         
-                """
-                Apply a uniform in comoving volume density redshift prior
-                """
-                if (self.redshift_prior == 1):
-                    # Compute p(z_gw|...)
-                    logP += np.sum([pr.logprior_redshift_single_event(self.O,
-                                                                    x['z%d'%e.ID],
-                                                                    zmax = self.bounds[2+j][1],
-                                                                    dl_cutoff = self.dl_cutoff)
-                                                                    for j,e in enumerate(self.data)])
-                                                                    
-                elif (self.redshift_prior == 0) and (self.time_redshifting == 1):
-                    logP += np.sum([-np.log((1+x['z%d'%e.ID])) for e in self.data])
-
-                    if (self.vc_normalization == 1):
-                        logP -= np.sum([np.log(self.O.IntegrateComovingVolumeDensity(self.bounds[2+j][1]))
-                                        for j,e in enumerate(self.data)])
-
+            else:
+                self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+            # check for the rate model or GW corrections
+            if ("Rate" in self.model):
+                self.r0 = 10**x['log10r0']
+                self.W  = x['W']
+                self.Q  = x['Q']
+                self.R  = x['R']
+            elif self.gw_correction == 1:
+                self.r0 = truths['r0']
+                self.W  = truths['W']
+                self.Q  = truths['Q']
+                self.R  = truths['R']
+            # check for the luminosity model or EM corrections
+            if ("Luminosity" in self.model):
+                self.phistar0            = x['phistar0']
+                self.phistar_exponent    = x['phistar_exponent']
+                self.Mstar0              = x['Mstar0']
+                self.Mstar_exponent      = x['Mstar_exponent']
+                self.alpha0              = x['alpha0']
+                self.alpha_exponent      = x['alpha_exponent']
+            elif self.em_correction == 1:
+                self.phistar0            = truths['phistar0']
+                self.phistar_exponent    = truths['phistar_exponent']
+                self.Mstar0              = truths['Mstar0']
+                self.Mstar_exponent      = truths['Mstar_exponent']
+                self.alpha0              = truths['alpha0']
+                self.alpha_exponent      = truths['alpha_exponent']
+        
         return logP
 
     def log_likelihood(self,x):
         
-        if (self.lk_sel_fun == 1):
-            logL = np.sum([lk.logLikelihood_single_event_sel_fun(self.hosts[e.ID],
-                                                                 e.dl,
-                                                                 e.sigma,
-                                                                 self.O,
-                                                                 x['z%d'%e.ID],
-                                                                 approx_int = self.approx_int,
-                                                                 zmin = self.bounds[2+j][0],
-                                                                 zmax = self.bounds[2+j][1])
-                                                                 for j,e in enumerate(self.data)])
-
-        elif (self.detection_corr == 1):
-            logL = np.sum([lk.logLikelihood_single_event_snr_threshold(self.hosts[e.ID],
-                                                        e.dl,
-                                                        e.sigma,
-                                                        e.snr,
-                                                        self.O,
-                                                        x['z%d'%e.ID],
-                                                        em_selection = self.em_selection,
-                                                        zmin = self.bounds[2+j][0],
-                                                        zmax = self.bounds[2+j][1],
-                                                        z_threshold  = self.z_threshold,
-                                                        SNR_threshold = 20.0)
-                                                        for j,e in enumerate(self.data)])
+        logL_GW         = 0.0
+        logL_rate       = 0.0
+        logL_luminosity = 0.0
+        
+        # if we are looking at the luminosity function
+        if self.luminosity == 1:
+            Schecter = gal.GalaxyDistribution(self.O,
+                                              self.phistar0,
+                                              self.phistar_exponent,
+                                              self.Mstar0,
+                                              self.Mstar_exponent,
+                                              self.alpha0,
+                                              self.alpha_exponent,
+                                              self.Mmin,
+                                              self.Mmax,
+                                              1e-5,
+                                              self.z_threshold,
+                                              0.0,
+                                              2.0*np.pi,
+                                              -0.5*np.pi,
+                                              0.5*np.pi,
+                                              self.magnitude_threshold,
+                                              0,0,0)
+                          
+            logL_luminosity += Schecter.loglikelihood(self.galaxy_magnitudes, self.galaxy_redshifts)
+            # this is a stupid correction for the sky coverage
+            logL_luminosity += np.sum([np.log(0.000405736691211125 * (87./e.snr)**2/(4*np.pi)) for e in self.data])
+            # if we do not care about GWs, return
+            if self.gw == 0: return logL_luminosity
+        
+        # if we are estimating the rate or we are correcting for GW selection effects, we need this part
+        if self.rate == 1 or self.gw_correction == 1:
+            Rtot = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O, 1e-5, self.z_threshold)
+            Ntot = Rtot*self.T
             
-        elif (self.sfr == 1):
-            # get the SFR parameters
-            r0  = 10**x['log10r0']
-            W   = x['W']
-            Q   = x['Q']
-            R   = x['R']
-            # compute the expected rate parameter integrated to the maximum redshift
-            # this will also serve as normalisation constant for the individual dR/dz_i
-            # p(z)dz = dR/R(\infty)
+            # compute the probability of observing the events we observed
+            selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
+                                                                    self.r0, self.W, self.R, self.Q,
+                                                                    self.snr_threshold, self.O, Ntot)
+            # compute the rate for the observed events
+            Rdet = Rtot*selection_probability
+            Ndet = Rdet*Ntot
+            logL_rate = -Ndet+self.N*np.log(Ndet)
+            # if we do not care about GWs, compute the rate density at the known gw redshifts and return
+            if self.gw == 0:
+                return logL_rate+np.sum([lk.logLikelihood_single_event_rate_only(self.O, e.z_true, self.r0, self.W, self.Q, self.R)/Ntot for e in self.data])
             
-            if 0:
-                # compute the normalisation constant for the individual p(z|\Omega,\lambda)
-                Rtot = lk.integrated_rate(r0, W, R, Q, self.O, 1e-5, self.z_threshold)
-                Ntot = Rtot*self.T
-                
-                logL  = lk.log_stirling_approx(Ntot)
-                logL += -lk.log_stirling_approx(self.N)
-                logL += -lk.log_stirling_approx(Ntot-self.N)
-                
-                # compute the probability of observing the events we observed
-                selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                        r0, W, R, Q,
-                                                        self.snr_threshold, self.O, Rtot)
-    #            selection_probability = np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, self.snr_threshold, self.O, Rtot) for j,e in enumerate(self.data)])
+        # if we are correcting for EM selection effects, we need this part
+        if self.em_correction == 1:
+        
+            for j,e in enumerate(self.data):
+                    
+                    Sch = gal.GalaxyDistribution(self.O,
+                                                 self.phistar0,
+                                                 self.phistar_exponent,
+                                                 self.Mstar0,
+                                                 self.Mstar_exponent,
+                                                 self.alpha0,
+                                                 self.alpha_exponent,
+                                                 self.Mmin,
+                                                 self.Mmax,
+                                                 e.zmin,
+                                                 e.zmax,
+                                                 0.0,
+                                                 2.0*np.pi,
+                                                 -0.5*np.pi,
+                                                 0.5*np.pi,
+                                                 self.magnitude_threshold,
+                                                 0,0,0)
+                    
+                    logL_GW += lk.logLikelihood_single_event_sel_fun(self.hosts[e.ID],
+                                                                     e.dl,
+                                                                     e.sigma,
+                                                                     self.O,
+                                                                     Sch,
+                                                                     x['z%d'%e.ID],
+                                                                     zmin = e.zmin,
+                                                                     zmax = e.zmax)
 
-                # compute the rate for the observed events
-    #            Rdet = Rtot*selection_probability
-                logL += (Ntot-self.N)*np.log1p(-selection_probability)
-    #            print(Rtot, Rdet, selection_probability)
-                # compute the likelihood for the individual observations
-                if not(np.isfinite(logL)): return -np.inf
-                logL += np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
-                                                                 e.dl,
-                                                                 e.sigma,
-                                                                 self.O,
-                                                                 x['z%d'%e.ID],
-                                                                 r0,
-                                                                 W,
-                                                                 R,
-                                                                 Q,
-                                                                 Rtot,
-                                                                 em_selection = self.em_selection,
-                                                                 zmin = 0.0,#self.bounds[2+j][0],
-                                                                 zmax = self.z_threshold)#self.bounds[2+j][1])
-                                                                 for j,e in enumerate(self.data)])
-#            logL += -Rdet
-            else:
-                # poisson likelihood
-                Rtot = lk.integrated_rate(r0, W, R, Q, self.O, 1e-5, self.z_threshold)
-                Ntot = Rtot*self.T
-                
-                # compute the probability of observing the events we observed
-#                selection_probability = np.prod([lk.gw_selection_probability_sfr(0.0, self.z_threshold, r0, W, R, Q, e.dl, e.sigma, e.snr, self.snr_threshold, self.O, Rtot) for j,e in enumerate(self.data)])
-                selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                                        r0, W, R, Q,
-                                                                        self.snr_threshold, self.O, Ntot)
-
-                # compute the rate for the observed events
-                Rdet = Rtot*selection_probability
-                Ndet = Rdet*Ntot
-    #            print(Rtot, Rdet, selection_probability)
-                # compute the likelihood for the individual observations
-                logL = np.sum([lk.logLikelihood_single_event_sfr(self.hosts[e.ID],
-                                                                 e.dl,
-                                                                 e.sigma,
-                                                                 self.O,
-                                                                 x['z%d'%e.ID],
-                                                                 r0,
-                                                                 W,
-                                                                 R,
-                                                                 Q,
-                                                                 Rtot,
-                                                                 em_selection = self.em_selection,
-                                                                 zmin = self.bounds[2+j][0],
-                                                                 zmax = self.bounds[2+j][1])
-                                                                 for j,e in enumerate(self.data)])
-
-                logL += -Ndet+self.N*np.log(Ndet)
+        # we assume the catalog is complete and no correction is necessary
         else:
-            # Compute sum_GW p(z_gw|...)*p(dL|...)*p(Di|...)
-            logL = np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
-                                                        e.dl,
-                                                        e.sigma,
-                                                        self.O,
-                                                        x['z%d'%e.ID],
-                                                        em_selection = self.em_selection,
-                                                        zmin = self.bounds[2+j][0],
-                                                        zmax = self.bounds[2+j][1])
-                                                        for j,e in enumerate(self.data)])
+            logL_GW += np.sum([lk.logLikelihood_single_event(self.hosts[e.ID],
+                                                             e.dl,
+                                                             e.sigma,
+                                                             self.O,
+                                                             x['z%d'%e.ID],
+                                                             zmin = self.bounds[2+j][0],
+                                                             zmax = self.bounds[2+j][1])
+                                                             for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 
-        return logL
-#--r0 5e-11 --W 4. --R 3.2 --Q 0.4
-truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0,'r0':5e-11,'Q':2.4,'W':41.,'R':5.2} # 0.73, 0.25, 0.75, -1.0, 0.0
-#--r0 1e-12 --W 32 --R 3.2 --Q 3.4
+        return logL_GW+logL_rate+logL_luminosity
+
+truths = {'h':0.73,
+          'om':0.25,
+          'ol':0.75,
+          'w0':-1.0,
+          'w1':0.0,
+          'r0':5e-11,
+          'Q':2.4,
+          'W':41.,
+          'R':5.2,
+          'phistar0':1e-2,
+          'Mstar0':-20.7,
+          'alpha0':-1.23,
+          'phistar_exponent':0.0,
+          'Mstar_exponent':0.0,
+          'alpha_exponent':0.0}
 usage=""" %prog (options)"""
 
 if __name__=='__main__':
@@ -274,6 +319,7 @@ if __name__=='__main__':
     parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',      help='Class of the event(s) [MBH, EMRI, sBH].')
     parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',            help='Event number.')
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('--corrections',       default='None',        type='string', metavar='corrections',      help='family of corrections (GW+EM)')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
@@ -290,6 +336,8 @@ if __name__=='__main__':
     parser.add_option('--sfr',    default=0,           type='int',    metavar='sfr',   help='fit the sfr parameters too')
     parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
+    parser.add_option('--luminosity',   default=0,           type='int',    metavar='luminosity',  help='infer also the luminosity function')
+    parser.add_option('--m_threshold',   default=20,           type='float',    metavar='m_threshold',  help='apparent magnitude threshold')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
     parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',            help='Number of live points.')
@@ -312,6 +360,7 @@ if __name__=='__main__':
     detection_corr   = opts.detection_corr
     approx_int       = opts.approx_int
     model            = opts.model
+    corrections      = opts.corrections
     joint            = opts.joint
     event_class      = opts.event_class
     reduced_catalog  = opts.reduced_catalog
@@ -320,6 +369,8 @@ if __name__=='__main__':
     out_dir          = opts.out_dir
     sfr              = opts.sfr
     T                = opts.T
+    luminosity_function = opts.luminosity
+    m_threshold = opts.m_threshold
     
     if not (screen_output):
         if not (postprocess):
@@ -452,6 +503,7 @@ if __name__=='__main__':
     
     C = CosmologicalModel(model,
                           events,
+                          corrections,
                           em_selection     = em_selection,
                           snr_threshold    = snr_threshold,
                           z_threshold      = zhorizon,
@@ -464,7 +516,9 @@ if __name__=='__main__':
                           approx_int       = approx_int,
                           dl_cutoff        = dl_cutoff,
                           sfr              = sfr,
-                          T                = T)
+                          T                = T,
+                          luminosity_function = luminosity_function,
+                          m_threshold      = m_threshold)
 
     #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
@@ -497,47 +551,48 @@ if __name__=='__main__':
     ##############
     
     if (event_class == "EMRI"):
-        for e in C.data:
-            fig = plt.figure()
-            ax  = fig.add_subplot(111)
-            z   = np.linspace(e.zmin,e.zmax, 100)
+        if C.gw == 1:
+            for e in C.data:
+                fig = plt.figure()
+                ax  = fig.add_subplot(111)
+                z   = np.linspace(e.zmin,e.zmax, 100)
 
-            if (em_selection):
-                ax2 = ax.twinx()
-                
-                if (model == "DE"): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
-                else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
-                # choose a colormap
-                c_m = matplotlib.cm.cool
-                # create a ScalarMappable and initialize a data structure
-                s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-                s_m.set_array([])
-                for i in range(x.shape[0])[::10]:
-                    if (model == "LambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-                    elif (model == "CLambdaCDM"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-                    elif (model == "LambdaCDMDE"): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-                    elif (model == "DE"): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-                    distances = np.array([O.LuminosityDistance(zi) for zi in z])
-                    if (model == "DE"):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
-                    else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
-                    O.DestroyCosmologicalParameters()
-                CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-                if (model == "DE"): CB.set_label('w_0')
-                else: CB.set_label('h')
-                ax2.set_ylim(0.0, 1.0)
-                ax2.set_ylabel('selection function')
-            ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
-            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
-            ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+                if (em_selection):
+                    ax2 = ax.twinx()
+                    
+                    if ("DE" in C.model): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+                    else:               normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+                    # choose a colormap
+                    c_m = matplotlib.cm.cool
+                    # create a ScalarMappable and initialize a data structure
+                    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+                    s_m.set_array([])
+                    for i in range(x.shape[0])[::10]:
+                        if ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                        elif ("CLambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+                        elif ("LambdaCDMDE" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                        elif ("DE" in C.model): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                        distances = np.array([O.LuminosityDistance(zi) for zi in z])
+                        if ("DE" in C.model):  ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+                        else: ax2.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+                        O.DestroyCosmologicalParameters()
+                    CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+                    if ("DE" in C.model): CB.set_label('w_0')
+                    else: CB.set_label('h')
+                    ax2.set_ylim(0.0, 1.0)
+                    ax2.set_ylabel('selection function')
+                ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+                ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+                ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
 
-            for g in e.potential_galaxy_hosts:
-                zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
-                pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
-                ax.plot(zg, pg, lw=0.5, color='k')
-            ax.set_xlabel('$z_{%d}$'%e.ID)
-            ax.set_ylabel('probability density')
-            plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
-            plt.close()
+                for g in e.potential_galaxy_hosts:
+                    zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
+                    pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
+                    ax.plot(zg, pg, lw=0.5, color='k')
+                ax.set_xlabel('$z_{%d}$'%e.ID)
+                ax.set_ylabel('probability density')
+                plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
+                plt.close()
     
     if (event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
@@ -555,33 +610,36 @@ if __name__=='__main__':
         models = []
         
         for k in range(x.shape[0]):
-            if (model == "LambdaCDM"):
+            if ("LambdaCDM" in C.model):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                1.0-x['om'][k],
                                                truths['w0'],
                                                truths['w1'])
-            elif (model == "CLambdaCDM"):
+            elif ("CLambdaCDM" in C.model):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
                                                truths['w0'],
                                                truths['w1'])
-            elif (model == "LambdaCDMDE"):
+            elif ("LambdaCDMDE" in C.model):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                x['ol'][k],
                                                x['w0'][k],
                                                x['w1'][k])
-            elif (model == "DE"):
+            elif ("DE" in C.model):
                 omega = cs.CosmologicalParameters(truths['h'],
                                                truths['om'],
                                                truths['ol'],
                                                x['w0'][k],
                                                x['w1'][k])
             else:
-                print(opts.model,"is unknown. Exiting.")
-                exit()
+                omega = cs.CosmologicalParameters(truths['h'],
+                                               truths['om'],
+                                               truths['ol'],
+                                               truths['w0'],
+                                               truths['w1'])
             models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
             omega.DestroyCosmologicalParameters()
         
@@ -604,65 +662,65 @@ if __name__=='__main__':
         fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
+    if C.cosmology == 1:
+        if ("LambdaCDM" in C.model):
+            samps = np.column_stack((x['h'],x['om']))
+            fig = corner.corner(samps,
+                   labels= [r'$h$',
+                            r'$\Omega_m$'],
+                   quantiles=[0.05, 0.5, 0.95],
+                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
+                   use_math_text=True, truths=[truths['h'],truths['om']],
+                   filename=os.path.join(output,'joint_posterior.pdf'))
+    #        axes = fig.get_axes()
+    #        axes[0].set_xlim(0.69, 0.77)
+    #        axes[2].set_xlim(0.69, 0.77)
+    #        axes[3].set_xlim(0.04, 0.5)
+    #        axes[2].set_ylim(0.04, 0.5)
+        
+        if ("CLambdaCDM" in C.model):
+            samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
+            fig = corner.corner(samps,
+                   labels= [r'$h$',
+                            r'$\Omega_m$',
+                            r'$\Omega_\Lambda$',
+                            r'$\Omega_k$'],
+                   quantiles=[0.05, 0.5, 0.95],
+                   show_titles=True, title_kwargs={"fontsize": 12},
+                   use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
+                   filename=os.path.join(output,'joint_posterior.pdf'))
+                   
+        if ("LambdaCDMDE" in C.model):
+            samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
+            fig = corner.corner(samps,
+                            labels= [r'$h$',
+                                     r'$\Omega_m$',
+                                     r'$\Omega_\Lambda$',
+                                     r'$w_0$',
+                                     r'$w_a$'],
+                            quantiles=[0.05, 0.5, 0.95],
+                            show_titles=True, title_kwargs={"fontsize": 12},
+                            use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
+                            filename=os.path.join(output,'joint_posterior.pdf'))
 
-    if (model == "LambdaCDM"):
-        samps = np.column_stack((x['h'],x['om']))
-        fig = corner.corner(samps,
-               labels= [r'$h$',
-                        r'$\Omega_m$'],
-               quantiles=[0.05, 0.5, 0.95],
-               show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-               use_math_text=True, truths=[truths['h'],truths['om']],
-               filename=os.path.join(output,'joint_posterior.pdf'))
-#        axes = fig.get_axes()
-#        axes[0].set_xlim(0.69, 0.77)
-#        axes[2].set_xlim(0.69, 0.77)
-#        axes[3].set_xlim(0.04, 0.5)
-#        axes[2].set_ylim(0.04, 0.5)
-    
-    if (model == "CLambdaCDM"):
-        samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
-        fig = corner.corner(samps,
-               labels= [r'$h$',
-                        r'$\Omega_m$',
-                        r'$\Omega_\Lambda$',
-                        r'$\Omega_k$'],
-               quantiles=[0.05, 0.5, 0.95],
-               show_titles=True, title_kwargs={"fontsize": 12},
-               use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
-               filename=os.path.join(output,'joint_posterior.pdf'))
-               
-    if (model == "LambdaCDMDE"):
-        samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
-        fig = corner.corner(samps,
-                        labels= [r'$h$',
-                                 r'$\Omega_m$',
-                                 r'$\Omega_\Lambda$',
-                                 r'$w_0$',
-                                 r'$w_a$'],
-                        quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
-                        filename=os.path.join(output,'joint_posterior.pdf'))
+        if ("DE" in C.model):
+            samps = np.column_stack((x['w0'],x['w1']))
+            fig = corner.corner(samps,
+                            labels= [r'$w_0$',
+                                     r'$w_a$'],
+                            quantiles=[0.05, 0.5, 0.95],
+                            show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
+                            use_math_text=True, truths=[truths['w0'],truths['w1']],
+                            filename=os.path.join(output,'joint_posterior.pdf'))
+    #        axes = fig.get_axes()
+    #        axes[0].set_xlim(-1.22, -0.53)
+    #        axes[2].set_xlim(-1.22, -0.53)
+    #        axes[3].set_xlim(-1.0, 1.0)
+    #        axes[2].set_ylim(-1.0, 1.0)
 
-    if (model == "DE"):
-        samps = np.column_stack((x['w0'],x['w1']))
-        fig = corner.corner(samps,
-                        labels= [r'$w_0$',
-                                 r'$w_a$'],
-                        quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                        use_math_text=True, truths=[truths['w0'],truths['w1']],
-                        filename=os.path.join(output,'joint_posterior.pdf'))
-#        axes = fig.get_axes()
-#        axes[0].set_xlim(-1.22, -0.53)
-#        axes[2].set_xlim(-1.22, -0.53)
-#        axes[3].set_xlim(-1.0, 1.0)
-#        axes[2].set_ylim(-1.0, 1.0)
+        fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
 
-    fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
-
-    if opts.sfr == 1:
+    if ("Rate" in C.model):
         z   = np.linspace(0.0,C.z_threshold,100)
         fig = plt.figure()
         ax  = fig.add_subplot(111)
@@ -674,14 +732,16 @@ if __name__=='__main__':
             W   = x['W'][i]
             Q   = x['Q'][i]
             R   = x['R'][i]
-            if (C.model == "LambdaCDM"):
+            if ("LambdaCDM" in C.model):
                 O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-            elif (C.model == "CLambdaCDM"):
+            elif ("CLambdaCDM" in C.model):
                 O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-            elif (C.model == "LambdaCDMDE"):
+            elif ("LambdaCDMDE" in C.model):
                 O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-            elif (C.model == "DE"):
+            elif ("DE" in C.model):
                 O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+            else:
+                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
             # compute the expected rate parameter integrated to the maximum redshift
             # this will also serve as normalisation constant for the individual dR/dz_i
             Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
@@ -748,6 +808,96 @@ if __name__=='__main__':
                         use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
                         filename=os.path.join(output,'joint_rate_posterior.pdf'))
         fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
+    """
+    if ("Luminosity" in C.model):
+        z   = np.linspace(0.0,C.z_threshold,100)
+        m   = np.linspace(C.Mmin,C.Mmax,100)
+        fig = plt.figure()
+        ax  = fig.add_subplot(111)
+        for i in range(x.shape[0]):
+            phistar0            = x['phistar0'][i]
+            phistar_exponent    = x['phistar_exponent'][i]
+            Mstar0              = x['Mstar0'][i]
+            Mstar_exponent      = x['Mstar_exponent'][i]
+            alpha0              = x['alpha0'][i]
+            alpha_exponent      = x['alpha_exponent'][i]
+            if ("LambdaCDM" in C.model):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+            elif ("CLambdaCDM" in C.model):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+            elif ("LambdaCDMDE" in C.model):
+                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+            elif ("DE" in C.model):
+                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+            else:
+                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+            # compute the expected rate parameter integrated to the maximum redshift
+            # this will also serve as normalisation constant for the individual dR/dz_i
+            Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
+            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O, Rtot[i])
+            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
+#            ax.plot(z,v,color='k', linewidth=.3)
+            sfr.append(v)
+
+        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
+        sfr   = np.array(sfr)
+        sfr_true = np.array([cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z])
+        
+        l,m,h = np.percentile(sfr,[5,50,95],axis=0)
+        ax.plot(z,m,color='k', linewidth=.7)
+        ax.fill_between(z,l,h,facecolor='lightgray')
+        ax.plot(z,sfr_true,linestyle='dashed',color='red')
+        ax.set_xlabel('redshift')
+        ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
+        fig.savefig(os.path.join(output,'redshift_distribution.pdf'), bbox_inches='tight')
+        
+        tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
+        nevents         = Rtot[:,None]*C.T*tmp
+        nevents_true    = Rtot_true*C.T*np.cumsum(sfr_true)*np.diff(z)[0]
+        l,m,h = np.percentile(nevents,[5,50,95],axis=0)
+        fig = plt.figure()
+        ax  = fig.add_subplot(111)
+        ax.plot(z,m,color='k', linewidth=.7)
+        ax.fill_between(z,l,h,facecolor='lightgray')
+        ax.plot(z,nevents_true, color='r', linestyle='dashed')
+        plt.yscale('log')
+        ax.set_xlabel('redshift z')
+        ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
+        plt.savefig(os.path.join(output,'number_of_events.pdf'), bbox_inches='tight')
+        
+        
+        fig = plt.figure()
+        ax  = fig.add_subplot(111)
+        ax.hist(Rtot, bins = 100, histtype='step')
+        ax.axvline(Rtot_true, linestyle='dashed', color='r')
+        ax.set_xlabel('global rate')
+        ax.set_ylabel('number')
+        fig.savefig(os.path.join(output,'global_rate.pdf'), bbox_inches='tight')
+        print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
+        
+        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true, Rtot_true)
+        fig = plt.figure()
+        ax  = fig.add_subplot(111)
+        ax.hist(selection_probability, bins = 100, histtype='step')
+        ax.axvline(true_selection_prob, linestyle='dashed', color='r')
+        ax.set_xlabel('selection probability')
+        ax.set_ylabel('number')
+        fig.savefig(os.path.join(output,'selection_probability.pdf'), bbox_inches='tight')
+
+        print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
+
+        samps = np.column_stack((x['log10r0'],x['W'],x['R'],x['Q']))
+        fig = corner.corner(samps,
+                        labels= [r'$\log_{10} r_0$',
+                                 r'$W$',
+                                 r'$R$',
+                                 r'$Q$'],
+                        quantiles=[0.05, 0.5, 0.95],
+                        show_titles=True, title_kwargs={"fontsize": 12},
+                        use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
+                        filename=os.path.join(output,'joint_rate_posterior.pdf'))
+        fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
+    """
 ############################################################
 ############################################################
 # UNUSED CODE

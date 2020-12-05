@@ -5,16 +5,17 @@ import os
 class Galaxy(object):
     """
     Galaxy class:
-    initialise a galaxy defined by its redshift, redshift error
-    and weight determined by its angular position
-    relative to the LISA posterior
+    initialise a galaxy defined by its redshift, redshift error,
+    weight determined by its angular position
+    relative to the LISA posterior and magnitude
     """
-    def __init__(self, redshift, dredshift, weight, dl):
+    def __init__(self, redshift, dredshift, weight, dl, magnitude):
         
         self.redshift   = redshift
         self.dredshift  = dredshift
         self.weight     = weight
         self.dl         = dl
+        self.magnitude  = magnitude
 
 class Event(object):
     """
@@ -31,6 +32,7 @@ class Event(object):
                  redshifts,
                  dredshifts,
                  weights,
+                 magnitudes,
                  zmin,
                  zmax,
                  snr,
@@ -39,7 +41,7 @@ class Event(object):
                  snr_threshold = 8.0,
                  VC = None):
 
-        self.potential_galaxy_hosts = [Galaxy(r,dr,w,dl) for r,dr,w,dl in zip(redshifts,dredshifts,weights,dl_host)]
+        self.potential_galaxy_hosts = [Galaxy(r,dr,w,dl,m) for r,dr,w,dl,m in zip(redshifts,dredshifts,weights,dl_host,magnitudes)]
         self.n_hosts                = len(self.potential_galaxy_hosts)
         self.ID                     = ID
         self.dl                     = dl
@@ -78,6 +80,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                 redshifts               = np.atleast_1d(redshifts)
                 d_redshifts             = np.atleast_1d(d_redshifts)
                 weights                 = np.ones(len(redshifts))
+                magnitudes              = np.ones(len(redshifts))
                 zmin                    = np.maximum(redshifts - 5.0*d_redshifts, 0.0)
                 zmax                    = redshifts + 5.0*d_redshifts
                 events.append(Event(ID,
@@ -88,6 +91,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                                     redshifts,
                                     d_redshifts,
                                     weights,
+                                    magnitudes,
                                     zmin,
                                     zmax,
                                     -1,
@@ -120,6 +124,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
             redshifts               = np.atleast_1d(redshifts)
             d_redshifts             = np.atleast_1d(d_redshifts)
             weights                 = np.atleast_1d(len(redshifts))
+            magnitudes              = np.atleast_1d(len(redshifts))
             zmin                    = np.maximum(redshifts - 10.0*d_redshifts, 0.0)
             zmax                    = redshifts + 10.0*d_redshifts
             analysis_events         = [Event(ID,
@@ -130,6 +135,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                                             redshifts,
                                             d_redshifts,
                                             weights,
+                                            magnitudes,
                                             zmin,
                                             zmax,
                                             -1,
@@ -203,10 +209,11 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
             event_file.close()
             try:
                 # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14
-                best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
+                best_dl,zcosmo,zobs,magnitudes,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
                 redshifts       = np.atleast_1d(zobs)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)
+                magnitudes      = np.atleast_1d(magnitudes)
                 sigma_gw_theta  = np.mean((theta-best_theta)/dtheta)
                 sigma_gw_phi    = np.mean((phi-best_phi)/dphi)
                 if not (isinstance(dl_host, type(redshifts))):
@@ -219,6 +226,7 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
                                     redshifts,
                                     d_redshifts,
                                     weights,
+                                    magnitudes,
                                     zmin,
                                     zmax,
                                     snr,
@@ -254,11 +262,12 @@ def read_EMRI_event(input_folder, event_number, max_distance = None, max_hosts =
         z_true          = np.float64(z_true)
         event_file.close()
 #        try:
-        best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
+        best_dl,zcosmo,zobs,magnitudes,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
         redshifts = np.atleast_1d(zobs)
         d_redshifts     = np.ones(len(redshifts))*pv
         weights         = np.atleast_1d(weights)
-        analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,d_redshifts,weights,zmin,zmax,snr,z_true,dl_host,VC = VC))
+        magnitudes      = np.atleast_1d(magnitudes)
+        analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,d_redshifts,weights,magnitudes,zmin,zmax,snr,z_true,dl_host,VC = VC))
         sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
 #        except:
 #            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))

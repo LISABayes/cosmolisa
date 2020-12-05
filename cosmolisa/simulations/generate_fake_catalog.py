@@ -73,29 +73,9 @@ def rejection_sampling(zmin, zmax, distribution, pmax, N):
             i += 1
     return np.random.choice(redshifts, size = N, replace = False)
 
-def galaxy_redshift_rejection_sampling(min, max, O, pmax, norm):
-    """
-    Samples the cosmologically correct redshift
-    distribution
-    
-    Parameters
-    ===========
-    min ::`obj`: `float`
-    max ::`obj`: `float`
-    omega ::`obj`: `lal.CosmologicalParameter`
-    pmax ::`obj`: `float`
-    norm ::`obj`: `float`
-    
-    Returns
-    ===========
-    z ::`obj`: `float`
-    """
-    while True:
-        test = pmax * np.random.uniform(0,1)
-        z = np.random.uniform(min,max)
-        prob = O.ComovingVolumeElement(z)/norm
-        if (test < prob): break
-    return z
+def normal(x,m,s):
+    u = (x-m)/s
+    return np.exp(-u**2)/np.sqrt(2.0*np.pi*s**2)
 
 class EMRIDistribution(object):
     def __init__(self,
@@ -142,7 +122,77 @@ class EMRIDistribution(object):
         try: self.R               = getattr(self,'R')
         except: self.R            = 0.0
         
+        # galaxy population parameters
+        
+        try: self.phistar0        = getattr(self,'phistar0')
+        except: self.phistar0     = 1e-2 # in galaxies per Mpc^{-3}
+        try: self.logMstar0       = getattr(self,'logMstar0')
+        except: self.logMstar0    = -20.7
+        try: self.alpha0          = getattr(self,'alpha0')
+        except: self.alpha0       = -1.23
+        try: self.Mmin            = getattr(self,'Mmin')
+        except: self.Mmin         = -25
+        try: self.Mmax            = getattr(self,'Mmax')
+        except: self.Mmax         = -15
+        try: self.m_threshold     = getattr(self,'m_threshold')
+        except: self.m_threshold  = 17.7
+        
         self.fiducial_O = cs.CosmologicalParameters(self.h, self.omega_m, self.omega_lambda, self.w0, self.w1)
+        
+        # luminosity function evolution model
+        try: self.slope_model_choice        = getattr(self,'slope_model_choice')
+        except: self.slope_model_choice     = 0
+        try: self.cutoff_model_choice       = getattr(self,'cutoff_model_choice')
+        except: self.cutoff_model_choice    = 0
+        try: self.density_model_choice      = getattr(self,'density_model_choice')
+        except: self.density_model_choice   = 0
+
+        if self.cutoff_model_choice == 1:
+            try:
+                self.logMstar_exponent = getattr(self,'logMstar_exponent')
+            except:
+                print("must define an exponent for the cutoff luminosity evolution")
+                exit(-1)
+        else:
+            self.logMstar_exponent = 0
+
+        if self.slope_model_choice == 1:
+            try:
+                self.logMstar_exponent = getattr(self,'alpha_exponent')
+            except:
+                print("must define an exponent for the slope evolution")
+                exit(-1)
+        else:
+            self.alpha_exponent = 0
+
+        if self.density_model_choice == 1:
+            try:
+                self.phistar_exponent = getattr(self,'phistar_exponent')
+            except:
+                print("must define an exponent for the density evolution")
+                exit(-1)
+        else:
+            self.phistar_exponent = 0
+
+        self.galaxy_distribution  = gal.GalaxyDistribution(self.fiducial_O,
+                                                           self.phistar0,
+                                                           self.phistar_exponent,
+                                                           self.logMstar0,
+                                                           self.logMstar_exponent,
+                                                           self.alpha0,
+                                                           self.alpha_exponent,
+                                                           self.Mmin,
+                                                           self.Mmax,
+                                                           self.z_min,
+                                                           self.z_max,
+                                                           self.ra_min,
+                                                           self.ra_max,
+                                                           self.dec_min,
+                                                           self.dec_max,
+                                                           self.m_threshold,
+                                                           self.slope_model_choice,
+                                                           self.cutoff_model_choice,
+                                                           self.density_model_choice)
 
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
@@ -187,7 +237,7 @@ class EMRIDistribution(object):
         self.catalog = self.find_redshift_limits()
         (idx,) = np.where(snrs > SNR_threshold)
 #        idx = []
-        self.p = lk.gw_selection_probability_sfr(0.001,
+        self.p = lk.gw_selection_probability_sfr(1e-5,
                                    self.z_max,
                                    self.r0,
                                    self.W,
@@ -199,9 +249,6 @@ class EMRIDistribution(object):
                                    
                                    
         print("d threshold = ", lk.threshold_distance(SNR_threshold))
-#        for i in range(self.catalog.shape[0]):
-#            if p > np.random.uniform(0,1):
-#                idx.append(i)
         print("Effective number of sources = ",len(idx))
         self.catalog = self.catalog[idx,:]
         return self.catalog
@@ -253,31 +300,52 @@ class EMRIDistribution(object):
         self.catalog = np.column_stack((self.catalog,redshift_fiducial,redshift_min,redshift_max))
         return self.catalog
     
+    def get_z_limits(self,i):
+        return self.catalog[i,8], self.catalog[i,9]
+
+    def get_ra_limits(self, i, A):
+        ra = self.catalog[i,2]
+        return ra-np.sqrt(A/np.pi), ra+np.sqrt(A/np.pi)
+    
+    def get_dec_limits(self, i, A):
+        dec = self.catalog[i,3]
+        return dec-np.sqrt(A/np.pi), dec+np.sqrt(A/np.pi)
+    
     def generate_galaxies(self, i):
-        self.n0 = 0.66 # Mpc^{-3}. Increase it to augment the # of possible hosts per event 
-        if self.galaxy_norm is None:
-            self.galaxy_norm = self.fiducial_O.ComovingVolume(self.z_max)
-        if self.galaxy_pmax is None:
-            zt    = np.linspace(0,self.z_max,1000)
-            self.galaxy_pmax  = np.max([self.fiducial_O.ComovingVolumeElement(zi)/self.galaxy_norm for zi in zt])
+
         Vc = self.catalog[i,6]
         D  = self.catalog[i,1]
         dD = D*self.catalog[i,5]
         A  = self.compute_area(self.catalog[i,4])
-        N_gal = np.random.poisson(A/(4.0*np.pi)*Vc*self.n0)
-#        print("D = ",D,"dD = ",dD,"Vc = ",Vc, "A = ",A, "N = ", N_gal)
-#        if N_gal > 10000:
-#            return 0,0,0
-#        z_cosmo = [galaxy_redshift_rejection_sampling(self.catalog[i,8], self.catalog[i,9], self.fiducial_O, self.galaxy_pmax, self.galaxy_norm) for _ in range(N_gal-1)]
-        z_cosmo = []
-        z_cosmo.append(self.catalog[i,0])
-        z_cosmo = np.array(z_cosmo)
-        z_obs   = z_cosmo #+ np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
+        N_gal_tot = int(A/(4.0*np.pi)*self.galaxy_distribution.get_norm(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 0))
+        N_gal = int(A/(4.0*np.pi)*self.galaxy_distribution.get_norm(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 1))
+        print(i,": SNR =",self.catalog[i,4],"area(sr) =",A,"area(deg^2) =",A*(180./np.pi)**2,"Ntot =",N_gal_tot,"N_gal =",N_gal)
+        if N_gal < 1:
+            N_gal = 1
+        
+        zmin, zmax     = self.get_z_limits(i)
+        ramin, ramax   = self.get_ra_limits(i, A)
+        decmin, decmax = self.get_dec_limits(i, A)
+        samps = self.galaxy_distribution.sample(zmin, zmax, ramin, ramax, decmin, decmax, N_gal, selection = 1)
+        # append the true host
+        true_host = self.galaxy_distribution.sample(zmin, zmax, ramin, ramax, decmin, decmax, 1, selection = 1)
+        true_host[0,1] = self.catalog[i,0]
+        true_host[0,2] = self.catalog[i,2]
+        true_host[0,3] = self.catalog[i,3]
+        idx = np.random.randint(N_gal)
+        print(idx,samps.shape)
+        samps[idx, :] = true_host
+#        z_cosmo.append(self.catalog[i,0])
+        z_cosmo = samps[:,1]
+        Mags    = samps[:,0]
+        z_obs   = z_cosmo + np.random.normal(0.0, 0.0015, size = z_cosmo.shape[0])
+        ra      = samps[:,2]
+        dec     = samps[:,3]
 #        logM    = np.random.uniform(10, 13, size = z_cosmo.shape[0])
         dz      = np.ones(N_gal)*0.0015
-        W       = np.random.uniform(0.0, 1.0, size = z_cosmo.shape[0])
+        W       = normal(self.catalog[i,2],ra,np.sqrt(A/np.pi))*normal(self.catalog[i,3],dec,np.sqrt(A/np.pi))#np.random.uniform(0.0, 1.0, size = z_cosmo.shape[0])
         W      /= W.sum()
-        return z_cosmo, z_obs, W
+        return z_cosmo, z_obs, Mags, ra, dec, W
         
     def save_catalog_ids(self, folder):
         """
@@ -294,6 +362,21 @@ class EMRIDistribution(object):
         10-maximum redshift adding the cosmological prior
         11-SNR
         12-SNR at the true distance
+        """
+        
+        
+        """
+            col 9: z_min assuming cosmology prior
+    col 10: z_max assuming cosmology prior
+    col 11: theta offset of the host compared to lisa best sky location (in sigmas, i.e. theta-theta_best/sigma{theta})
+    col 12: same for phi
+    col 13: same for dL
+    col 14: theta host (rad)
+    col 15: phi host (rad)
+    col 16: dL host (Mpc)
+    col 17: SNR
+    col 18: altro SNR
+        
         """
         os.system("mkdir -p {0}".format(folder))
         for i in range(self.catalog.shape[0]):
@@ -312,14 +395,17 @@ class EMRIDistribution(object):
                                                                 0,
                                                                 0,
                                                                 0,
-                                                                0,
-                                                                0,
-                                                                0,
+                                                                self.catalog[i,3],
+                                                                self.catalog[i,2],
+                                                                self.catalog[i,1],
                                                                 self.catalog[i,4],
                                                                 self.catalog[i,4])),
                                                                 fmt = '%d %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f %.5f',
                                                                 delimiter =' ')
-            z_cosmo,z_obs, W = self.generate_galaxies(i)
+            try:
+                z_cosmo, z_obs, Mags, ra, dec, W = self.generate_galaxies(i)
+            except:
+                pass
             """
             The file ERRORBOX.dat has all the info you need to run the inference code. Each row is a possible host within the errorbox. Columns are:
             1-best luminosity distance measured by LISA
@@ -343,19 +429,19 @@ class EMRIDistribution(object):
                 np.savetxt(os.path.join(f,"ERRORBOX.dat"),np.column_stack((self.catalog[i,1]*np.ones(N),
                                                                            z_cosmo,
                                                                            z_obs,
-                                                                           np.zeros(N),
+                                                                           Mags,
                                                                            W,
+                                                                           dec,
                                                                            np.zeros(N),
                                                                            np.zeros(N),
-                                                                           np.zeros(N),
-                                                                           np.zeros(N),
+                                                                           ra,
                                                                            np.zeros(N),
                                                                            np.zeros(N),
                                                                            np.zeros(N),
                                                                            np.zeros(N),
                                                                            np.zeros(N))))
             else:
-                print("Too many hosts, EVENT_1{:03d} is unusable".format(i+1))
+                print("Too many hosts (or zero), EVENT_1{:03d} is unusable".format(i+1))
         return
         
         
@@ -374,6 +460,12 @@ if __name__=='__main__':
     parser.add_option('--ol', default=0.75, type='float', metavar='ol', help='ol')
     parser.add_option('--w0', default=-1.0, type='float', metavar='w0', help='w0')
     parser.add_option('--w1', default=0.0, type='float', metavar='w1', help='w1')
+    parser.add_option('--alpha', default=-1.23, type='float', metavar='alpha', help='alpha')
+    parser.add_option('--logMstar', default=-20.7, type='float', metavar='logMstar', help='logMstar')
+    parser.add_option('--phistar', default=1e-5, type='float', metavar='phistar', help='phistar')
+    parser.add_option('--Mmin', default=-25.0, type='float', metavar='Mmin', help='Mmin')
+    parser.add_option('--Mmax', default=-15.0, type='float', metavar='Mmax', help='Mmax')
+    parser.add_option('--m_threshold', default=20.0, type='float', metavar='m_threshold', help='m_threshold')
     parser.add_option('--zmax', default=1.0, type='float', metavar='zmax', help='maximum redshift')
     parser.add_option('--seed', default=1, type='float', metavar='seed', help='seed initialisation')
     parser.add_option('--snrmin', default=20, type='float', metavar='snrmin', help='snr threshold')
@@ -392,14 +484,36 @@ if __name__=='__main__':
     R  = opts.R
     Q  = opts.Q
     T  = opts.T
+    logMstar = opts.logMstar
+    alpha = opts.alpha
+    phistar = opts.phistar
     snr_th = opts.snrmin
+    Mmin   = opts.Mmin
+    Mmax   = opts.Mmax
+    m_threshold = opts.m_threshold
     # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
 
     # EDITABLE
     redshift_max = opts.zmax
     catalog_name = opts.output
     os.system('mkdir -p {0}'.format(catalog_name))
-    C = EMRIDistribution(redshift_max  = redshift_max, h = h, omega_m = om, omega_lambda = ol, w0 = w0, w1 = w1, r0 = r0, W = W, R = R, Q = Q)
+    C = EMRIDistribution(redshift_max  = redshift_max,
+                         h = h,
+                         omega_m = om,
+                         omega_lambda = ol,
+                         w0 = w0,
+                         w1 = w1,
+                         r0 = r0,
+                         W = W,
+                         R = R,
+                         Q = Q,
+                         Mmin = Mmin,
+                         Mmax = Mmax,
+                         alpha0 = alpha,
+                         logMstar0 = logMstar,
+                         phistar0 = phistar,
+                         m_threshold = m_threshold)
+                         
     C.get_catalog(T = T, SNR_threshold = snr_th)
     C.save_catalog_ids(catalog_name)
     print('fraction of detected events = ',C.p)
@@ -441,3 +555,45 @@ if __name__=='__main__':
     ax.set_xlabel('SNR')
     ax.set_ylabel('number of events')
     plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'snr'), bbox_inches='tight')
+
+    plt.clf()
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111, projection='aitoff')
+    Sc = ax.scatter(np.pi-C.catalog[:,2],C.catalog[:,3],c=C.catalog[:,0])
+    plt.grid()
+    plt.colorbar(Sc)
+    plt.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'sky_position'), bbox_inches='tight')
+
+    
+    galaxies_z = []
+    galaxies_m = []
+    
+    import matplotlib.cm as cm
+    colors = iter(cm.rainbow(np.linspace(0, 1, C.catalog.shape[0])))
+    
+    plt.clf()
+    fig1 = plt.figure(1)
+    fig2 = plt.figure(2)
+    ax1  = fig1.add_subplot(111)
+    ax2  = fig2.add_subplot(111, projection='aitoff')
+    iterator = range(0,C.catalog.shape[0])
+    
+    for i in iterator:
+        try:
+            z, m, W, dec, ra = np.loadtxt(catalog_name+"/EVENT_1{:03d}/ERRORBOX.dat".format(i+1), usecols = (1,3,4,5,8), unpack=True)
+            c = next(colors)
+            ax1.scatter(z, m, color = c, alpha=0.5,label ="EVENT_1{:03d}".format(i+1))
+            ax1.axvline(C.catalog[i,0], color = c, linestyle='dotted')
+            ax2.scatter(np.pi-ra, dec, color = c, alpha=0.5)
+            ax2.plot(np.pi-C.catalog[:,2],C.catalog[:,3], color=c, marker='+', linestyle='None', label ="EVENT_1{:03d}".format(i+1))
+            galaxies_z.extend(z)
+            galaxies_m.extend(m)
+        except:
+            pass
+    
+    ax1.set_xlabel('redshift')
+    ax1.set_ylabel('magnitude')
+    fig1.legend(ncol=4,bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    fig2.legend(ncol=4,bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    fig1.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'galaxies'), bbox_inches='tight')
+    fig2.savefig('{0}/{1}.pdf'.format(os.path.join(catalog_name,'figures'),'skyposition_galaxies'), bbox_inches='tight')
