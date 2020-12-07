@@ -137,10 +137,8 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
     zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
     """
     cdef double logL              = -HUGE_VAL
-#    cdef double log_in_cat        = -HUGE_VAL
     cdef double p_out_cat       = -HUGE_VAL
     logL      = _logLikelihood_single_event(hosts, meandl, sigmadl, omega, event_redshift, zmin, zmax)
-#    p_in_cat  = gal._get_detected_normalisation(zmin, zmax)/gal._get_normalisation(zmin, zmax)
     p_out_cat = gal._get_non_detected_normalisation(zmin, zmax)/gal._get_normalisation(zmin, zmax)
 
     return logL+log1p(-p_out_cat)

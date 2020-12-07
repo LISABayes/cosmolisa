@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
-from libc.math cimport pow,log,log10,isfinite,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL
+from libc.math cimport pow,log,log10,isfinite,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL,log1p
 cimport cython
 
 from scipy.integrate import quad, dblquad
@@ -58,6 +58,10 @@ cdef class GalaxyDistribution:
         self.logMmax                        = logMmax
         self.zmin                           = zmin
         self.zmax                           = zmax
+        self.ramin                          = ramin
+        self.ramax                          = ramax
+        self.decmin                         = decmin
+        self.decmax                         = decmax
         self.logMthreshold                  = logMthreshold
         self.slope_model_choice             = slope_model_choice
         self.cutoff_model_choice            = cutoff_model_choice
@@ -311,27 +315,27 @@ cdef class GalaxyDistribution:
     def sample(self, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int N, int selection = 0):
         return np.array([self._sample(zmin, zmax, ramin, ramax, decmin, decmax, selection = selection) for _ in range(N)])
     
-    def loglikelihood(self, const double[::1] M, const double[::1] Z):
-        return self._loglikelihood(M,Z)
+    def loglikelihood(self, const double[::1] M, const double[::1] Z, const double asp):
+        return self._loglikelihood(M,Z,asp)
         
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z) nogil:
+    cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z, const double asp) nogil:
         """
         Eq. 10 in https://arxiv.org/pdf/0805.2946.pdf
         we are using the stirling approximation for the log factorial
         """
         cdef unsigned int i
-        cdef double Ntot = self._get_normalisation(self.zmin, self.zmax)
+        cdef double Ntot = self._get_normalisation(self.zmin, self.zmax)# need to correct for A/4pi
         cdef unsigned int Ndet = Z.shape[0]
         cdef double logL = _log_stirling_approx(Ntot)-_log_stirling_approx(Ndet)-_log_stirling_approx(Ntot-Ndet)
-
         for i in range(Ndet):
             logL += log(self._pdf(M[i], Z[i]))
-        
-        logL += (Ntot-Ndet)*log(self._get_non_detected_normalisation(self.zmin, self.zmax)/Ntot)
+        if (Ntot-Ndet) > 0.0:
+            # see Eq.C8 in https://iopscience.iop.org/article/10.1088/0004-637X/786/1/57/pdf
+            logL += (Ntot-Ndet)*log1p(-(asp/4.0*M_PI)*self._get_detected_normalisation(self.zmin, self.zmax)/Ntot)
         return logL
         
 

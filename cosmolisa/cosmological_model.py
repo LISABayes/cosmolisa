@@ -104,17 +104,17 @@ class CosmologicalModel(cpnest.model.Model):
             self.luminosity = 1
             self.em_correction = 1
             self.names.append('phistar0')
-            self.bounds.append([1e-3,1e-1])
+            self.bounds.append([1e-4,1e-1])
             self.names.append('phistar_exponent')
-            self.bounds.append([-0.01,0.01])
+            self.bounds.append([-0.1,0.1])
             self.names.append('Mstar0')
-            self.bounds.append([-21,-20])
+            self.bounds.append([-24,-18])
             self.names.append('Mstar_exponent')
-            self.bounds.append([-0.01,0.01])
+            self.bounds.append([-0.1,0.1])
             self.names.append('alpha0')
-            self.bounds.append([-1.3,-1.0])
+            self.bounds.append([-2.0,0.0])
             self.names.append('alpha_exponent')
-            self.bounds.append([-0.01,0.01])
+            self.bounds.append([-0.1,0.1])
 
         # if we are using GWs, add the relevant redshift parameters
         if self.gw == 1:
@@ -148,10 +148,11 @@ class CosmologicalModel(cpnest.model.Model):
         print("==================================================")
         
     def _initialise_galaxy_hosts(self):
-        self.hosts = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
-        self.galaxy_redshifts = np.hstack([self.hosts[e.ID][:,0] for e in self.data]).copy(order='C')
-        self.galaxy_magnitudes = np.hstack([self.hosts[e.ID][:,3] for e in self.data]).copy(order='C')
-
+        self.hosts             = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
+        self.galaxy_redshifts    = np.hstack([self.hosts[e.ID][:,0] for e in self.data]).copy(order='C')
+        self.galaxy_magnitudes   = np.hstack([self.hosts[e.ID][:,3] for e in self.data]).copy(order='C')
+        self.areas               = {e.ID:0.000405736691211125 * (87./e.snr)**2 for e in self.data}
+        
     def log_prior(self,x):
     
         logP = super(CosmologicalModel,self).log_prior(x)
@@ -206,27 +207,27 @@ class CosmologicalModel(cpnest.model.Model):
         
         # if we are looking at the luminosity function
         if self.luminosity == 1:
-            Schecter = gal.GalaxyDistribution(self.O,
-                                              self.phistar0,
-                                              self.phistar_exponent,
-                                              self.Mstar0,
-                                              self.Mstar_exponent,
-                                              self.alpha0,
-                                              self.alpha_exponent,
-                                              self.Mmin,
-                                              self.Mmax,
-                                              1e-5,
-                                              self.z_threshold,
-                                              0.0,
-                                              2.0*np.pi,
-                                              -0.5*np.pi,
-                                              0.5*np.pi,
-                                              self.magnitude_threshold,
-                                              0,0,0)
+            for e in self.data:
+                Schecter = gal.GalaxyDistribution(self.O,
+                                                  self.phistar0,
+                                                  self.phistar_exponent,
+                                                  self.Mstar0,
+                                                  self.Mstar_exponent,
+                                                  self.alpha0,
+                                                  self.alpha_exponent,
+                                                  self.Mmin,
+                                                  self.Mmax,
+                                                  e.zmin,
+                                                  e.zmax,
+                                                  0.0,
+                                                  2.0*np.pi,
+                                                  -0.5*np.pi,
+                                                  0.5*np.pi,
+                                                  self.magnitude_threshold,
+                                                  0,0,0)
                           
-            logL_luminosity += Schecter.loglikelihood(self.galaxy_magnitudes, self.galaxy_redshifts)
-            # this is a stupid correction for the sky coverage
-            logL_luminosity += np.sum([np.log(0.000405736691211125 * (87./e.snr)**2/(4*np.pi)) for e in self.data])
+                logL_luminosity += Schecter.loglikelihood(self.hosts[e.ID][:,3].copy(order='C'), self.hosts[e.ID][:,0].copy(order='C'), self.areas[e.ID])
+
             # if we do not care about GWs, return
             if self.gw == 0: return logL_luminosity
         
@@ -808,13 +809,16 @@ if __name__=='__main__':
                         use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
                         filename=os.path.join(output,'joint_rate_posterior.pdf'))
         fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
-    """
+    
     if ("Luminosity" in C.model):
-        z   = np.linspace(0.0,C.z_threshold,100)
-        m   = np.linspace(C.Mmin,C.Mmax,100)
+        distributions = []
+        Z   = np.linspace(0.0,C.z_threshold,100)
+        M   = np.linspace(C.Mmin,C.Mmax,100)
+        Ntot = []
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         for i in range(x.shape[0]):
+            sys.stderr.write("processing {0} out of {1}\r".format(i+1,x.shape[0]))
             phistar0            = x['phistar0'][i]
             phistar_exponent    = x['phistar_exponent'][i]
             Mstar0              = x['Mstar0'][i]
@@ -831,73 +835,72 @@ if __name__=='__main__':
                 O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
             else:
                 O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-            # compute the expected rate parameter integrated to the maximum redshift
-            # this will also serve as normalisation constant for the individual dR/dz_i
-            Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
-            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O, Rtot[i])
-            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
+            S = gal.GalaxyDistribution(O,
+                                       phistar0,
+                                       phistar_exponent,
+                                       Mstar0,
+                                       Mstar_exponent,
+                                       alpha0,
+                                       alpha_exponent,
+                                       C.Mmin,
+                                       C.Mmax,
+                                       0.0,
+                                       C.z_threshold,
+                                       0.0,
+                                       2.0*np.pi,
+                                       -0.5*np.pi,
+                                       0.5*np.pi,
+                                       C.magnitude_threshold,
+                                       0,0,0)
+            Ntot.append(S.get_norm(0.0,C.z_threshold,0))
+            PMZ = np.array([S.pdf(Mi, Zj, 0) for Mi in M for Zj in Z]).reshape(100,100)
 #            ax.plot(z,v,color='k', linewidth=.3)
-            sfr.append(v)
-
-        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
-        sfr   = np.array(sfr)
-        sfr_true = np.array([cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z])
-        
-        l,m,h = np.percentile(sfr,[5,50,95],axis=0)
-        ax.plot(z,m,color='k', linewidth=.7)
-        ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,sfr_true,linestyle='dashed',color='red')
-        ax.set_xlabel('redshift')
-        ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
-        fig.savefig(os.path.join(output,'redshift_distribution.pdf'), bbox_inches='tight')
-        
-        tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
-        nevents         = Rtot[:,None]*C.T*tmp
-        nevents_true    = Rtot_true*C.T*np.cumsum(sfr_true)*np.diff(z)[0]
-        l,m,h = np.percentile(nevents,[5,50,95],axis=0)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.plot(z,m,color='k', linewidth=.7)
-        ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,nevents_true, color='r', linestyle='dashed')
-        plt.yscale('log')
-        ax.set_xlabel('redshift z')
-        ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
-        plt.savefig(os.path.join(output,'number_of_events.pdf'), bbox_inches='tight')
-        
+            distributions.append(PMZ)
+        sys.stderr.write("\n")
+        distributions = np.array(distributions)
+        pmzl,pmzm,pmzh = np.percentile(distributions,[5,50,95],axis=0)
+        Nl,Nm,Nh = np.percentile(Ntot,[5,50,95],axis=0)
+        schechter_function = Nl*np.sum(pmzl*np.diff(Z)[0],axis=1),Nm*np.sum(pmzm*np.diff(Z)[0],axis=1),Nh*np.sum(pmzh*np.diff(Z)[0],axis=1)
+        ax.fill_between(M,schechter_function[0],schechter_function[2],facecolor='lightgray')
+        ax.plot(M,schechter_function[1],linestyle='dashed',color='k')
+        ax.set_yscale('log')
+        ax.set_xlabel('magnitude')
+        ax.set_ylabel('$\phi(M|\Omega,I)$')
+        fig.savefig(os.path.join(output,'luminosity_function.pdf'), bbox_inches='tight')
         
         fig = plt.figure()
         ax  = fig.add_subplot(111)
-        ax.hist(Rtot, bins = 100, histtype='step')
-        ax.axvline(Rtot_true, linestyle='dashed', color='r')
-        ax.set_xlabel('global rate')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(output,'global_rate.pdf'), bbox_inches='tight')
-        print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
-        
-        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true, Rtot_true)
+        ax.fill_between(M,schechter_function[0]/Nl,schechter_function[2]/Nh,facecolor='lightgray')
+        ax.plot(M,schechter_function[1]/Nm,linestyle='dashed',color='k')
+        ax.hist(C.galaxy_magnitudes, 100, density = True, facecolor='turquoise')
+        ax.set_xlabel('magnitude')
+        ax.set_ylabel('$\phi(M|\Omega,I)$')
+        fig.savefig(os.path.join(output,'luminosity_probability.pdf'), bbox_inches='tight')
+
         fig = plt.figure()
         ax  = fig.add_subplot(111)
-        ax.hist(selection_probability, bins = 100, histtype='step')
-        ax.axvline(true_selection_prob, linestyle='dashed', color='r')
-        ax.set_xlabel('selection probability')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(output,'selection_probability.pdf'), bbox_inches='tight')
+        ax.hist(Ntot,100,facecolor='lightgray',density=True)
+        ax.set_xlabel('number of galaxies')
+        ax.set_ylabel('probability density')
+        fig.savefig(os.path.join(output,'number_of_galaxies.pdf'), bbox_inches='tight')
 
-        print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
 
-        samps = np.column_stack((x['log10r0'],x['W'],x['R'],x['Q']))
+        samps = np.column_stack((x['phistar0'],x['phistar_exponent'],x['Mstar0'],x['Mstar_exponent'],x['alpha0'],x['alpha_exponent']))
         fig = corner.corner(samps,
-                        labels= [r'$\log_{10} r_0$',
-                                 r'$W$',
-                                 r'$R$',
-                                 r'$Q$'],
+                        labels= [r'$\phi^{*}/Mpc^{3}$',
+                                 r'$a$',
+                                 r'$M^{*}$',
+                                 r'$b$',
+                                 r'$\alpha$',
+                                 r'$c$'],
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
-                        filename=os.path.join(output,'joint_rate_posterior.pdf'))
-        fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
-    """
+                        use_math_text=True, truths=[truths['phistar0'],truths['phistar_exponent'],
+                                                    truths['Mstar0'],truths['Mstar_exponent'],
+                                                    truths['alpha0'],truths['alpha_exponent']],
+                        filename=os.path.join(output,'joint_luminosity_posterior.pdf'))
+        fig.savefig(os.path.join(output,'joint_luminosity_posterior.pdf'), bbox_inches='tight')
+        
 ############################################################
 ############################################################
 # UNUSED CODE
