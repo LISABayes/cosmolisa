@@ -8,7 +8,7 @@ import readdata
 
 import multiprocessing as mp
 from scipy.special import logsumexp
-from cosmology import *
+from cosmolisa.cosmology import *
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib
@@ -79,13 +79,16 @@ def FindHeightForLevel(inArr, adLevels):
 
 if __name__=="__main__":
     parser=OptionParser()
-    parser.add_option('-o','--outdir',default=None,type='string',metavar='DIR',help='Directory for output')
-    parser.add_option('-d','--data',default=None,type='string',metavar='data',help='galaxy data location')
-    parser.add_option('-p','--posteriors',default=None,type='string',metavar='DIR',help='posterior location from cpnest')
-    parser.add_option('-m','--model',default='LAMBDACDM',type='string',metavar='model',help='model (default: LAMBDACDM)')
-    parser.add_option('-s','--source',default=None,type='string',metavar='source',help='source class')
+    parser.add_option('-o','--outdir',     default=None,        type='string', metavar='DIR',    help='Directory for output')
+    parser.add_option('-d','--data',       default=None,        type='string', metavar='data',   help='galaxy data location')
+    parser.add_option('-p','--posteriors', default=None,        type='string', metavar='DIR',    help='posterior location from cpnest')
+    parser.add_option('-m','--model',      default='LAMBDACDM', type='string', metavar='model',  help='model (default: LAMBDACDM)')
+    parser.add_option('-s','--source',     default=None,        type='string', metavar='source', help='source class')
     (opts,args)=parser.parse_args()
     init_plotting()
+
+    os.system('mkdir -p {0}'.format(opts.outdir))
+
     # read in the events
     events = readdata.read_event(opts.source, opts.data, None)
     # read in the posterior samples
@@ -197,8 +200,8 @@ if __name__=="__main__":
     ax.fill_between(redshift,model16,model84,facecolor='lightseagreen')
     ax.set_xlabel(r"z", fontsize=15)
     ax.set_ylabel(r"$d_L$/Gpc", fontsize=15)
-    ax.set_xlim(np.min(redshift)*0.95,0.7)
-    ax.set_ylim(0.0,2.5)
+    ax.set_xlim(np.min(redshift)*0.95,0.9)
+    ax.set_ylim(0.0,4)
     ax.tick_params(labelsize=13)
     fig.savefig(os.path.join(opts.outdir,'regression.pdf'),bbox_inches='tight')
 #    plt.close(fig)
