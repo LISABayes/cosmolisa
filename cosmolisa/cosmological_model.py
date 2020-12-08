@@ -286,7 +286,7 @@ if __name__=='__main__':
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
         elif (event_ID_list is not None):
             events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection)
-        elif (snr_threshold > 0.0):
+        elif (snr_threshold is not 0.0):
             if not reduced_catalog:
                 events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
             else:
@@ -300,11 +300,18 @@ if __name__=='__main__':
                     idx = np.random.randint(len(events))
                     selected_event = events.pop(idx)
                     print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
-                    if selected_event.snr > snr_threshold:
-                        print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
-                        selected_events.append(selected_event)
-                    else: pass
-                    k += 1
+                    if snr_threshold > 0.0:
+                        if selected_event.snr > snr_threshold:
+                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1
+                    else:
+                        if selected_event.snr < abs(snr_threshold):
+                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1                        
                 events = selected_events
                 events = sorted(selected_events, key=lambda x: getattr(x, 'snr'))
                 print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[len(events)-1].snr))

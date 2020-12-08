@@ -298,12 +298,16 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
             for e in events:
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
 
-        if (snr_threshold > 0):
-            events = [e for e in events if e.snr >= snr_threshold]
+        if (snr_threshold is not 0.0):
+            if snr_threshold > 0:
+                events = [e for e in events if e.snr > snr_threshold]
+            else:
+                events = [e for e in events if e.snr < abs(snr_threshold)]
             events = sorted(events, key=lambda x: getattr(x, 'snr'))
             print("\nSelected {} events from SNR={} to SNR={} (SNR_threshold={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
             for e in events:
                 print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(7)))     
+
 
         if (event_ID_list is not None):
             event_list = []
