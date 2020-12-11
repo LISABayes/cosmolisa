@@ -42,22 +42,39 @@ if __name__ == "__main__":
     
     parser = OptionParser()
     parser.add_option('-p', '--parameter',   default=None, type='string', metavar='parameter', help='parameter to plot (h, om, w0, wa)')
-    parser.add_option('--galaxies',          default=None, type='string', metavar='galaxies', help='file containing the number of galaxies per catalog')
+    parser.add_option('--scenario',          default='LambdaCDM', type='string', metavar='scenario', help='Scenario (LambdaCDM,DE')
+    # parser.add_option('--galaxies',          default=None, type='string', metavar='galaxies', help='file containing the number of galaxies per catalog')
+    parser.add_option('--path',              default=None, type='string', metavar='path', help='base_path of the posteriors')
     parser.add_option('--labels',            default=None, type='string', metavar='lables', help='file containing the labels for the catalog')
     parser.add_option('--regions',           default=None, type='string', metavar='regions', help='file the credible regions for the parameter to plot')
     parser.add_option('-o', '--output',      default=None, type='string', metavar='DIR', help='directory for output')
     (opts,args)=parser.parse_args()
     
-# To produce the CR file, use compute_CR.py
-    
+# OUTDATED: To produce the CR file, use compute_CR.py
+
+# For each run we have an averaged_posterior.dat file with two columns ['h','om'] located in base_path
+    base_path = opts.path 
+    different_paths = ['SNR_100_reduced', 'SNR_100']
+    models = ['M105', 'M101', 'M106']
+    scenario = opts.scenario #LambdaCDM, DE
+    posteriors_list = []
+
+    for model in models:
+        for path in different_paths:
+            print('Reading {}_{}'.format(model, path))
+            post_path = os.path.join(base_path,scenario+'_'+path,model+'_averaged')
+            posteriors_list.append(np.genfromtxt(post_path+'/averaged_posterior.dat'))
+
+    #FIXME: calculate and produce the plots
+
     init_plotting()
-    ll,l,medians,h,hh = np.loadtxt(opts.regions, unpack = True)
+    ll,l,medians,h,hh = np.percentile(posteriors_list,[5.0,34.0,50.0,84.0,95.0],axis = 0)
     credible68  = np.array([(medians[i]-l[i], h[i]-medians[i]) for i in range(len(medians))])
     credible90  = np.array([(medians[i]-ll[i], hh[i]-medians[i]) for i in range(len(medians))])
 #    labels      = np.genfromtxt(opts.labels,dtype='str')
     labels = [r'M5$_4$', r'M5$_{10}$', r'M1$_4$', r'M1$_{10}$', r'M6$_4$', r'M6$_{10}$']
-    N           = np.loadtxt(opts.galaxies)
-    xaxis       = range(len(N))
+    # N           = np.loadtxt(opts.galaxies)
+    xaxis       = range(len(labels))
     
     print(credible90)
     fig = plt.figure(1)
