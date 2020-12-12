@@ -61,8 +61,8 @@ if __name__ == "__main__":
 
     for model in models:
         for diff_path in different_paths:
-            print('Reading {}_{}'.format(model, diff_path))
             post_path = os.path.join(base_path,scenario+'_'+diff_path,model+'_averaged')
+            print('Reading posterior from {}'.format(post_path))
             posteriors_list.append(np.genfromtxt(post_path+'/averaged_posterior.dat',names=True))
 
     #FIXME: calculate and produce the plots
@@ -79,11 +79,15 @@ if __name__ == "__main__":
         if opts.parameter == 'h':
             print(post['h'])
             ll,l,median,h,hh = np.percentile(post['h'],[5.0,16.0,50.0,84.0,95.0],axis = 0)
-            medians.append(median)
-            inf_68.append(median - l)
-            sup_68.append(h - median)
-            inf_90.append(median - ll)
-            sup_90.append(hh - median)
+        elif opts.parameter == 'w0':
+            print(post['w0'])
+            ll,l,median,h,hh = np.percentile(post['w0'],[5.0,16.0,50.0,84.0,95.0],axis = 0)
+        medians.append(median)
+        inf_68.append(median - l)
+        sup_68.append(h - median)
+        inf_90.append(median - ll)
+        sup_90.append(hh - median)
+
     credible68 = np.column_stack((inf_68, sup_68))
     credible90 = np.column_stack((inf_90, sup_90))
 #    labels      = np.genfromtxt(opts.labels,dtype='str')
