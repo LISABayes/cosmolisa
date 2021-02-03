@@ -20,7 +20,7 @@ import cosmolisa.prior as pr
 
 
 """
-Default formulation with em_selection = 0
+Default formulation with em_selection = 0 and lk_sel_fun = 0
     Di   = a GW
     O    = omega (cosmological parameters)
 
@@ -116,7 +116,6 @@ class CosmologicalModel(cpnest.model.Model):
         logP = super(CosmologicalModel,self).log_prior(x)
         
         if np.isfinite(logP):
-        
             if   (self.model == "LambdaCDM"):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])
             elif (self.model == "CLambdaCDM"):
@@ -188,7 +187,7 @@ class CosmologicalModel(cpnest.model.Model):
 
         return logL
 
-truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0} # 0.73, 0.25, 0.75, -1.0, 0.0
+truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0}
 usage=""" %prog (options)"""
 
 if __name__=='__main__':
@@ -377,18 +376,16 @@ if __name__=='__main__':
                           approx_int       = approx_int,
                           dl_cutoff        = dl_cutoff)
 
-    #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
+    #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
         work=cpnest.CPNest(C,
-                           verbose      = 2,
+                           verbose      = 2, # To plot prior&posterior: verbose = 3, or prior-sampling = True
                            poolsize     = opts.poolsize,
                            nthreads     = opts.threads,
                            nlive        = opts.nlive,
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
                            nhamiltonian = 0)
-    # To plot prior&posterior: verbose =3, or prior-sampling = True
-
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
         x = work.posterior_samples.ravel()
@@ -396,7 +393,6 @@ if __name__=='__main__':
         # Save git info
         with open("{}/git_info.txt".format(out_dir), "w+") as fileout:
             subprocess.call(["git", "diff"], stdout=fileout)
-
     else:
         print("Reading the chain...")
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
@@ -516,7 +512,6 @@ if __name__=='__main__':
         fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
-
     if (model == "LambdaCDM"):
         samps = np.column_stack((x['h'],x['om']))
         fig = corner.corner(samps,
