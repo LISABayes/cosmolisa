@@ -494,8 +494,7 @@ if __name__=='__main__':
             omega.DestroyCosmologicalParameters()
         
         models = np.array(models)
-        model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.7,16.0,50.0,84.0,97.5],axis = 0)
-        
+        model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.5,16.0,50.0,84.0,97.5],axis = 0)
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -535,7 +534,7 @@ if __name__=='__main__':
                         r'$\Omega_\Lambda$',
                         r'$\Omega_k$'],
                quantiles=[0.05, 0.5, 0.95],
-               show_titles=True, title_kwargs={"fontsize": 12},
+               show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
                filename=os.path.join(output,'joint_posterior.pdf'))
                
@@ -548,7 +547,7 @@ if __name__=='__main__':
                                  r'$w_0$',
                                  r'$w_a$'],
                         quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_kwargs={"fontsize": 12},
+                        show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                         use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
                         filename=os.path.join(output,'joint_posterior.pdf'))
 
