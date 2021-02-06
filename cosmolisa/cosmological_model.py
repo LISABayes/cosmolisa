@@ -341,6 +341,7 @@ if __name__=='__main__':
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")
+        exit()
 
     print("\nDetailed list of the %d selected events:\n"%len(events))
     print("==================================================")
@@ -356,7 +357,7 @@ if __name__=='__main__':
             print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
             str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
             str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
-    exit()
+
     if out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
     else:
