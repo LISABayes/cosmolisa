@@ -163,7 +163,7 @@ if __name__=="__main__":
         omega.DestroyCosmologicalParameters()
     
     models = np.array(models)
-    model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.7,16.0,50.0,84.0,97.5],axis = 0)
+    model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.5,16.0,50.0,84.0,97.5],axis = 0)
     
     
     fig = plt.figure()
