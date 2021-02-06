@@ -341,7 +341,6 @@ if __name__=='__main__':
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")
-        exit()
 
     print("\nDetailed list of the %d selected events:\n"%len(events))
     print("==================================================")
