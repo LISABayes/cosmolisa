@@ -261,6 +261,7 @@ if __name__=='__main__':
     if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
+        events = readdata.read_event(event_class, opts.data, opts.event)
 
     if (event_class == "EMRI"):
         if (snr_selection is not None):
@@ -344,12 +345,19 @@ if __name__=='__main__':
 
     print("\nDetailed list of the %d selected events:\n"%len(events))
     print("==================================================")
-    events = sorted(events, key=lambda x: getattr(x, 'ID'))
-    for e in events:
-        print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
-        str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-        str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
-
+    if event_class == 'MBH':
+        events = sorted(events, key=lambda x: getattr(x, 'ID'))
+        for e in events:
+            print("ID: {}  |  z_host: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  | hosts: {}".format(
+            str(e.ID).ljust(3), str(e.potential_galaxy_hosts[0].redshift).ljust(8), 
+            str(e.dl).ljust(9), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+    else:
+        events = sorted(events, key=lambda x: getattr(x, 'ID'))
+        for e in events:
+            print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
+            str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
+            str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+    exit()
     if out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
     else:
