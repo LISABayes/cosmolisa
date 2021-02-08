@@ -23,7 +23,7 @@ import cosmolisa.prior as pr
 class CosmologicalModel(cpnest.model.Model):
 
     names  = [] #'h','om','ol','w0','w1']
-    bounds = [] #[0.5,1.0],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+    bounds = [] #[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
     def __init__(self, model, data, corrections, *args, **kwargs):
 
@@ -323,8 +323,11 @@ if __name__=='__main__':
     parser.add_option('--corrections',       default='None',        type='string', metavar='corrections',      help='family of corrections (GW+EM)')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
-    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI true dL allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
     parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
+    parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
+    parser.add_option('--event_ID_list',     default=None,        type='string', metavar='event_ID_list',    help='String of specific ID events to be read.')
+    parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
@@ -341,8 +344,8 @@ if __name__=='__main__':
     parser.add_option('--m_threshold',   default=20,           type='float',    metavar='m_threshold',  help='apparent magnitude threshold')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
-    parser.add_option('--nlive',             default=1000,        type='int',    metavar='nlive',            help='Number of live points.')
-    parser.add_option('--poolsize',          default=1000,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
+    parser.add_option('--nlive',             default=5000,        type='int',    metavar='nlive',            help='Number of live points.')
+    parser.add_option('--poolsize',          default=256,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
     parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
@@ -381,127 +384,119 @@ if __name__=='__main__':
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
-    omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-
+    print("The output will be saved in {}".format(out_dir))
     if (event_class == "MBH"):
         # if running on SMBH override the selection functions
         em_selection = 0
+        events = readdata.read_event(event_class, opts.data, opts.event)
 
-    if (event_class == "EMRI") and (joint != 0):
-        if (dl_cutoff > 0) and (zhorizon == 1000):
-            # events = readdata.read_event(event_class, opts.data, event_number=None)
-            events = readdata.read_event(event_class, opts.data, event_number=None, max_distance=dl_cutoff)
-            # print("\nAll the events:", len(events))
-            # events_selected = []
-            # for e in events:
-            #     print(e.ID)
-            #     if (omega_true.LuminosityDistance(e.zmax) > dl_cutoff):
-            #         events_selected.append(e) 
-            #     else:
-            #         print("Event {} removed (z={}).".format(e.ID))
-            # events = events_selected
-            for e in events:
-                print("ID: {}, z_true: {}, dl: {}".format(e.ID.ljust(3), e.z_true.ljust(7), e.dl.ljust(7)))
-            exit()
+    if (event_class == "EMRI"):
+        if (snr_selection is not None):
+            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection)
         elif (z_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None)
-            new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
-            if (z_selection > 0):
-                events = new_list[:z_selection]
-            elif (z_selection < 0):
-                events = new_list[z_selection:]
+            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection)
+        elif (dl_cutoff > 0) and (zhorizon == 1000):
+            all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+            events_selected = []
+            print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
+            for e in all_events:
+                if (omega_true.LuminosityDistance(e.zmax) < dl_cutoff):
+                    events_selected.append(e)
+                    print("Event {} selected: dl(z_max)={}.".format(str(e.ID).ljust(3), omega_true.LuminosityDistance(e.zmax)))
+            events = sorted(events_selected, key=lambda x: getattr(x, 'dl'))
+            print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
-                print("ID:",e.ID,"z_true:",e.z_true)
-            print("Selected {} events from z={} to z={}.".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
-        elif (snr_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None)
-            new_list = sorted(events, key=lambda x: getattr(x, 'snr'))
-            if (snr_selection > 0):
-                events = new_list[:snr_selection]
-            elif (snr_selection < 0):
-                events = new_list[snr_selection:]
-            for e in events:
-                print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
-                str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-                str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
-            print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))
-            # CHECK BLOCK
-            # events_selected = []
-            # for e in events:
-            #     print(e.ID)
-            #     if (e.z_true > 0.3):
-            #         events_selected.append(e) 
-            #     else:
-            #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
-            # events = events_selected
-            # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
-            # for e in events:
-            #     print("ID: {}| SNR: {}| z_true: {}| dl: {}| sigmadl: {}| hosts: {}".format(
-            #     str(e.ID).ljust(4), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
-            #     str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
-            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
-
-        else:
-            events = readdata.read_event(event_class, opts.data, None)
-            if (len(events) == 0):
-                print("The passed catalog is empty.\n")
-                exit()
-            if (reduced_catalog):
-                N = np.int(np.random.poisson(len(events)*T/10.))
+                print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
+        elif (zhorizon < 1000):
+            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
+        elif (max_hosts is not None):
+            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
+        elif (event_ID_list is not None):
+            events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection)
+        elif (snr_threshold is not 0.0):
+            if not reduced_catalog:
+                events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
             else:
-                N = joint
-                if (N > len(events)):
-                    N = len(events)
-            print("==================================================")
-            print("Selecting a random catalog of (max) {0} events for joint analysis:".format(N))
-            print("==================================================")
-            selected_events = []
-            if not (reduced_catalog):
-                while len(selected_events) < N and not(len(events) == 0):
-                    while True:
-                        if (len(events) > 0):
-                            idx = np.random.randint(len(events))
-                            selected_event = events.pop(idx)
-                        else:
-                            break
-                        if (selected_event.z_true < zhorizon):
-                            print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
-                            selected_events.append(selected_event)
-                            break
-                print("==================================================")
-                print("After z-selection (z<{0}), will run a joint analysis on {1} out of {2} random selected events:".format(zhorizon, len(selected_events),N))
-            else:
+                events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+                # Draw a number of events in the 4-year scenario
+                N = np.int(np.random.poisson(len(events)*4./10.))
+                print("\nReduced number of events: {}".format(N))
+                selected_events = []
                 k = 0
                 while k < N and not(len(events) == 0):
                     idx = np.random.randint(len(events))
                     selected_event = events.pop(idx)
-                    print("Drawn event: {0} - True redshift: z={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.z_true, zhorizon))
-                    if selected_event.z_true < zhorizon:
-                        selected_events.append(selected_event)
-                    else: pass
-                    k += 1
-                print("==================================================")
-                print("After catalog reduction and z-selection (z<{0}), will run a joint analysis on {1} out of {2} randomly selected events:".format(zhorizon, len(selected_events),N))
-    #        else:
-    #            events = np.random.choice(events, size = N, replace = False)
-    #            print("z-selection set by default to {0}. Will run a joint analysis on {1} random selected events:".format(zhorizon, N))
+                    print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
+                    if snr_threshold > 0.0:
+                        if selected_event.snr > snr_threshold:
+                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1
+                    else:
+                        if selected_event.snr < abs(snr_threshold):
+                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1                        
+                events = selected_events
+                events = sorted(selected_events, key=lambda x: getattr(x, 'snr'))
+                print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[len(events)-1].snr))
+                for e in events:
+                    print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
+        else:
+            events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+
+        if (joint != 0):
+            N = joint
+            if (N > len(events)):
+                N = len(events)
+                print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {}".format(N, len(events)))
+            events = np.random.choice(events, size = N, replace = False)
             print("==================================================")
-            events = np.copy(selected_events)
+            print("Selecting a random catalog of {0} events for joint analysis:".format(N))
+            print("==================================================")
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
                 print("==================================================")
             else:
-                print("None of the drawn events has z<{0}. No data to analyse.\n".format(zhorizon))
+                print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
                 exit()
     else:
         events = readdata.read_event(event_class, opts.data, opts.event)
+
+    if (len(events) == 0):
+        print("The passed catalog is empty. Exiting.\n")
+        exit()
+
+    print("\nDetailed list of the %d selected events:\n"%len(events))
+    print("==================================================")
+    if event_class == 'MBH':
+        events = sorted(events, key=lambda x: getattr(x, 'ID'))
+        for e in events:
+            print("ID: {}  |  z_host: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  | hosts: {}".format(
+            str(e.ID).ljust(3), str(e.potential_galaxy_hosts[0].redshift).ljust(8), 
+            str(e.dl).ljust(9), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
+    else:
+        events = sorted(events, key=lambda x: getattr(x, 'ID'))
+        for e in events:
+            print("ID: {}  |  SNR: {}  |  z_true: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  |  hosts: {}".format(
+            str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
+            str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
 
     if out_dir is None:
         output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
     else:
         output = out_dir
-    
+
+    print("==================================================")
+    print("\nCPNest will be initialised with:")
+    print("poolsize: {0}".format(opts.poolsize))
+    print("nlive:    {0}".format(opts.nlive))
+    print("maxmcmc:  {0}".format(opts.maxmcmc))
+    print("nthreads: {0}".format(opts.threads))
+
     C = CosmologicalModel(model,
                           events,
                           corrections,
@@ -521,17 +516,16 @@ if __name__=='__main__':
                           luminosity_function = luminosity_function,
                           m_threshold      = m_threshold)
 
-    #FIXME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
+    #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
         work=cpnest.CPNest(C,
-                           verbose      = 2,
+                           verbose      = 2, # To plot prior&posterior: verbose = 3, or prior-sampling = True
                            poolsize     = opts.poolsize,
                            nthreads     = opts.threads,
                            nlive        = opts.nlive,
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
                            nhamiltonian = 0)
-
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
         x = work.posterior_samples.ravel()
@@ -539,7 +533,6 @@ if __name__=='__main__':
         # Save git info
         with open("{}/git_info.txt".format(out_dir), "w+") as fileout:
             subprocess.call(["git", "diff"], stdout=fileout)
-
     else:
         print("Reading the chain...")
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
@@ -547,9 +540,9 @@ if __name__=='__main__':
         print("Drawing posterior samples...")
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
-    ##############
-    # Make plots #
-    ##############
+    ###############################################
+    ################# MAKE PLOTS ##################
+    ###############################################
     
     if (event_class == "EMRI"):
         if C.gw == 1:
@@ -645,8 +638,7 @@ if __name__=='__main__':
             omega.DestroyCosmologicalParameters()
         
         models = np.array(models)
-        model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.7,16.0,50.0,84.0,97.5],axis = 0)
-        
+        model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.5,16.0,50.0,84.0,97.5],axis = 0)
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -687,7 +679,7 @@ if __name__=='__main__':
                             r'$\Omega_\Lambda$',
                             r'$\Omega_k$'],
                    quantiles=[0.05, 0.5, 0.95],
-                   show_titles=True, title_kwargs={"fontsize": 12},
+                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
                    filename=os.path.join(output,'joint_posterior.pdf'))
                    
@@ -700,7 +692,7 @@ if __name__=='__main__':
                                      r'$w_0$',
                                      r'$w_a$'],
                             quantiles=[0.05, 0.5, 0.95],
-                            show_titles=True, title_kwargs={"fontsize": 12},
+                            show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
                             filename=os.path.join(output,'joint_posterior.pdf'))
 

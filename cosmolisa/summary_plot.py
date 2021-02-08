@@ -41,25 +41,60 @@ if __name__ == "__main__":
     from optparse import OptionParser
     
     parser = OptionParser()
-    parser.add_option('-p', '--parameter',   default=None, type='string', metavar='parameter', help='parameter to plot (h, om, w0, wa)')
-    parser.add_option('--galaxies',          default=None, type='string', metavar='galaxies', help='file containing the number of galaxies per catalog')
-    parser.add_option('--labels',            default=None, type='string', metavar='lables', help='file containing the labels for the catalog')
-    parser.add_option('--regions',           default=None, type='string', metavar='regions', help='file the credible regions for the parameter to plot')
-    parser.add_option('-o', '--output',      default=None, type='string', metavar='DIR', help='directory for output')
+    parser.add_option('-p', '--parameter', default=None, type='string', metavar='parameter', help='parameter to plot (h, om, w0, wa)')
+    parser.add_option('--scenario',        default='LambdaCDM', type='string', metavar='scenario', help='Scenario (LambdaCDM,DE')
+    parser.add_option('-N',                default=None, type='string', metavar='EMRIs', help='file containing the number of EMRIs per catalog')
+    parser.add_option('--path',            default=None, type='string', metavar='path', help='base_path of the posteriors')
+    parser.add_option('--labels',          default=None, type='string', metavar='lables', help='file containing the labels for the catalog')
+    parser.add_option('--regions',         default=None, type='string', metavar='regions', help='file the credible regions for the parameter to plot')
+    parser.add_option('-o', '--output',    default=None, type='string', metavar='DIR', help='directory for output')
     (opts,args)=parser.parse_args()
     
-# To produce the CR file, use compute_CR.py
-    
+# OUTDATED: To produce the CR file, use compute_CR.py
+
+# For each run we have an averaged_posterior.dat file with two columns ['h','om'] located in base_path
+    base_path = opts.path 
+    different_paths = ['SNR_100_reduced', 'SNR_100']
+    models = ['M105', 'M101', 'M106']
+    scenario = opts.scenario #LambdaCDM, DE
+    posteriors_list = []
+
+    for model in models:
+        for diff_path in different_paths:
+            post_path = os.path.join(base_path,scenario+'_'+diff_path,model+'_averaged')
+            print('Reading posterior from {}'.format(post_path))
+            posteriors_list.append(np.genfromtxt(post_path+'/averaged_posterior.dat',names=True))
+
+    #FIXME: calculate and produce the plots
+    medians= []
+    inf_68 = []
+    sup_68 = []
+    inf_90 = []
+    sup_90 = []
+    credible68 = []
+    credible90 = []
     init_plotting()
-    ll,l,medians,h,hh = np.loadtxt(opts.regions, unpack = True)
-    credible68  = np.array([(medians[i]-l[i], h[i]-medians[i]) for i in range(len(medians))])
-    credible90  = np.array([(medians[i]-ll[i], hh[i]-medians[i]) for i in range(len(medians))])
+    for post in posteriors_list:
+        print("Reading...\n")
+        if opts.parameter == 'h':
+            print(post['h'])
+            ll,l,median,h,hh = np.percentile(post['h'],[5.0,16.0,50.0,84.0,95.0],axis = 0)
+        elif opts.parameter == 'w0':
+            print(post['w0'])
+            ll,l,median,h,hh = np.percentile(post['w0'],[5.0,16.0,50.0,84.0,95.0],axis = 0)
+        medians.append(median)
+        inf_68.append(median - l)
+        sup_68.append(h - median)
+        inf_90.append(median - ll)
+        sup_90.append(hh - median)
+
+    credible68 = np.column_stack((inf_68, sup_68))
+    credible90 = np.column_stack((inf_90, sup_90))
 #    labels      = np.genfromtxt(opts.labels,dtype='str')
-    labels = [r'M5$_4$', r'M5$_{10}$', r'M1$_4$', r'M1$_{10}$', r'M6$_4$', r'M6$_{10}$']
-    N           = np.loadtxt(opts.galaxies)
-    xaxis       = range(len(N))
-    
-    print(credible90)
+    labels = [r'M5$_{4\;\,}$', r'M5$_{10}$', r'M1$_{4\;\,}$', r'M1$_{10}$', r'M6$_{4\;\,}$', r'M6$_{10}$']
+    N           = opts.N.split(',')
+    xaxis       = range(len(labels))
+
     fig = plt.figure(1)
     ax  = fig.add_subplot(111)
     ax.errorbar(xaxis, medians, yerr=credible68.T, fmt='o', color='red', ecolor='red', elinewidth=1.3, capsize=2, ms = 2.7, zorder=1)
