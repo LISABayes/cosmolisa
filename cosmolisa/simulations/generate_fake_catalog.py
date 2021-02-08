@@ -174,31 +174,11 @@ class EMRIDistribution(object):
         else:
             self.phistar_exponent = 0
 
-        self.galaxy_distribution  = gal.GalaxyDistribution(self.fiducial_O,
-                                                           self.phistar0,
-                                                           self.phistar_exponent,
-                                                           self.logMstar0,
-                                                           self.logMstar_exponent,
-                                                           self.alpha0,
-                                                           self.alpha_exponent,
-                                                           self.Mmin,
-                                                           self.Mmax,
-                                                           self.z_min,
-                                                           self.z_max,
-                                                           self.ra_min,
-                                                           self.ra_max,
-                                                           self.dec_min,
-                                                           self.dec_max,
-                                                           self.m_threshold,
-                                                           self.slope_model_choice,
-                                                           self.cutoff_model_choice,
-                                                           self.density_model_choice)
-
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
         self.norm = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.fiducial_O, self.z_min, self.z_max)
-        print(self.norm)
+
         self.rate = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)
         self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm
         self.pmax = np.max([self.dist(zi) for zi in zt])
@@ -247,7 +227,7 @@ class EMRIDistribution(object):
                                    self.fiducial_O,
                                    self.norm)
                                    
-                                   
+        print("detection probability for SNR threshold {0} = {1}".format(SNR_threshold,self.p))
         print("d threshold = ", lk.threshold_distance(SNR_threshold))
         print("Effective number of sources = ",len(idx))
         self.catalog = self.catalog[idx,:]
@@ -317,9 +297,31 @@ class EMRIDistribution(object):
         D  = self.catalog[i,1]
         dD = D*self.catalog[i,5]
         A  = self.compute_area(self.catalog[i,4])
-        N_gal_tot = int(A/(4.0*np.pi)*self.galaxy_distribution.get_norm(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 0))
-        N_gal = int(A/(4.0*np.pi)*self.galaxy_distribution.get_norm(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 1))
-        print(i,": SNR =",self.catalog[i,4],"area(sr) =",A,"area(deg^2) =",A*(180./np.pi)**2,"Ntot =",N_gal_tot,"N_gal =",N_gal)
+        self.galaxy_distribution  = gal.GalaxyDistribution(self.fiducial_O,
+                                                           self.phistar0,
+                                                           self.phistar_exponent,
+                                                           self.logMstar0,
+                                                           self.logMstar_exponent,
+                                                           self.alpha0,
+                                                           self.alpha_exponent,
+                                                           self.Mmin,
+                                                           self.Mmax,
+                                                           self.catalog[i,8],
+                                                           self.catalog[i,9],
+                                                           self.ra_min,
+                                                           self.ra_max,
+                                                           self.dec_min,
+                                                           self.dec_max,
+                                                           self.m_threshold,
+                                                           A,
+                                                           self.slope_model_choice,
+                                                           self.cutoff_model_choice,
+                                                           self.density_model_choice)
+
+        N_gal_tot = int(self.galaxy_distribution.get_number_of_galaxies(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 0))
+        N_gal = int(self.galaxy_distribution.get_number_of_galaxies(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 1))
+        N_gal_nd = int(self.galaxy_distribution.get_number_of_galaxies(zmin = self.catalog[i,8], zmax = self.catalog[i,9],selection = 2))
+        print(i,": SNR =",self.catalog[i,4],"area(sr) =",A,"area(deg^2) =",A*(180./np.pi)**2,"Ntot =",N_gal_tot,"N_gal =",N_gal,"N_gal_nd =",N_gal_nd)
         if N_gal < 1:
             N_gal = 1
         
@@ -333,7 +335,6 @@ class EMRIDistribution(object):
         true_host[0,2] = self.catalog[i,2]
         true_host[0,3] = self.catalog[i,3]
         idx = np.random.randint(N_gal)
-        print(idx,samps.shape)
         samps[idx, :] = true_host
 #        z_cosmo.append(self.catalog[i,0])
         z_cosmo = samps[:,1]
@@ -462,7 +463,7 @@ if __name__=='__main__':
     parser.add_option('--w1', default=0.0, type='float', metavar='w1', help='w1')
     parser.add_option('--alpha', default=-1.23, type='float', metavar='alpha', help='alpha')
     parser.add_option('--logMstar', default=-20.7, type='float', metavar='logMstar', help='logMstar')
-    parser.add_option('--phistar', default=1e-5, type='float', metavar='phistar', help='phistar')
+    parser.add_option('--phistar', default=1e-2, type='float', metavar='phistar', help='phistar')
     parser.add_option('--Mmin', default=-25.0, type='float', metavar='Mmin', help='Mmin')
     parser.add_option('--Mmax', default=-15.0, type='float', metavar='Mmax', help='Mmax')
     parser.add_option('--m_threshold', default=20.0, type='float', metavar='m_threshold', help='m_threshold')
