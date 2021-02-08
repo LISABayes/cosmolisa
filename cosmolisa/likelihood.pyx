@@ -1,3 +1,7 @@
+"""
+# cython: profile=True
+# distutils: define_macros=CYTHON_TRACE_NOGIL=1
+"""
 from __future__ import division
 import numpy as np
 cimport numpy as np
@@ -82,7 +86,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
         logL        = log_add(logL,logL_galaxy)
         
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
-    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL-log(N)#+log_add(logL,logLn)#+logP
+    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL-log(N)
 
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
@@ -136,10 +140,10 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
     approx_int:       :obj: 'numpy.int'.                 Flag to choose whether or not to approximate the in-catalogue integral
     zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
     """
-    cdef double logL              = -HUGE_VAL
-    cdef double p_out_cat       = -HUGE_VAL
-    logL      = _logLikelihood_single_event(hosts, meandl, sigmadl, omega, event_redshift, zmin, zmax)
-    p_out_cat = gal._get_non_detected_normalisation(zmin, zmax)/gal._get_normalisation(zmin, zmax)
+    cdef double logL      = -HUGE_VAL
+    cdef double p_out_cat = -HUGE_VAL
+    logL                  = _logLikelihood_single_event(hosts, meandl, sigmadl, omega, event_redshift, zmin, zmax)
+    p_out_cat             = gal._get_non_detected_normalisation(zmin, zmax)/gal._get_normalisation(zmin, zmax)
 
     return logL+log1p(-p_out_cat)
 
@@ -181,15 +185,15 @@ cdef double _integrated_rate(const double r0, const double W, const double R, co
     return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q, omega, zmin, zmax)
 
 
-def logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double Q, double R):
-    return _logLikelihood_single_event_rate_only(O, z, r0, W, Q, R)
+def logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double R, double Q, double N):
+    return _logLikelihood_single_event_rate_only(O, z, r0, W, Q, R, N)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double Q, double R) nogil:
-    return log(_StarFormationDensity(z, r0, W, R, Q))+log(O._UniformComovingVolumeDensity(z))
+cdef double _logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double R, double Q, double N) nogil:
+    return log(_StarFormationDensity(z, r0, W, R, Q))+log(O._UniformComovingVolumeDensity(z))-log(N)
 
 
 ##########################################################
@@ -233,28 +237,6 @@ cdef double _gw_selection_probability_sfr(const double zmin,
         z += dz
     return I*dz/norm
 
-def snr_vs_distance(double d):
-    return _snr_vs_distance(d)
-
-cdef inline double _snr_vs_distance(double d) nogil:
-    """ from a log-linear regression on M106 """
-    return 23299.606754*d**(-0.741036)
-
-def distance_error_vs_snr(double snr):
-    return _distance_error_vs_snr(snr)
-    
-cdef inline double _distance_error_vs_snr(double snr) nogil:
-    """ from a log-linear regression on M106 """
-    return 23912.196795*snr**(-1.424880 )
-
-def threshold_distance(double SNR_threshold):
-    return _threshold_distance(SNR_threshold)
-    
-cdef inline double _threshold_distance(double SNR_threshold) nogil:
-    # D0       = 1748.50, SNR0     = 87
-    return (SNR_threshold/23299.606754)**(-1./0.741036)
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -276,7 +258,28 @@ cdef double _gw_selection_probability_integrand_sfr(const double z,
     cdef double denominator       = sqrt(2.0)*sigma_total
     cdef double integrand         = 0.5*A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
     return integrand
+    
+def snr_vs_distance(double d):
+    return _snr_vs_distance(d)
 
+cdef inline double _snr_vs_distance(double d) nogil:
+    """ from a log-linear regression on M106 """
+    return 23299.606754*d**(-0.741036)
+
+def distance_error_vs_snr(double snr):
+    return _distance_error_vs_snr(snr)
+    
+cdef inline double _distance_error_vs_snr(double snr) nogil:
+    """ from a log-linear regression on M106 """
+    return 23912.196795*snr**(-1.424880 )
+
+def threshold_distance(double SNR_threshold):
+    return _threshold_distance(SNR_threshold)
+    
+cdef inline double _threshold_distance(double SNR_threshold) nogil:
+    # D0       = 1748.50, SNR0     = 87
+    return (SNR_threshold/23299.606754)**(-1./0.741036)
+    
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -286,4 +289,3 @@ cdef inline double _log_stirling_approx(double n) nogil:
     
 def log_stirling_approx(double n):
     return _log_stirling_approx(n)
-    

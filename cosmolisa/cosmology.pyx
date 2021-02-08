@@ -107,7 +107,7 @@ cdef double _IntegrateRateWeightedComovingVolumeDensity(const double r0,
                                                         const double zmin,
                                                         const double zmax) nogil:
     cdef unsigned int i = 0
-    cdef unsigned int N = 64
+    cdef unsigned int N = 100
     cdef double I = 0
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin

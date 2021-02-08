@@ -1,14 +1,16 @@
+"""
+# cython: profile=True
+# distutils: define_macros=CYTHON_TRACE_NOGIL=1
+"""
 from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray
 from libc.math cimport pow,log,log10,isfinite,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL,log1p
 cimport cython
-
-from scipy.integrate import quad, dblquad
+from scipy.integrate import quad
+from scipy.special.cython_special cimport gammaln
 from cosmolisa.cosmology cimport CosmologicalParameters
-
-from scipy import LowLevelCallable
 
 ctypedef double (*model_pointer)(double, double, double)
 
@@ -28,8 +30,8 @@ cdef class GalaxyDistribution:
     
     def __cinit__(self,
                   CosmologicalParameters omega,
-                  double phistar0,
-                  double phistar_exponent,
+                  double n0,
+                  double number_density_exponent,
                   double logMstar0,
                   double logMstar_exponent,
                   double alpha0,
@@ -43,13 +45,14 @@ cdef class GalaxyDistribution:
                   double decmin,
                   double decmax,
                   double logMthreshold,
+                  double sky_coverage,
                   int slope_model_choice,
                   int cutoff_model_choice,
                   int density_model_choice):
         
         self.omega                          = omega
-        self.phistar0                       = phistar0
-        self.phistar_exponent               = phistar_exponent
+        self.n0                             = n0
+        self.number_density_exponent        = number_density_exponent
         self.logMstar0                      = logMstar0
         self.logMstar_exponent              = logMstar_exponent
         self.alpha0                         = alpha0
@@ -63,6 +66,7 @@ cdef class GalaxyDistribution:
         self.decmin                         = decmin
         self.decmax                         = decmax
         self.logMthreshold                  = logMthreshold
+        self.sky_coverage                   = sky_coverage
         self.slope_model_choice             = slope_model_choice
         self.cutoff_model_choice            = cutoff_model_choice
         self.density_model_choice           = density_model_choice
@@ -89,9 +93,9 @@ cdef class GalaxyDistribution:
         """
         cdef double logMs = 0.0, As = 0.0, phistar = 0.0
         if self.density_model_choice == 0:
-            phistar = self.phistar0
+            phistar = self.n0
         elif self.density_model_choice == 1:
-            phistar = _powerlaw(self.phistar0, self.phistar_exponent, z)
+            phistar = _powerlaw(self.n0, self.number_density_exponent, z)
             
         if self.cutoff_model_choice == 0:
             logMs = self.logMstar0
@@ -118,9 +122,9 @@ cdef class GalaxyDistribution:
         """
         cdef double logMs = 0.0, As = 0.0, phistar = 0.0
         if self.density_model_choice == 0:
-            phistar = self.phistar0
+            phistar = self.n0
         elif self.density_model_choice == 1:
-            phistar = _powerlaw(self.phistar0, self.phistar_exponent, z)
+            phistar = _powerlaw(self.n0, self.number_density_exponent, z)
             
         if self.cutoff_model_choice == 0:
             logMs = self.logMstar0
@@ -150,9 +154,9 @@ cdef class GalaxyDistribution:
         """
         cdef double logMs = 0.0, As = 0.0, phistar = 0.0
         if self.density_model_choice == 0:
-            phistar = self.phistar0
+            phistar = self.n0
         elif self.density_model_choice == 1:
-            phistar = _powerlaw(self.phistar0, self.phistar_exponent, z)
+            phistar = _powerlaw(self.n0, self.number_density_exponent, z)
             
         if self.cutoff_model_choice == 0:
             logMs = self.logMstar0
@@ -172,28 +176,16 @@ cdef class GalaxyDistribution:
         else:
             return ln10*phistar*exp(-p10logdiff)*p10logdiff**(-0.4*(As+1))*self.omega._ComovingVolumeElement(z)
 
-#    @cython.boundscheck(False)
-#    @cython.wraparound(False)
-#    @cython.nonecheck(False)
-#    @cython.cdivision(True)
-#    cdef double _get_norm(self, int selection = 0):
-#
-#        return dblquad(self, # scipy lowlevelcallable
-#                       self.zmin,
-#                       self.zmax,
-#                       lambda x: self.logMmin,
-#                       lambda x: self.logMmax, args=(selection,))[0]
-
-    def get_norm(self, double zmin, double zmax, int selection):
+    def get_number_of_galaxies(self, double zmin, double zmax, int selection):
         if zmin == -1: zmin = self.zmin
         if zmax == -1: zmax = self.zmax
-        return self._get_norm(zmin, zmax, selection)
+        return self._get_number_of_galaxies(zmin, zmax, selection)
     
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _get_norm(self, double zmin, double zmax, int selection) nogil:
+    cdef double _get_number_of_galaxies(self, double zmin, double zmax, int selection) nogil:
         
         cdef unsigned int i, j
         cdef unsigned int N = 32
@@ -211,7 +203,7 @@ cdef class GalaxyDistribution:
                 m += dm
             z += dz
             
-        return result*dz*dm#dblquad(self, self.zmin, self.zmax, lambda x: self.mmin, lambda x: self.mmax, args=(sel,))[0]
+        return (self.sky_coverage/(4*M_PI))*result*dz*dm #dblquad(self, self.zmin, self.zmax, lambda x: self.mmin, lambda x: self.mmax, args=(sel,))[0]
 
 
     @cython.boundscheck(False)
@@ -220,7 +212,7 @@ cdef class GalaxyDistribution:
     @cython.cdivision(True)
     cdef double _get_normalisation(self, double zmin, double zmax) nogil:
         if self._normalisation == -1:
-            self._normalisation = self._get_norm(zmin, zmax, 0)
+            self._normalisation = self._get_number_of_galaxies(zmin, zmax, 0)
         return self._normalisation
         
     @cython.boundscheck(False)
@@ -229,7 +221,7 @@ cdef class GalaxyDistribution:
     @cython.cdivision(True)
     cdef double _get_detected_normalisation(self, double zmin, double zmax) nogil:
         if self._detected_normalisation == -1:
-            self._detected_normalisation = self._get_norm(zmin, zmax, 1)
+            self._detected_normalisation = self._get_number_of_galaxies(zmin, zmax, 1)
         return self._detected_normalisation
 
     @cython.boundscheck(False)
@@ -238,7 +230,7 @@ cdef class GalaxyDistribution:
     @cython.cdivision(True)
     cdef double _get_non_detected_normalisation(self, double zmin, double zmax) nogil:
         if self._non_detected_normalisation == -1:
-            self._non_detected_normalisation = self._get_norm(zmin, zmax, 2)
+            self._non_detected_normalisation = self._get_number_of_galaxies(zmin, zmax, 2)
         return self._non_detected_normalisation
 
     @cython.boundscheck(False)
@@ -315,29 +307,43 @@ cdef class GalaxyDistribution:
     def sample(self, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int N, int selection = 0):
         return np.array([self._sample(zmin, zmax, ramin, ramax, decmin, decmax, selection = selection) for _ in range(N)])
     
-    def loglikelihood(self, const double[::1] M, const double[::1] Z, const double asp):
-        return self._loglikelihood(M,Z,asp)
+    def loglikelihood(self, const double[::1] M, const double[::1] Z):
+        return self._loglikelihood(M,Z)
         
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z, const double asp) nogil:
+    cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z) nogil:
         """
         Eq. 10 in https://arxiv.org/pdf/0805.2946.pdf
-        we are using the stirling approximation for the log factorial
+        we are using the log gamma for the log factorial
         """
         cdef unsigned int i
-        cdef double Ntot = self._get_normalisation(self.zmin, self.zmax)# need to correct for A/4pi
+        cdef double Ntot = self._get_normalisation(self.zmin, self.zmax)
         cdef unsigned int Ndet = Z.shape[0]
-        cdef double logL = _log_stirling_approx(Ntot)-_log_stirling_approx(Ndet)-_log_stirling_approx(Ntot-Ndet)
+        cdef double logL = gammaln(Ntot+1)-gammaln(Ndet+1)-gammaln(Ntot-Ndet+1)
         for i in range(Ndet):
             logL += log(self._pdf(M[i], Z[i]))
         if (Ntot-Ndet) > 0.0:
             # see Eq.C8 in https://iopscience.iop.org/article/10.1088/0004-637X/786/1/57/pdf
-            logL += (Ntot-Ndet)*log1p(-(asp/4.0*M_PI)*self._get_detected_normalisation(self.zmin, self.zmax)/Ntot)
+            logL += (Ntot-Ndet)*log1p(-self._get_detected_normalisation(self.zmin, self.zmax)/Ntot)
         return logL
-        
+    
+    def luminosity_function(self, double M, double Z, int selection = 0):
+        return self._luminosity_function(M, Z, selection)
+    
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    @cython.cdivision(True)
+    cdef double _luminosity_function(self, double M, double Z, int selection) nogil:
+        cdef double N = self._get_normalisation(self.zmin, self.zmax)
+        cdef double P = 0.0
+        if selection == 0: P = self._pdf(M, Z)
+        elif selection == 1: P = self._pdf_detected(M, Z)
+        elif selection == 2: P = self._pdf_non_detected(M, Z)
+        return N*P/self.omega._ComovingVolumeElement(Z)
 
 cdef class SchechterFunctionMagnitude:
     """
@@ -843,6 +849,13 @@ cdef inline double _phistar_evolution(double theta, double gamma, double beta, d
 @cython.cdivision(True)
 cdef inline double _absolute_magnitude(double apparent_magnitude, double dl) nogil:
     return apparent_magnitude - 5.0*log10(1e5*dl)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef inline double _apparent_magnitude(double absolute_magnitude, double dl) nogil:
+    return absolute_magnitude + 5.0*log10(1e5*dl)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -90,29 +90,37 @@ class CosmologicalModel(cpnest.model.Model):
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.rate = 1
             self.gw_correction = 1
+#            self.names.append('log10r0')
+#            self.bounds.append([-20,-7])
+#            self.names.append('W')
+#            self.bounds.append([0.0,100.0])
+#            self.names.append('Q')
+#            self.bounds.append([0.0,10.0])
+#            self.names.append('R')
+#            self.bounds.append([0.0,10.0])
             self.names.append('log10r0')
-            self.bounds.append([-20,-7])
+            self.bounds.append([np.log10(4e-11),np.log10(6e-11)])
             self.names.append('W')
-            self.bounds.append([0.0,100.0])
+            self.bounds.append([40.0,42.0])
             self.names.append('Q')
-            self.bounds.append([0.0,10.0])
+            self.bounds.append([2.3,2.5])
             self.names.append('R')
-            self.bounds.append([0.0,10.0])
-        
+            self.bounds.append([5.1,5.3])
+            
         if ("Luminosity" in self.model):
         
             self.luminosity = 1
             self.em_correction = 1
             self.names.append('phistar0')
-            self.bounds.append([1e-4,1e-1])
+            self.bounds.append([1e-5,1e-1])
             self.names.append('phistar_exponent')
             self.bounds.append([-0.1,0.1])
             self.names.append('Mstar0')
-            self.bounds.append([-24,-18])
+            self.bounds.append([-22,-18])
             self.names.append('Mstar_exponent')
             self.bounds.append([-0.1,0.1])
             self.names.append('alpha0')
-            self.bounds.append([-2.0,0.0])
+            self.bounds.append([-2.0,-1.0])
             self.names.append('alpha_exponent')
             self.bounds.append([-0.1,0.1])
 
@@ -176,6 +184,11 @@ class CosmologicalModel(cpnest.model.Model):
                 self.W  = x['W']
                 self.Q  = x['Q']
                 self.R  = x['R']
+                if self.R <= self.Q:
+                    # we want the merger rate to asymptotically either go to zero or to a finite number
+                    self.O.DestroyCosmologicalParameters()
+                    return -np.inf
+            
             elif self.gw_correction == 1:
                 self.r0 = truths['r0']
                 self.W  = truths['W']
@@ -206,7 +219,7 @@ class CosmologicalModel(cpnest.model.Model):
         logL_luminosity = 0.0
         
         # if we are looking at the luminosity function
-        if self.luminosity == 1:
+        if self.luminosity == 1 and self.gw == 0:
             for e in self.data:
                 Schecter = gal.GalaxyDistribution(self.O,
                                                   self.phistar0,
@@ -224,29 +237,31 @@ class CosmologicalModel(cpnest.model.Model):
                                                   -0.5*np.pi,
                                                   0.5*np.pi,
                                                   self.magnitude_threshold,
+                                                  self.areas[e.ID],
                                                   0,0,0)
-                          
-                logL_luminosity += Schecter.loglikelihood(self.hosts[e.ID][:,3].copy(order='C'), self.hosts[e.ID][:,0].copy(order='C'), self.areas[e.ID])
+
+                logL_luminosity += Schecter.loglikelihood(self.hosts[e.ID][:,3].copy(order='C'), self.hosts[e.ID][:,0].copy(order='C'))
 
             # if we do not care about GWs, return
-            if self.gw == 0: return logL_luminosity
+            return logL_luminosity
         
         # if we are estimating the rate or we are correcting for GW selection effects, we need this part
         if self.rate == 1 or self.gw_correction == 1:
-            Rtot = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O, 1e-5, self.z_threshold)
-            Ntot = Rtot*self.T
+            Rtot    = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O, 1e-5, self.z_threshold)
+            Ntot    = Rtot*self.T
             
             # compute the probability of observing the events we observed
             selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
                                                                     self.r0, self.W, self.R, self.Q,
                                                                     self.snr_threshold, self.O, Ntot)
             # compute the rate for the observed events
-            Rdet = Rtot*selection_probability
-            Ndet = Rdet*Ntot
-            logL_rate = -Ndet+self.N*np.log(Ndet)
+            Rdet      = Rtot*selection_probability
+            Ndet      = Rdet*Ntot
+            logL_rate = -Ndet+self.N*np.log(Ntot)
+#            print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
             # if we do not care about GWs, compute the rate density at the known gw redshifts and return
             if self.gw == 0:
-                return logL_rate+np.sum([lk.logLikelihood_single_event_rate_only(self.O, e.z_true, self.r0, self.W, self.Q, self.R)/Ntot for e in self.data])
+                return logL_rate+np.sum([lk.logLikelihood_single_event_rate_only(self.O, e.z_true, self.r0, self.W, self.R, self.Q, Ntot) for e in self.data])
             
         # if we are correcting for EM selection effects, we need this part
         if self.em_correction == 1:
@@ -269,6 +284,7 @@ class CosmologicalModel(cpnest.model.Model):
                                                  -0.5*np.pi,
                                                  0.5*np.pi,
                                                  self.magnitude_threshold,
+                                                 self.areas[e.ID],
                                                  0,0,0)
                     
                     logL_GW += lk.logLikelihood_single_event_sel_fun(self.hosts[e.ID],
@@ -279,6 +295,8 @@ class CosmologicalModel(cpnest.model.Model):
                                                                      x['z%d'%e.ID],
                                                                      zmin = e.zmin,
                                                                      zmax = e.zmax)
+                    if self.luminosity == 1:
+                        logL_luminosity += Sch.loglikelihood(self.hosts[e.ID][:,3].copy(order='C'), self.hosts[e.ID][:,0].copy(order='C'))
 
         # we assume the catalog is complete and no correction is necessary
         else:
@@ -300,7 +318,7 @@ truths = {'h':0.73,
           'ol':0.75,
           'w0':-1.0,
           'w1':0.0,
-          'r0':5e-11,
+          'r0':5e-10,
           'Q':2.4,
           'W':41.,
           'R':5.2,
@@ -525,12 +543,12 @@ if __name__=='__main__':
     if (postprocess == 0):
         work=cpnest.CPNest(C,
                            verbose      = 2,
-                           poolsize     = opts.poolsize,
                            nthreads     = opts.threads,
                            nlive        = opts.nlive,
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
-                           nhamiltonian = 0)
+                           nhamiltonian = 0,
+                           nslice       = 0)
 
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
@@ -814,7 +832,9 @@ if __name__=='__main__':
         distributions = []
         Z   = np.linspace(0.0,C.z_threshold,100)
         M   = np.linspace(C.Mmin,C.Mmax,100)
-        Ntot = []
+        luminosity_function_0 = []
+        luminosity_function_1 = []
+        luminosity_function_2 = []
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         for i in range(x.shape[0]):
@@ -851,40 +871,75 @@ if __name__=='__main__':
                                        -0.5*np.pi,
                                        0.5*np.pi,
                                        C.magnitude_threshold,
-                                       0,0,0)
-            Ntot.append(S.get_norm(0.0,C.z_threshold,0))
-            PMZ = np.array([S.pdf(Mi, Zj, 0) for Mi in M for Zj in Z]).reshape(100,100)
-#            ax.plot(z,v,color='k', linewidth=.3)
+                                       4.0*np.pi,
+                                       1,1,1)
+
+            PMZ = np.array([S.pdf(Mi, Zj, 1) for Mi in M for Zj in Z]).reshape(100,100)
             distributions.append(PMZ)
+            luminosity_function_0.append(np.array([S.luminosity_function(Mi, 1e-5, 0) for Mi in M]))
+            luminosity_function_1.append(np.array([S.luminosity_function(Mi, S.zmax/2., 0) for Mi in M]))
+            luminosity_function_2.append(np.array([S.luminosity_function(Mi, S.zmax, 0) for Mi in M]))
+
         sys.stderr.write("\n")
         distributions = np.array(distributions)
         pmzl,pmzm,pmzh = np.percentile(distributions,[5,50,95],axis=0)
-        Nl,Nm,Nh = np.percentile(Ntot,[5,50,95],axis=0)
-        schechter_function = Nl*np.sum(pmzl*np.diff(Z)[0],axis=1),Nm*np.sum(pmzm*np.diff(Z)[0],axis=1),Nh*np.sum(pmzh*np.diff(Z)[0],axis=1)
-        ax.fill_between(M,schechter_function[0],schechter_function[2],facecolor='lightgray')
-        ax.plot(M,schechter_function[1],linestyle='dashed',color='k')
-        ax.set_yscale('log')
+        pl,pm,ph = np.percentile(luminosity_function_0,[5,50,95],axis=0)
+        ax.fill_between(M,pl,ph,facecolor='magenta',alpha=0.5)
+        ax.plot(M,pm,linestyle='dashed',color='r',label="z = 0.0")
+        
+        pl,pm,ph = np.percentile(luminosity_function_1,[5,50,95],axis=0)
+        ax.fill_between(M,pl,ph,facecolor='green',alpha=0.5)
+        ax.plot(M,pm,linestyle='dashed',color='g',label="z = {0:.1f}".format(S.zmax/2.))
+        
+        pl,pm,ph = np.percentile(luminosity_function_2,[5,50,95],axis=0)
+        ax.fill_between(M,pl,ph,facecolor='turquoise',alpha=0.5)
+        ax.plot(M,pm,linestyle='dashed',color='b',label="z = {0:.1f}".format(S.zmax))
+        
+        St = gal.GalaxyDistribution(cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']),
+                                    truths['phistar0'],
+                                    truths['phistar_exponent'],
+                                    truths['Mstar0'],
+                                    truths['Mstar_exponent'],
+                                    truths['alpha0'],
+                                    truths['alpha_exponent'],
+                                    C.Mmin,
+                                    C.Mmax,
+                                    0.0,
+                                    C.z_threshold,
+                                    0.0,
+                                    2.0*np.pi,
+                                    -0.5*np.pi,
+                                    0.5*np.pi,
+                                    C.magnitude_threshold,
+                                    4.0*np.pi,
+                                    1,1,1)
+        
+        ax.plot(M,np.array([St.luminosity_function(Mi, 1e-5, 0) for Mi in M]),linestyle='solid',color='k',lw=1.5,zorder=0)
+        plt.legend(fancybox=True)
         ax.set_xlabel('magnitude')
         ax.set_ylabel('$\phi(M|\Omega,I)$')
         fig.savefig(os.path.join(output,'luminosity_function.pdf'), bbox_inches='tight')
         
+        magnitude_probability = np.sum(pmzl*np.diff(Z)[0],axis=1),np.sum(pmzm*np.diff(Z)[0],axis=1),np.sum(pmzh*np.diff(Z)[0],axis=1)
         fig = plt.figure()
         ax  = fig.add_subplot(111)
-        ax.fill_between(M,schechter_function[0]/Nl,schechter_function[2]/Nh,facecolor='lightgray')
-        ax.plot(M,schechter_function[1]/Nm,linestyle='dashed',color='k')
+        ax.fill_between(M,magnitude_probability[0],magnitude_probability[2],facecolor='lightgray')
+        ax.plot(M,magnitude_probability[1],linestyle='dashed',color='k')
         ax.hist(C.galaxy_magnitudes, 100, density = True, facecolor='turquoise')
         ax.set_xlabel('magnitude')
         ax.set_ylabel('$\phi(M|\Omega,I)$')
         fig.savefig(os.path.join(output,'luminosity_probability.pdf'), bbox_inches='tight')
 
+        redshift_probability = np.sum(pmzl*np.diff(M)[0],axis=0),np.sum(pmzm*np.diff(M)[0],axis=0),np.sum(pmzh*np.diff(M)[0],axis=0)
         fig = plt.figure()
         ax  = fig.add_subplot(111)
-        ax.hist(Ntot,100,facecolor='lightgray',density=True)
-        ax.set_xlabel('number of galaxies')
-        ax.set_ylabel('probability density')
-        fig.savefig(os.path.join(output,'number_of_galaxies.pdf'), bbox_inches='tight')
-
-
+        ax.fill_between(Z,redshift_probability[0],redshift_probability[2],facecolor='lightgray')
+        ax.plot(Z,redshift_probability[1],linestyle='dashed',color='k')
+        ax.hist(C.galaxy_redshifts, 100, density = True, facecolor='turquoise')
+        ax.set_xlabel('redshift')
+        ax.set_ylabel('$\phi(z|\Omega,I)$')
+        fig.savefig(os.path.join(output,'galaxy_redshift_probability.pdf'), bbox_inches='tight')
+        
         samps = np.column_stack((x['phistar0'],x['phistar_exponent'],x['Mstar0'],x['Mstar_exponent'],x['alpha0'],x['alpha_exponent']))
         fig = corner.corner(samps,
                         labels= [r'$\phi^{*}/Mpc^{3}$',
