@@ -224,7 +224,7 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
                 redshifts       = np.atleast_1d(zobs)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)
-                magnitudes      = np.atleast_1d(magnitudes)
+                magnitudes      = np.atleast_1d(logM) #Fictitious values since current catalogs do not have magnitudes 
                 sigma_gw_theta  = np.mean((theta-best_theta)/dtheta)
                 sigma_gw_phi    = np.mean((phi-best_phi)/dphi)
                 if not (isinstance(dl_host, type(redshifts))):

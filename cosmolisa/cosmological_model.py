@@ -378,6 +378,9 @@ if __name__=='__main__':
     redshift_prior   = opts.redshift_prior
     time_redshifting = opts.time_redshifting
     vc_normalization = opts.vc_normalization
+    max_hosts        = opts.max_hosts
+    event_ID_list    = opts.event_ID_list
+    one_host_selection = opts.one_host_sel
     lk_sel_fun       = opts.lk_sel_fun
     detection_corr   = opts.detection_corr
     approx_int       = opts.approx_int
@@ -544,7 +547,8 @@ if __name__=='__main__':
                            maxmcmc      = opts.maxmcmc,
                            output       = output,
                            nhamiltonian = 0,
-                           nslice       = 0)
+                        #    nslice       = 0
+                           )
 
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))

@@ -250,15 +250,15 @@ if __name__=="__main__":
 #            axes[3].set_xlim(0.04, 0.5)
 #            axes[2].set_ylim(0.04, 0.5)
         elif options.model == "CLambdaCDM":
-            samps = np.column_stack((p1,p2,p3,1.0-p2-p3))
+            samps = np.column_stack((p1,p2,p3))
             fig = corner.corner(samps,
                                 labels=[r'$h$',
                                         r'$\Omega_m$',
                                         r'$\Omega_\Lambda$',
-                                        r'$\Omega_k$'],
+                                        ],
                                 quantiles=[0.05, 0.5, 0.95],
                                 show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                                use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
+                                use_math_text=True, truths=[truths['h'],truths['om'],truths['ol']],
                                 filename=os.path.join(out_folder,'joint_posterior.pdf'))            
         elif options.model == "DE":
             samps = np.column_stack((p1,p2))
