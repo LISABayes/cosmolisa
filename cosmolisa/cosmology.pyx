@@ -23,6 +23,9 @@ cdef class CosmologicalParameters:
     cdef double _HubbleDistance(self) nogil:
         return XLALHubbleDistance(self._LALCosmologicalParameters)
 
+    cdef double _ComovingDistance(self, double z) nogil:
+        return XLALComovingLOSDistance(self._LALCosmologicalParameters,z)
+        
     cdef double _IntegrateComovingVolumeDensity(self, double zmax) nogil:
         return XLALIntegrateComovingVolumeDensity(self._LALCosmologicalParameters,zmax)
 

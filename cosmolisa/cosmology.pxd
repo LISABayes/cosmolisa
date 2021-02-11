@@ -79,6 +79,7 @@ cdef class CosmologicalParameters:
     cdef public double w1
     cdef public double _HubbleParameter(self,double z) nogil
     cdef public double _LuminosityDistance(self, double z) nogil
+    cdef public double _ComovingDistance(self, double z) nogil
     cdef public double _HubbleDistance(self) nogil
     cdef public double _IntegrateComovingVolumeDensity(self, double zmax) nogil
     cdef public double _IntegrateComovingVolume(self, double zmax) nogil
