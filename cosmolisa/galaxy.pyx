@@ -312,31 +312,45 @@ cdef class GalaxyDistribution:
         
         cdef double meanDc = self.omega._ComovingDistance(Z)
         
-        cdef double XC, YC, ZC
-        XC, YC, ZC = spherical_to_cartesian(self.omega._ComovingDistance(Z),DEC+np.pi/2.,RA)
         # now we move to the comoving frame,cartesian coordinates and generate
         # the correlated galaxies there
-        cdef double corr0 = _correlation_function(1e-3, self.omega.h)
-        cdef double Rmax  = 10
+        cdef double corr0     = _correlation_function(1e-3, self.omega.h)
+        cdef double delta_ra  = ramax-ramin
+        cdef double delta_dec = decmax-decmin
+
+        cdef double Zdir_min = self.omega._ComovingDistance(zmin)-meanDc
+        cdef double Zdir_max = self.omega._ComovingDistance(zmax)-meanDc
+        
         cdef np.ndarray[double, mode="c",ndim=2] positions = np.zeros((N,3), dtype=np.double)
-        cdef np.ndarray[double, mode="c",ndim=1] x0 = np.array([np.random.uniform(-Rmax,Rmax),
-                                                                np.random.uniform(-Rmax,Rmax),
-                                                                np.random.uniform(-Rmax,Rmax)])
+        cdef np.ndarray[double, mode="c",ndim=1] x0 = np.array([np.random.uniform(Zdir_min,Zdir_max),
+                                                                np.random.uniform(-delta_dec/2.,delta_dec/2.),
+                                                                np.random.uniform(-delta_ra/2.,delta_ra/2.),
+                                                                ])
         cdef np.ndarray[double, mode="c",ndim=1] xp = np.zeros(3, dtype=np.double)
         cdef double D, corr
         cdef int new_gal = 0
         cdef np.ndarray[double, mode="c",ndim=1] xclostest = np.zeros(3, dtype=np.double)
+        cdef np.ndarray[double, mode="c",ndim=1] distances
+        cdef int imin = 0
+        cdef int j = 0
         while i < N:
             # pick a random direction
-            xp[0] = np.random.uniform(-Rmax,Rmax)
-            xp[1] = np.random.uniform(-Rmax,Rmax)
-            xp[2] = np.random.uniform(-Rmax,Rmax)
+            xp[0] = np.random.uniform(Zdir_min,Zdir_max)
+            xp[1] = np.random.uniform(-delta_dec/2.,delta_dec/2.)
+            xp[2] = np.random.uniform(-delta_ra/2.,delta_ra/2.)
             # find the closest element in the position sampled until now
             if i > 0:
-                x_closest = positions[:i].flat[np.abs(positions[:i] - xp).argmin()]
+                distances = np.zeros(i, dtype=np.double)
+                for j in range(i):
+                    distances[j] = _distance_spherical(positions[j,:],xp)
+
+                imin = distances.argmin()
+                x_closest = positions[imin,:]
             else:
                 x_closest = x0
-            D = np.linalg.norm(x_closest-xp)
+
+            D = _distance_spherical(x_closest,xp)
+#            D = np.linalg.norm(x_closest-xp)
             # check if a galaxy should be there
             # compute the 2-point correlation function for this distance
             corr = _correlation_function(D, self.omega.h)/corr0
@@ -345,18 +359,18 @@ cdef class GalaxyDistribution:
             if new_gal > 0:
                 positions[i,:] = xp
                 i+=1
+
 #            x0 = xp.copy()
         # now that we have the centroid of the box and the population in cartesian coordinates
         # within the box we have to convert back to the observables
         # the z direction in the cartesian system coincides with the redshift direction
         # first of all, convert the z direction to redshifts
-        cdef double r, theta, phi
-        cdef double x, y, z
+
         for i in range(N):
-            r, theta, phi = cartesian_to_spherical(XC+positions[i,0], YC+positions[i,1], ZC+positions[i,2])
-            out[i,1] = find_redshift(self.omega, r)
-            out[i,2] = phi + np.pi
-            out[i,3] = theta - np.pi/2.0
+            out[i,1] = find_redshift(self.omega, meanDc+positions[i,0])
+
+            out[i,2] = positions[i,2] + np.pi
+            out[i,3] = positions[i,1] #- np.pi/2.0
             out[i,0],_,_,_,_ = self._sample(out[i,1], out[i,1], ramin, ramax, decmin, decmax, selection)
         return out
     
@@ -994,3 +1008,8 @@ cdef spherical_to_cartesian(r, th, p):
     z = r * np.cos(th)
 
     return x, y, z
+
+cdef double _distance_spherical(np.ndarray[double,mode="c",ndim=1] x1, np.ndarray[double,mode="c",ndim=1] x2):
+    cdef double d1 = x1[0]**2+x2[0]**2
+    cdef double d2 = -2.0*(x1[0]*x2[0])*cos(x1[1]-x2[1])-2.0*(x1[0]*x2[0])*sin(x1[1])*sin(x2[1])*(cos(x1[2]-x2[2])-1.0)
+    return sqrt(d1+d2)
