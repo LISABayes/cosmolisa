@@ -177,10 +177,10 @@ class EMRIDistribution(object):
         # now we are ready to sample the EMRI according to the cosmology and rate that we specified
         # find the maximum of the probability for efficiency
         zt        = np.linspace(0,self.z_max,1000)
-        self.norm = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.fiducial_O, self.z_min, self.z_max)
+        self.norm = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.fiducial_O, self.z_min, self.z_max) #how many EMRIs per time
 
         self.rate = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)
-        self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm
+        self.dist = lambda z: cs.StarFormationDensity(z, self.r0, self.W, self.R, self.Q)*self.fiducial_O.UniformComovingVolumeDensity(z)/self.norm #dist to eventually sample
         self.pmax = np.max([self.dist(zi) for zi in zt])
             
         self.ra_pdf     = scipy.stats.uniform(loc = self.ra_min, scale = self.ra_max-self.ra_min)

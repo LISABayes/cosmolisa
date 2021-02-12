@@ -30,25 +30,25 @@ cdef class GalaxyDistribution:
     
     def __cinit__(self,
                   CosmologicalParameters omega,
-                  double n0,
-                  double number_density_exponent,
-                  double logMstar0,
-                  double logMstar_exponent,
-                  double alpha0,
+                  double n0, #galaxy density with lum logMstar0 at z=0
+                  double number_density_exponent, #exponent of the power low to model n0 evolution
+                  double logMstar0, #abs magnitude of galaxies (where the exp cutoff of Schechter function begins)
+                  double logMstar_exponent, #exp of power low of abs magnitude
+                  double alpha0, #exp determining the behaviour of the galaxy distr at low luminosities at z=0. It has to be <-1, otherwise it diverges (observationally)
                   double alpha_exponent,
-                  double logMmin,
+                  double logMmin, # extreme of integration of the galaxy distr in magnitude
                   double logMmax,
-                  double zmin,
+                  double zmin, 
                   double zmax,
                   double ramin,
                   double ramax,
                   double decmin,
                   double decmax,
-                  double logMthreshold,
-                  double sky_coverage,
-                  int slope_model_choice,
-                  int cutoff_model_choice,
-                  int density_model_choice):
+                  double logMthreshold, #thresh of my telescope in abs magnitude. In general it is a function of z
+                  double sky_coverage, # fraction of sky covered by the hypothetical survey (for ex the area for the EMRIs)
+                  int slope_model_choice, # alpha
+                  int cutoff_model_choice, #logMstar
+                  int density_model_choice): #n0
         
         self.omega                          = omega
         self.n0                             = n0
@@ -77,11 +77,11 @@ cdef class GalaxyDistribution:
 
     def __call__(self, double logM, double z, int selection):
         if selection == 0:
-            return self._evaluate(logM, z)
+            return self._evaluate(logM, z) #int of this = int (evaluate_det + evaluate_non_det)
         elif selection == 1:
-            return self._evaluate_detected(logM, z)
+            return self._evaluate_detected(logM, z) #corrected for selection effects
         elif selection == 2:
-            return self._evaluate_non_detected(logM, z)
+            return self._evaluate_non_detected(logM, z) #return the density of gal per unit M per unit z that are not seen due to selection effects
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
