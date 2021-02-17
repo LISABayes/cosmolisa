@@ -320,8 +320,14 @@ cdef class GalaxyDistribution:
         # begin by sampling a redshift, a magnitude and a sky position within the box
         # note that we are going to ignore correlations in the luminosities
         # that are there in the universe
+        cdef np.ndarray[double, mode="c",ndim=1] r = np.linspace(0.0,1000,1000)
+        cdef double corr_max = 0
+        for j in range(1000):
+            corr = _correlation_function(r[j], self.omega.h)
+            if corr > corr_max: corr_max = corr
+        
         while i<N:
-            test = self._get_pmax() * np.random.uniform(0,1)
+            test = (1+corr_max)*self._get_pmax() * np.random.uniform(0,1)
             M    = np.random.uniform(self.logMmin,self.logMmax)
             Z    = np.random.uniform(zmin,zmax)
             RA   = np.random.uniform(ramin,ramax)

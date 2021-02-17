@@ -51,51 +51,29 @@ if __name__=="__main__":
     """
     mmin    = -30
     mmax    = -15
-    zmin    = 0.2
-    zmax    = 0.25
+    zmin    = 0.001
+    zmax    = 1.0
 #    ramax   = 2.0*np.pi
 #    ramin   = 0.0
     ramax   = 1.0
     ramin   = 1.05
 #    decmax  = np.pi/2.0
 #    decmin  = -np.pi/2.0
-    decmax  = -0.15
-    decmin  = -0.2
+    decmax  = -0.25
+    decmin  = -0.3
     A       = (ramax-ramin)*(np.cos(decmax+np.pi/2)-np.cos(decmin+np.pi/2))
     h       = 0.73
     om      = 0.25
     n0      = 1e-2
     Mstar   = -20.7
     Mstar_exponent = -0.13
-    cutoff_model_choice = 1
+    cutoff_model_choice = 0
     alpha = -1.23
     alpha_exponent = 0.054
-    slope_model_choice = 1
-    density_model_choice = 1
+    slope_model_choice = 0
+    density_model_choice = 0
     phistar_exponent = -0.1
-    threshold = 20
-    
-#    n = 1000
-#    positions = generate_proper_distances(1000,n)
-###    print(rs.shape)
-###    plt.plot(rs,'.')
-###    plt.show()
-###    exit()
-##    phi = np.random.uniform(0,np.pi*2, size=n)
-##    costheta = np.random.uniform(-1,1, size=n)
-##    theta = np.arccos( costheta )
-#    x = positions[:,0]
-#    y = positions[:,1]
-#    z = positions[:,2]
-#    fig = plt.figure()
-#    ax  = fig.add_subplot(111, projection='3d')
-#    ax.scatter(x,y,z)
-#    ax.set_xlabel("x/Mpc")
-#    ax.set_ylabel("y/Mpc")
-#    ax.set_zlabel("y/Mpc")
-#    plt.show()
-#    exit()
-    
+    threshold = 17.7
     
     O = cs.CosmologicalParameters(h, om, 1.0-om, -1.0, 0.0)
     S = gal.GalaxyDistribution(O,
@@ -119,32 +97,61 @@ if __name__=="__main__":
                                cutoff_model_choice,
                                density_model_choice)
     
-    N = S.get_number_of_galaxies(zmin,zmax,1)
-    print("sampling {} galaxies".format(N))
+    N = int(S.get_number_of_galaxies(zmin,zmax,1))
+#    N = 1000
+    print("sampling {0} galaxies in a field of {1} square deg".format(N,A*3282.8063500117))
     galaxies = S.sample_correlated(N, zmin, zmax, ramin, ramax, decmin, decmax, selection = 1)
+    galaxies_uniform = S.sample(zmin, zmax, ramin, ramax, decmin, decmax, N, selection = 1)
 
     M = galaxies[:,0]
     z = galaxies[:,1]
     ra = galaxies[:,2]
     dec = galaxies[:,3]
     
+    Mu = galaxies_uniform[:,0]
+    zu = galaxies_uniform[:,1]
+    rau = galaxies_uniform[:,2]
+    decu = galaxies_uniform[:,3]
+    
     fig = plt.figure()
     ax  = fig.add_subplot(111, projection = '3d')
-    SC  = ax.scatter(z,ra,dec,c=M,s=2)
+    SC  = ax.scatter(z,ra,dec,c=M,s=32)
     CB = plt.colorbar(SC)
+
+#    SC  = ax.scatter(zu,rau,decu,c=Mu,s=32,marker='^')
+    
+    
     ax.set_xlabel('z')
     ax.set_ylabel('ra')
     ax.set_zlabel('dec')
     plt.show()
     
-    fig = plt.figure()
-    ax  = fig.add_subplot(111)
-    SC = ax.scatter(ra,dec,c=z)
-    CB = plt.colorbar(SC)
-    fig = plt.figure()
-    ax  = fig.add_subplot(111)
+    fig = plt.figure(figsize=(8,8))
+    ax  = fig.add_subplot(221)
     SC = ax.scatter(z,M)
+    ax.scatter(zu,Mu,marker='+')
+    ax.set_xlabel('redshift')
+    ax.set_ylabel('magnitude')
+    
+    ax  = fig.add_subplot(222)
+    SC = ax.scatter(ra,dec,c=z,s=np.abs(M))
+    ax.scatter(rau,decu,marker='+',s=np.abs(Mu))
     CB = plt.colorbar(SC)
+    ax.set_xlabel('ra')
+    ax.set_ylabel('dec')
+
+    
+    ax  = fig.add_subplot(223)
+    ax.hist(z, bins=100, facecolor='blue', alpha=0.5)
+    ax.hist(zu, bins=100, facecolor='red', alpha=0.5)
+    ax.set_xlabel('redshift')
+    ax.set_ylabel('number of galaxies')
+    
+    ax  = fig.add_subplot(224)
+    ax.hist(M, bins=100, facecolor='blue', alpha=0.5)
+    ax.hist(Mu, bins=100, facecolor='red', alpha=0.5)
+    ax.set_xlabel('magnitude')
+    ax.set_ylabel('number of galaxies')
     plt.show()
     exit()
 
