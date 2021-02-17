@@ -1,4 +1,5 @@
 cimport cosmolisa.cosmology
+cimport numpy as np
 from cosmolisa.cosmology cimport CosmologicalParameters
 cdef class GalaxyDistribution:
     cdef public double n0
@@ -38,6 +39,7 @@ cdef class GalaxyDistribution:
     cdef double _pdf_non_detected(self, double m, double z) nogil
     cdef double _get_pmax(self) nogil
     cdef tuple _sample(self, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection)
+    cdef np.ndarray[double, mode="c",ndim=2] _sample_correlated(self, int N, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection)
     cdef double _loglikelihood(self, const double[::1] M, const double[::1] Z) nogil
     cdef double _luminosity_function(self, double M, double Z, int selection) nogil
     

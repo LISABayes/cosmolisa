@@ -11,6 +11,7 @@ cimport cython
 from scipy.integrate import quad
 from scipy.special.cython_special cimport gammaln
 from cosmolisa.cosmology cimport CosmologicalParameters
+from scipy.optimize import newton
 
 ctypedef double (*model_pointer)(double, double, double)
 
@@ -203,8 +204,7 @@ cdef class GalaxyDistribution:
                 m += dm
             z += dz
             
-        return (self.sky_coverage/(4*M_PI))*result*dz*dm #dblquad(self, self.zmin, self.zmax, lambda x: self.mmin, lambda x: self.mmax, args=(sel,))[0]
-
+        return (self.sky_coverage/(4*M_PI))*result*dz*dm
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -285,6 +285,95 @@ cdef class GalaxyDistribution:
 
         return self._pmax
 
+    def sample_correlated(self, int N, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection = 0):
+        return self._sample_correlated(N, zmin, zmax, ramin, ramax, decmin, decmax, selection = selection)
+    
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    @cython.cdivision(True)
+    cdef np.ndarray[double, mode="c",ndim=2] _sample_correlated(self, int N, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection):
+
+        cdef int i = 0
+        cdef double test, prob
+        cdef np.ndarray[double, mode="c",ndim=2] out = np.zeros((N,5), dtype=np.double)
+        cdef double M, Z, RA, DEC
+        # begin by sampling a redshift, a magnitude and a sky position
+        # note that we are going to ignore correlations in the luminosities
+        # that are there in the universe
+        while True:
+            test = self._get_pmax() * np.random.uniform(0,1)
+            M    = np.random.uniform(self.logMmin,self.logMmax)
+            Z    = np.random.uniform(zmin,zmax)
+            RA   = np.random.uniform(ramin,ramax)
+            DEC  = np.arcsin(np.sin(np.random.uniform(decmin,decmax)))
+            prob = self.pdf(M, Z, selection = selection)
+            if (test < prob): break
+        
+        cdef double meanDc = self.omega._ComovingDistance(Z)
+        
+        # now we move to the comoving frame,cartesian coordinates and generate
+        # the correlated galaxies there
+        cdef double corr0     = _correlation_function(1e-3, self.omega.h)
+        cdef double delta_ra  = ramax-ramin
+        cdef double delta_dec = decmax-decmin
+
+        cdef double Zdir_min = self.omega._ComovingDistance(zmin)-meanDc
+        cdef double Zdir_max = self.omega._ComovingDistance(zmax)-meanDc
+        
+        cdef np.ndarray[double, mode="c",ndim=2] positions = np.zeros((N,3), dtype=np.double)
+        cdef np.ndarray[double, mode="c",ndim=1] x0 = np.array([np.random.uniform(Zdir_min,Zdir_max),
+                                                                np.random.uniform(-delta_dec/2.,delta_dec/2.),
+                                                                np.random.uniform(-delta_ra/2.,delta_ra/2.),
+                                                                ])
+        cdef np.ndarray[double, mode="c",ndim=1] xp = np.zeros(3, dtype=np.double)
+        cdef double D, corr
+        cdef int new_gal = 0
+        cdef np.ndarray[double, mode="c",ndim=1] xclostest = np.zeros(3, dtype=np.double)
+        cdef np.ndarray[double, mode="c",ndim=1] distances
+        cdef int imin = 0
+        cdef int j = 0
+        while i < N:
+            # pick a random direction
+            xp[0] = np.random.uniform(Zdir_min,Zdir_max)
+            xp[1] = np.random.uniform(-delta_dec/2.,delta_dec/2.)
+            xp[2] = np.random.uniform(-delta_ra/2.,delta_ra/2.)
+            # find the closest element in the position sampled until now
+            if i > 0:
+                distances = np.zeros(i, dtype=np.double)
+                for j in range(i):
+                    distances[j] = _distance_spherical(positions[j,:],xp)
+
+                imin = distances.argmin()
+                x_closest = positions[imin,:]
+            else:
+                x_closest = x0
+
+            D = _distance_spherical(x_closest,xp)
+#            D = np.linalg.norm(x_closest-xp)
+            # check if a galaxy should be there
+            # compute the 2-point correlation function for this distance
+            corr = _correlation_function(D, self.omega.h)/corr0
+            new_gal = int(np.random.poisson(1+corr))
+
+            if new_gal > 0:
+                positions[i,:] = xp
+                i+=1
+
+#            x0 = xp.copy()
+        # now that we have the centroid of the box and the population in cartesian coordinates
+        # within the box we have to convert back to the observables
+        # the z direction in the cartesian system coincides with the redshift direction
+        # first of all, convert the z direction to redshifts
+
+        for i in range(N):
+            out[i,1] = find_redshift(self.omega, meanDc+positions[i,0])
+
+            out[i,2] = positions[i,2] + np.pi
+            out[i,3] = positions[i,1] #- np.pi/2.0
+            out[i,0],_,_,_,_ = self._sample(out[i,1], out[i,1], ramin, ramax, decmin, decmax, selection)
+        return out
+    
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
@@ -866,3 +955,61 @@ cdef inline double _log_stirling_approx(double n) nogil:
     
 def log_stirling_approx(double n):
     return _log_stirling_approx(n)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef inline double _angular_correlation_function(double theta) nogil:
+    """
+    from https://academic.oup.com/mnras/article/432/3/1961/1746880
+    """
+    cdef double A = 10**(-2.12)
+    cdef double one_minus_gamma  = -0.72
+    return A*theta**one_minus_gamma
+
+def angular_correlation_function(double theta):
+    return _angular_correlation_function(theta)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef inline double _correlation_function(double r, double h) nogil: #r in Mpc
+    """
+    from https://academic.oup.com/mnras/article/432/3/1961/1746880
+    """
+    cdef double r0 = 5.5/h
+    cdef double gamm  = 1.72
+    return (r/r0)**(-gamm)
+
+def correlation_function(r, h):
+    return np.array([_correlation_function(ri, h) for ri in r])
+
+cdef double find_redshift(CosmologicalParameters omega, double dc):
+    return newton(objective,1.0,args=(omega,dc))
+
+cdef double objective(double z, CosmologicalParameters omega, double dc) nogil:
+    return dc - omega._ComovingDistance(z)
+
+cdef cartesian_to_spherical(x, y, z):
+    hxy = np.hypot(x, y)
+    r = np.hypot(hxy, z)
+    theta = np.arctan2(hxy, z)
+    phi = np.arctan2(y, x)
+    n1 = x ** 2 + y ** 2
+    n2 = n1 + z ** 2
+    return r, theta, phi
+
+cdef spherical_to_cartesian(r, th, p):
+
+    x = r * np.cos(p) * np.sin(th)
+    y = r * np.sin(p) * np.sin(th)
+    z = r * np.cos(th)
+
+    return x, y, z
+
+cdef double _distance_spherical(np.ndarray[double,mode="c",ndim=1] x1, np.ndarray[double,mode="c",ndim=1] x2):
+    cdef double d1 = x1[0]**2+x2[0]**2
+    cdef double d2 = -2.0*(x1[0]*x2[0])*cos(x1[1]-x2[1])-2.0*(x1[0]*x2[0])*sin(x1[1])*sin(x2[1])*(cos(x1[2]-x2[2])-1.0)
+    return sqrt(d1+d2)
