@@ -256,7 +256,7 @@ class CosmologicalModel(cpnest.model.Model):
                                                                     self.snr_threshold, self.O, Ntot)
             # compute the rate for the observed events
             Rdet      = Rtot*selection_probability
-            Ndet      = Rdet*Ntot
+            Ndet      = Ntot*selection_probability
             logL_rate = -Ndet+self.N*np.log(Ntot)
 #            print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
             # if we do not care about GWs, compute the rate density at the known gw redshifts and return
