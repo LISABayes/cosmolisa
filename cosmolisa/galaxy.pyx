@@ -31,25 +31,25 @@ cdef class GalaxyDistribution:
     
     def __cinit__(self,
                   CosmologicalParameters omega,
-                  double n0, #galaxy density with lum logMstar0 at z=0
-                  double number_density_exponent, #exponent of the power low to model n0 evolution
-                  double logMstar0, #abs magnitude of galaxies (where the exp cutoff of Schechter function begins)
-                  double logMstar_exponent, #exp of power low of abs magnitude
-                  double alpha0, #exp determining the behaviour of the galaxy distr at low luminosities at z=0. It has to be <-1, otherwise it diverges (observationally)
+                  double n0,
+                  double number_density_exponent,
+                  double logMstar0,
+                  double logMstar_exponent,
+                  double alpha0,
                   double alpha_exponent,
-                  double logMmin, # extreme of integration of the galaxy distr in magnitude
+                  double logMmin,
                   double logMmax,
-                  double zmin, 
+                  double zmin,
                   double zmax,
                   double ramin,
                   double ramax,
                   double decmin,
                   double decmax,
-                  double logMthreshold, #thresh of my telescope in abs magnitude. In general it is a function of z
-                  double sky_coverage, # fraction of sky covered by the hypothetical survey (for ex the area for the EMRIs)
-                  int slope_model_choice, # alpha
-                  int cutoff_model_choice, #logMstar
-                  int density_model_choice): #n0
+                  double logMthreshold,
+                  double sky_coverage,
+                  int slope_model_choice,
+                  int cutoff_model_choice,
+                  int density_model_choice):
         
         self.omega                          = omega
         self.n0                             = n0
@@ -78,11 +78,11 @@ cdef class GalaxyDistribution:
 
     def __call__(self, double logM, double z, int selection):
         if selection == 0:
-            return self._evaluate(logM, z) #int of this = int (evaluate_det + evaluate_non_det)
+            return self._evaluate(logM, z)
         elif selection == 1:
-            return self._evaluate_detected(logM, z) #corrected for selection effects
+            return self._evaluate_detected(logM, z)
         elif selection == 2:
-            return self._evaluate_non_detected(logM, z) #return the density of gal per unit M per unit z that are not seen due to selection effects
+            return self._evaluate_non_detected(logM, z)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -293,85 +293,68 @@ cdef class GalaxyDistribution:
     @cython.nonecheck(False)
     @cython.cdivision(True)
     cdef np.ndarray[double, mode="c",ndim=2] _sample_correlated(self, int N, double zmin, double zmax, double ramin, double ramax, double decmin, double decmax, int selection):
-
+        """
+        we want to sample a set of galaxies following the empirically measured correlation function
+        as well as the global distribution of galaxies
+        
+        we start by noting that given a galaxy, the probability of finding another one within
+        a volume dV is given by
+        
+        dP = n(1+eps(r))dV = n(1+eps(r))(dV/dz) dz
+        
+        if we enlarge the discourse to include the magnitude, we can write
+        
+        dP = n(1+eps(r))(dV/dz)\phi(M,z) dz dM
+        
+        with r =  r(dz)[and potentially dM]
+        """
         cdef int i = 0
+        cdef int j = 0
         cdef double test, prob
+        cdef np.ndarray[double, mode="c",ndim=1] comoving_distance = np.zeros(N, dtype=np.double)
+        cdef np.ndarray[double, mode="c",ndim=1] relative_distance
+        cdef np.ndarray[double, mode="c",ndim=1] x1, x2
         cdef np.ndarray[double, mode="c",ndim=2] out = np.zeros((N,5), dtype=np.double)
         cdef double M, Z, RA, DEC
-        # begin by sampling a redshift, a magnitude and a sky position
+        cdef double D, corr = 0
+        # begin by sampling a redshift, a magnitude and a sky position within the box
         # note that we are going to ignore correlations in the luminosities
         # that are there in the universe
-        while True:
-            test = self._get_pmax() * np.random.uniform(0,1)
+        cdef np.ndarray[double, mode="c",ndim=1] r = np.linspace(0.0,1000,1000)
+        cdef double corr_max = 0
+        for j in range(1000):
+            corr = _correlation_function(r[j], self.omega.h)
+            if corr > corr_max: corr_max = corr
+        
+        while i<N:
+            test = (1+corr_max)*self._get_pmax() * np.random.uniform(0,1)
             M    = np.random.uniform(self.logMmin,self.logMmax)
             Z    = np.random.uniform(zmin,zmax)
             RA   = np.random.uniform(ramin,ramax)
             DEC  = np.arcsin(np.sin(np.random.uniform(decmin,decmax)))
-            prob = self.pdf(M, Z, selection = selection)
-            if (test < prob): break
-        
-        cdef double meanDc = self.omega._ComovingDistance(Z)
-        
-        # now we move to the comoving frame,cartesian coordinates and generate
-        # the correlated galaxies there
-        cdef double corr0     = _correlation_function(1e-3, self.omega.h)
-        cdef double delta_ra  = ramax-ramin
-        cdef double delta_dec = decmax-decmin
+            comoving_distance[i] = self.omega._ComovingDistance(Z)
 
-        cdef double Zdir_min = self.omega._ComovingDistance(zmin)-meanDc
-        cdef double Zdir_max = self.omega._ComovingDistance(zmax)-meanDc
-        
-        cdef np.ndarray[double, mode="c",ndim=2] positions = np.zeros((N,3), dtype=np.double)
-        cdef np.ndarray[double, mode="c",ndim=1] x0 = np.array([np.random.uniform(Zdir_min,Zdir_max),
-                                                                np.random.uniform(-delta_dec/2.,delta_dec/2.),
-                                                                np.random.uniform(-delta_ra/2.,delta_ra/2.),
-                                                                ])
-        cdef np.ndarray[double, mode="c",ndim=1] xp = np.zeros(3, dtype=np.double)
-        cdef double D, corr
-        cdef int new_gal = 0
-        cdef np.ndarray[double, mode="c",ndim=1] xclostest = np.zeros(3, dtype=np.double)
-        cdef np.ndarray[double, mode="c",ndim=1] distances
-        cdef int imin = 0
-        cdef int j = 0
-        while i < N:
-            # pick a random direction
-            xp[0] = np.random.uniform(Zdir_min,Zdir_max)
-            xp[1] = np.random.uniform(-delta_dec/2.,delta_dec/2.)
-            xp[2] = np.random.uniform(-delta_ra/2.,delta_ra/2.)
-            # find the closest element in the position sampled until now
             if i > 0:
-                distances = np.zeros(i, dtype=np.double)
+                relative_distance = np.zeros(i, dtype=np.double)
+                x1 = np.array([comoving_distance[i],DEC,RA])
+
                 for j in range(i):
-                    distances[j] = _distance_spherical(positions[j,:],xp)
+                    
+                    x2 = np.array([comoving_distance[j],out[j,3],out[j,2]])
+                    relative_distance[j] = _distance_spherical(x1,x2)
+ 
+                    
+                D    = relative_distance.min()
+                corr = _correlation_function(D, self.omega.h)
+            prob = (1+corr)*self.pdf(M, Z, selection = selection)
 
-                imin = distances.argmin()
-                x_closest = positions[imin,:]
-            else:
-                x_closest = x0
+            if (test < prob):
+                out[i,1] = Z
+                out[i,2] = RA
+                out[i,3] = DEC #- np.pi/2.0
+                out[i,0] = M
+                i += 1
 
-            D = _distance_spherical(x_closest,xp)
-#            D = np.linalg.norm(x_closest-xp)
-            # check if a galaxy should be there
-            # compute the 2-point correlation function for this distance
-            corr = _correlation_function(D, self.omega.h)/corr0
-            new_gal = int(np.random.poisson(1+corr))
-
-            if new_gal > 0:
-                positions[i,:] = xp
-                i+=1
-
-#            x0 = xp.copy()
-        # now that we have the centroid of the box and the population in cartesian coordinates
-        # within the box we have to convert back to the observables
-        # the z direction in the cartesian system coincides with the redshift direction
-        # first of all, convert the z direction to redshifts
-
-        for i in range(N):
-            out[i,1] = find_redshift(self.omega, meanDc+positions[i,0])
-
-            out[i,2] = positions[i,2] + np.pi
-            out[i,3] = positions[i,1] #- np.pi/2.0
-            out[i,0],_,_,_,_ = self._sample(out[i,1], out[i,1], ramin, ramax, decmin, decmax, selection)
         return out
     
     @cython.boundscheck(False)
@@ -981,6 +964,8 @@ cdef inline double _correlation_function(double r, double h) nogil: #r in Mpc
     """
     cdef double r0 = 5.5/h
     cdef double gamm  = 1.72
+    if r < 1e-2:
+        return 0
     return (r/r0)**(-gamm)
 
 def correlation_function(r, h):
