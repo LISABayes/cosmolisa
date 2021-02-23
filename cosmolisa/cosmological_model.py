@@ -29,26 +29,26 @@ class CosmologicalModel(cpnest.model.Model):
 
         super(CosmologicalModel,self).__init__()
         # Set up the data
-        self.data               = data
-        self.N                  = len(self.data)
-        self.model              = model.split('+')
-        self.corrections        = corrections.split('+')
-        self.em_selection       = kwargs['em_selection']
-        self.z_threshold        = kwargs['z_threshold']
-        self.snr_threshold      = kwargs['snr_threshold']
-        self.event_class        = kwargs['event_class']
-        self.redshift_prior     = kwargs['redshift_prior']
-        self.time_redshifting   = kwargs['time_redshifting']
-        self.vc_normalization   = kwargs['vc_normalization']
-        self.lk_sel_fun         = kwargs['lk_sel_fun']
-        self.detection_corr     = kwargs['detection_corr']
-        self.approx_int         = kwargs['approx_int']
-        self.dl_cutoff          = kwargs['dl_cutoff']
-        self.sfr                = kwargs['sfr']
-        self.T                  = kwargs['T']
+        self.data                = data
+        self.N                   = len(self.data)
+        self.model               = model.split('+')
+        self.corrections         = corrections.split('+')
+        self.em_selection        = kwargs['em_selection']
+        self.z_threshold         = kwargs['z_threshold']
+        self.snr_threshold       = kwargs['snr_threshold']
+        self.event_class         = kwargs['event_class']
+        self.redshift_prior      = kwargs['redshift_prior']
+        self.time_redshifting    = kwargs['time_redshifting']
+        self.vc_normalization    = kwargs['vc_normalization']
+        self.lk_sel_fun          = kwargs['lk_sel_fun']
+        self.detection_corr      = kwargs['detection_corr']
+        self.approx_int          = kwargs['approx_int']
+        self.dl_cutoff           = kwargs['dl_cutoff']
+        self.sfr                 = kwargs['sfr']
+        self.T                   = kwargs['T']
         self.luminosity_function = kwargs['luminosity_function']
         self.magnitude_threshold = kwargs['m_threshold']
-        self.O                  = None
+        self.O                   = None
         
         self.Mmin = -25.0
         self.Mmax = -15.0
@@ -57,30 +57,48 @@ class CosmologicalModel(cpnest.model.Model):
         self.gw = 0
         self.cosmology = 0
         
+        if ("LambdaCDM_h" in self.model):
+            
+            self.cosmology = 1
+            self.npar      = 1
+            self.names     = ['h']
+            self.bounds    = [[0.6,0.86]]            
+
+        if ("LambdaCDM_om" in self.model):
+            
+            self.cosmology = 1
+            self.npar      = 1
+            self.names     = ['om']
+            self.bounds    = [[0.04,0.5]]
+
         if ("LambdaCDM" in self.model):
             
             self.cosmology = 1
-            self.names  = ['h','om']
-            self.bounds = [[0.6,0.86],[0.04,0.5]]
+            self.npar      = 2
+            self.names     = ['h','om']
+            self.bounds    = [[0.6,0.86],[0.04,0.5]]
 
         if ("CLambdaCDM" in self.model):
             
             self.cosmology = 1
-            self.names  = ['h','om','ol']
-            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
+            self.npar      = 3
+            self.names     = ['h','om','ol']
+            self.bounds    = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
 
         if ("LambdaCDMDE" in self.model):
             
             self.cosmology = 1
-            self.names  = ['h','om','ol','w0','w1']
-            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
-            
+            self.npar      = 5
+            self.names     = ['h','om','ol','w0','w1']
+            self.bounds    = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+
         if ("DE" in self.model):
             
             self.cosmology = 1
-            self.names  = ['w0','w1']
-            self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
-        
+            self.npar      = 2
+            self.names     = ['w0','w1']
+            self.bounds    = [[-3.0,-0.3],[-1.0,1.0]]
+
         if ("GW" in self.model):
             self.gw = 1
         else:
@@ -154,7 +172,11 @@ class CosmologicalModel(cpnest.model.Model):
         print("GW correction: {0}".format(self.gw_correction))
         print("Free parameters: {0}".format(self.names))
         print("==================================================")
-        
+        print("\nPrior bounds:")
+        for name,bound in zip(self.names, self.bounds):
+            print("{}: {}".format(str(name).ljust(4), bound))
+        print("==================================================")
+
     def _initialise_galaxy_hosts(self):
         self.hosts             = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
         self.galaxy_redshifts    = np.hstack([self.hosts[e.ID][:,0] for e in self.data]).copy(order='C')
@@ -168,7 +190,11 @@ class CosmologicalModel(cpnest.model.Model):
         if np.isfinite(logP):
             
             # check for the cosmological model
-            if  ("LambdaCDM" in self.model):
+            if ("LambdaCDM_h" in self.model):
+                self.O = cs.CosmologicalParameters(x['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])  
+            elif ("LambdaCDM_om" in self.model):
+                self.O = cs.CosmologicalParameters(truths['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])                                
+            elif  ("LambdaCDM" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])
             elif ("CLambdaCDM" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],truths['w0'],truths['w1'])
@@ -305,8 +331,8 @@ class CosmologicalModel(cpnest.model.Model):
                                                              e.sigma,
                                                              self.O,
                                                              x['z%d'%e.ID],
-                                                             zmin = self.bounds[2+j][0],
-                                                             zmax = self.bounds[2+j][1])
+                                                             zmin = self.bounds[self.npar+j][0],
+                                                             zmax = self.bounds[self.npar+j][1])
                                                              for j,e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
@@ -369,34 +395,34 @@ if __name__=='__main__':
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
     (opts,args)=parser.parse_args()
 
-    em_selection     = opts.em_selection
-    dl_cutoff        = opts.dl_cutoff
-    z_selection      = opts.z_selection
-    snr_selection    = opts.snr_selection
-    zhorizon         = opts.zhorizon
-    snr_threshold    = opts.snr_threshold
-    redshift_prior   = opts.redshift_prior
-    time_redshifting = opts.time_redshifting
-    vc_normalization = opts.vc_normalization
-    max_hosts        = opts.max_hosts
-    event_ID_list    = opts.event_ID_list
-    one_host_selection = opts.one_host_sel
-    lk_sel_fun       = opts.lk_sel_fun
-    detection_corr   = opts.detection_corr
-    approx_int       = opts.approx_int
-    model            = opts.model
-    corrections      = opts.corrections
-    joint            = opts.joint
-    event_class      = opts.event_class
-    reduced_catalog  = opts.reduced_catalog
-    postprocess      = opts.postprocess
-    screen_output    = opts.screen_output
-    out_dir          = opts.out_dir
-    sfr              = opts.sfr
-    T                = opts.T
+    em_selection        = opts.em_selection
+    dl_cutoff           = opts.dl_cutoff
+    z_selection         = opts.z_selection
+    snr_selection       = opts.snr_selection
+    zhorizon            = opts.zhorizon
+    snr_threshold       = opts.snr_threshold
+    redshift_prior      = opts.redshift_prior
+    time_redshifting    = opts.time_redshifting
+    vc_normalization    = opts.vc_normalization
+    max_hosts           = opts.max_hosts
+    event_ID_list       = opts.event_ID_list
+    one_host_selection  = opts.one_host_sel
+    lk_sel_fun          = opts.lk_sel_fun
+    detection_corr      = opts.detection_corr
+    approx_int          = opts.approx_int
+    model               = opts.model
+    corrections         = opts.corrections
+    joint               = opts.joint
+    event_class         = opts.event_class
+    reduced_catalog     = opts.reduced_catalog
+    postprocess         = opts.postprocess
+    screen_output       = opts.screen_output
+    out_dir             = opts.out_dir
+    sfr                 = opts.sfr
+    T                   = opts.T
     luminosity_function = opts.luminosity
-    m_threshold = opts.m_threshold
-    
+    m_threshold         = opts.m_threshold
+
     if not (screen_output):
         if not (postprocess):
             directory = out_dir
@@ -411,7 +437,7 @@ if __name__=='__main__':
         em_selection = 0
         events = readdata.read_event(event_class, opts.data, opts.event)
 
-    if (event_class == "EMRI"):
+    if ((event_class == "EMRI") or (event_class == "sBH")):
         if (snr_selection is not None):
             events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection)
         elif (z_selection is not None):
@@ -440,7 +466,10 @@ if __name__=='__main__':
             else:
                 events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
                 # Draw a number of events in the 4-year scenario
-                N = np.int(np.random.poisson(len(events)*4./10.))
+                if (event_class == "sBH"):
+                    N = np.int(np.random.poisson(len(events)*4./40.))
+                elif (event_class == "EMRI"):
+                    N = np.int(np.random.poisson(len(events)*4./10.))
                 print("\nReduced number of events: {}".format(N))
                 selected_events = []
                 k = 0
@@ -521,21 +550,21 @@ if __name__=='__main__':
     C = CosmologicalModel(model,
                           events,
                           corrections,
-                          em_selection     = em_selection,
-                          snr_threshold    = snr_threshold,
-                          z_threshold      = zhorizon,
-                          event_class      = event_class,
-                          redshift_prior   = redshift_prior,
-                          time_redshifting = time_redshifting,
-                          vc_normalization = vc_normalization,
-                          lk_sel_fun       = lk_sel_fun,
-                          detection_corr   = detection_corr,
-                          approx_int       = approx_int,
-                          dl_cutoff        = dl_cutoff,
-                          sfr              = sfr,
-                          T                = T,
+                          em_selection        = em_selection,
+                          snr_threshold       = snr_threshold,
+                          z_threshold         = zhorizon,
+                          event_class         = event_class,
+                          redshift_prior      = redshift_prior,
+                          time_redshifting    = time_redshifting,
+                          vc_normalization    = vc_normalization,
+                          lk_sel_fun          = lk_sel_fun,
+                          detection_corr      = detection_corr,
+                          approx_int          = approx_int,
+                          dl_cutoff           = dl_cutoff,
+                          sfr                 = sfr,
+                          T                   = T,
                           luminosity_function = luminosity_function,
-                          m_threshold      = m_threshold)
+                          m_threshold         = m_threshold)
 
     #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (postprocess == 0):
@@ -628,7 +657,19 @@ if __name__=='__main__':
         models = []
         
         for k in range(x.shape[0]):
-            if ("LambdaCDM" in C.model):
+            if ("LambdaCDM_h" in C.model):
+                omega = cs.CosmologicalParameters(x['h'][k],
+                                               truths['om'],
+                                               truths['ol'],
+                                               truths['w0'],
+                                               truths['w1'])
+            elif ("LambdaCDM_om" in C.model):
+                omega = cs.CosmologicalParameters(truths['h'],
+                                               x['om'][k],
+                                               1.0-x['om'][k],
+                                               truths['w0'],
+                                               truths['w1'])                                               
+            elif ("LambdaCDM" in C.model):
                 omega = cs.CosmologicalParameters(x['h'][k],
                                                x['om'][k],
                                                1.0-x['om'][k],
@@ -680,6 +721,25 @@ if __name__=='__main__':
         plt.close()
     
     if C.cosmology == 1:
+
+        if ("LambdaCDM_h" in C.model):
+            fig = plt.figure()
+            plt.hist(x['h'], density=True, alpha = 0.5, histtype='step', edgecolor="k")
+            plt.axvline(truths['h'], linestyle='dashed', color='r')
+            quantiles = np.quantile(x['h'], [0.05, 0.5, 0.95])
+            plt.title(r'$h = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]))
+            plt.xlabel(r'$h$')
+            plt.savefig(os.path.join(output,'h_histogram.pdf'), bbox_inches='tight')
+
+        if ("LambdaCDM_om" in C.model):
+            fig = plt.figure()
+            plt.hist(x['om'], density=True, alpha = 0.5, histtype='step', edgecolor="k")
+            plt.axvline(truths['om'], linestyle='dashed', color='r')
+            quantiles = np.quantile(x['om'], [0.05, 0.5, 0.95])
+            plt.title(r'$\Omega_m = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]))
+            plt.xlabel(r'$\Omega_m$')
+            plt.savefig(os.path.join(output,'om_histogram.pdf'), bbox_inches='tight')        
+
         if ("LambdaCDM" in C.model):
             samps = np.column_stack((x['h'],x['om']))
             fig = corner.corner(samps,
@@ -687,14 +747,13 @@ if __name__=='__main__':
                             r'$\Omega_m$'],
                    quantiles=[0.05, 0.5, 0.95],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                   use_math_text=True, truths=[truths['h'],truths['om']],
-                   filename=os.path.join(output,'joint_posterior.pdf'))
+                   use_math_text=True, truths=[truths['h'],truths['om']])
     #        axes = fig.get_axes()
     #        axes[0].set_xlim(0.69, 0.77)
     #        axes[2].set_xlim(0.69, 0.77)
     #        axes[3].set_xlim(0.04, 0.5)
-    #        axes[2].set_ylim(0.04, 0.5)
-        
+    #        axes[2].set_ylim(0.04, 0.5)    
+
         if ("CLambdaCDM" in C.model):
             samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
             fig = corner.corner(samps,
@@ -704,8 +763,7 @@ if __name__=='__main__':
                             r'$\Omega_k$'],
                    quantiles=[0.05, 0.5, 0.95],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                   use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0],
-                   filename=os.path.join(output,'joint_posterior.pdf'))
+                   use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0])
                    
         if ("LambdaCDMDE" in C.model):
             samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
@@ -717,8 +775,7 @@ if __name__=='__main__':
                                      r'$w_a$'],
                             quantiles=[0.05, 0.5, 0.95],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                            use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
-                            filename=os.path.join(output,'joint_posterior.pdf'))
+                            use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']])
 
         if ("DE" in C.model):
             samps = np.column_stack((x['w0'],x['w1']))
@@ -727,15 +784,14 @@ if __name__=='__main__':
                                      r'$w_a$'],
                             quantiles=[0.05, 0.5, 0.95],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                            use_math_text=True, truths=[truths['w0'],truths['w1']],
-                            filename=os.path.join(output,'joint_posterior.pdf'))
+                            use_math_text=True, truths=[truths['w0'],truths['w1']])
     #        axes = fig.get_axes()
     #        axes[0].set_xlim(-1.22, -0.53)
     #        axes[2].set_xlim(-1.22, -0.53)
     #        axes[3].set_xlim(-1.0, 1.0)
     #        axes[2].set_ylim(-1.0, 1.0)
-
-        fig.savefig(os.path.join(output,'joint_posterior.pdf'), bbox_inches='tight')
+        if(('LambdaCDM_h' not in C.model) and ('LambdaCDM_om' not in C.model)):
+            fig.savefig(os.path.join(output,'corner_plot.pdf'), bbox_inches='tight')
 
     if ("Rate" in C.model):
         z   = np.linspace(0.0,C.z_threshold,100)
