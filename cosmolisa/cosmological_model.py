@@ -172,7 +172,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("GW correction: {0}".format(self.gw_correction))
         print("Free parameters: {0}".format(self.names))
         print("==================================================")
-        print("\nPrior bounds:")
+        print("Prior bounds:")
         for name,bound in zip(self.names, self.bounds):
             print("{}: {}".format(str(name).ljust(4), bound))
         print("==================================================")
@@ -597,7 +597,7 @@ if __name__=='__main__':
     ################# MAKE PLOTS ##################
     ###############################################
     
-    if (event_class == "EMRI"):
+    if ((event_class == "EMRI") or (event_class == "sBH")):
         if C.gw == 1:
             for e in C.data:
                 fig = plt.figure()
@@ -615,7 +615,8 @@ if __name__=='__main__':
                     s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
                     s_m.set_array([])
                     for i in range(x.shape[0])[::10]:
-                        if ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                        if ("LambdaCDM_h" in C.model): O = cs.CosmologicalParameters(x['h'][i],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+                        elif ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
                         elif ("CLambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
                         elif ("LambdaCDMDE" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
                         elif ("DE" in C.model): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
@@ -628,6 +629,13 @@ if __name__=='__main__':
                     else: CB.set_label('h')
                     ax2.set_ylim(0.0, 1.0)
                     ax2.set_ylabel('selection function')
+                omega_truth = cs.CosmologicalParameters(truths['h'],
+                                               truths['om'],
+                                               truths['ol'],
+                                               truths['w0'],
+                                               truths['w1'])
+                ax.axvline(lk.find_redshift(omega_truth,e.dl), linestyle='dotted', lw=0.5, color='red')
+                omega_truth.DestroyCosmologicalParameters()
                 ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
@@ -724,19 +732,19 @@ if __name__=='__main__':
 
         if ("LambdaCDM_h" in C.model):
             fig = plt.figure()
-            plt.hist(x['h'], density=True, alpha = 0.5, histtype='step', edgecolor="k")
+            plt.hist(x['h'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
             plt.axvline(truths['h'], linestyle='dashed', color='r')
             quantiles = np.quantile(x['h'], [0.05, 0.5, 0.95])
-            plt.title(r'$h = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]))
+            plt.title(r'$h = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
             plt.xlabel(r'$h$')
             plt.savefig(os.path.join(output,'h_histogram.pdf'), bbox_inches='tight')
 
         if ("LambdaCDM_om" in C.model):
             fig = plt.figure()
-            plt.hist(x['om'], density=True, alpha = 0.5, histtype='step', edgecolor="k")
+            plt.hist(x['om'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
             plt.axvline(truths['om'], linestyle='dashed', color='r')
             quantiles = np.quantile(x['om'], [0.05, 0.5, 0.95])
-            plt.title(r'$\Omega_m = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]))
+            plt.title(r'$\Omega_m = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
             plt.xlabel(r'$\Omega_m$')
             plt.savefig(os.path.join(output,'om_histogram.pdf'), bbox_inches='tight')        
 
