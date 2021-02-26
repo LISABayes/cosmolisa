@@ -628,6 +628,19 @@ if __name__=='__main__':
                     else: CB.set_label('h')
                     ax2.set_ylim(0.0, 1.0)
                     ax2.set_ylabel('selection function')
+                
+                distance_likelihood = []
+                for i in range(x.shape[0])[::10]:
+                    if ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                    elif ("CLambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
+                    elif ("LambdaCDMDE" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+                    elif ("DE" in C.model): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
+                    distance_likelihood.append(np.array([lk.logLikelihood_single_event(C.hosts[e.ID], e.dl, e.sigma, O, zi) for zi in z]))
+                    O.DestroyCosmologicalParameters()
+                distance_likelihood = np.exp(np.array(distance_likelihood))
+                l,m,h = np.percentile(distance_likelihood,[5,50,95],axis = 1)
+                ax.plot(z, m, linestyle = 'solid', color='k', lw=0.75)
+                ax.fill_between(z,l,h,facecolor='turquoise')
                 ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
