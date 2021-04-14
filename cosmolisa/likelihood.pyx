@@ -86,7 +86,7 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
         logL        = log_add(logL,logL_galaxy)
         
     # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
-    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL-log(N)
+    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL
 
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
