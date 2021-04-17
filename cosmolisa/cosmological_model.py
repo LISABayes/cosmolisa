@@ -630,26 +630,32 @@ if __name__=='__main__':
                     ax2.set_ylim(0.0, 1.0)
                     ax2.set_ylabel('selection function')
 
+                # Plot the likelihood  
                 distance_likelihood = []
+                print("redshift plot of event", e.ID)
                 for i in range(x.shape[0])[::10]:
-                    if ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
+                    if ("LambdaCDM_h" in C.model): O = cs.CosmologicalParameters(x['h'][i],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+                    elif ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
                     elif ("CLambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
                     elif ("LambdaCDMDE" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
                     elif ("DE" in C.model): O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-                    distance_likelihood.append(np.array([lk.logLikelihood_single_event(C.hosts[e.ID], e.dl, e.sigma, O, zi) for zi in z]))
+                    # distance_likelihood.append(np.array([lk.logLikelihood_single_event(C.hosts[e.ID], e.dl, e.sigma, O, zi) for zi in z]))
+                    distance_likelihood.append(np.array([-0.5*((O.LuminosityDistance(zi)-e.dl)/e.sigma)**2 for zi in z]))
                     O.DestroyCosmologicalParameters()
                 distance_likelihood = np.exp(np.array(distance_likelihood))
-                l,m,h = np.percentile(distance_likelihood,[5,50,95],axis = 1)
-                ax.plot(z, m, linestyle = 'solid', color='k', lw=0.75)
-                ax.fill_between(z,l,h,facecolor='turquoise')
+                l,m,h = np.percentile(distance_likelihood,[5,50,95],axis = 0)
+                ax2 = ax.twinx()
+                ax2.plot(z, m, linestyle = 'dashed', color='k', lw=0.75)
+                ax2.fill_between(z,l,h,facecolor='magenta', alpha=0.5)
                 omega_truth = cs.CosmologicalParameters(truths['h'],
                                                truths['om'],
                                                truths['ol'],
                                                truths['w0'],
                                                truths['w1'])
-                ax.axvline(lk.find_redshift(omega_truth,e.dl), linestyle='dotted', lw=0.5, color='red')
+                ax2.plot(z, np.exp(np.array([-0.5*((omega_truth.LuminosityDistance(zi)-e.dl)/e.sigma)**2 for zi in z])), linestyle = 'dashed', color='gold', lw=1.5)
+                ax.axvline(lk.find_redshift(omega_truth,e.dl), linestyle='dotted', lw=0.8, color='red')
                 omega_truth.DestroyCosmologicalParameters()
-                ax.axvline(e.z_true, linestyle='dotted', lw=0.5, color='k')
+                ax.axvline(e.z_true, linestyle='dotted', lw=0.8, color='k')
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, facecolor="green")
                 ax.hist(x['z%d'%e.ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
 
