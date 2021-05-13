@@ -89,9 +89,9 @@ if __name__=="__main__":
 
     os.system('mkdir -p {0}'.format(opts.outdir))
 
-    # read in the events
-    events = readdata.read_event(opts.source, opts.data, None)
-    # read in the posterior samples
+    # Read in the events
+    events = readdata.read_event(opts.source, opts.data, None, snr_threshold=100.0)
+    # Read in the posterior samples
     try:
         posteriors = np.genfromtxt(os.path.join(opts.posteriors,'posterior.dat'),names=True)
     except:
@@ -103,7 +103,7 @@ if __name__=="__main__":
         for n in posteriors.dtype.names: names += n+ '\t'
         np.savetxt(os.path.join(opts.posteriors,'posterior.dat'), posteriors, header = names)
     
-    # injected cosmology
+    # Injected cosmology
     omega_true = CosmologicalParameters(0.73,0.25,0.75,-1,0)
     
     dlmeasured = []
@@ -115,7 +115,7 @@ if __name__=="__main__":
     weight_galaxies = []
     redshift_posteriors = []
     distance_posteriors = []
-    # FIXME:
+    # Read in the event details
     for e in events:
         try:
             redshift_posteriors.append(posteriors['z%d'%e.ID])
@@ -131,8 +131,7 @@ if __name__=="__main__":
             pass
 
     redshift   = np.logspace(-3,0.4,100)
-    # loop over the posterior samples to get all models to then average
-    # for the plot
+    # Loop over the posterior samples to get all models to then average for the plot
     
     models = []
     
@@ -165,43 +164,60 @@ if __name__=="__main__":
     models = np.array(models)
     model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.5,16.0,50.0,84.0,97.5],axis = 0)
     
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    # Create the structure for the subplots
+    fig = plt.figure(constrained_layout=True,figsize=(12,8))
+    widths = [1]
+    heights = [3, 1]
+    spec = fig.add_gridspec(hspace=0, nrows=2, width_ratios=widths, height_ratios=heights)
+
+    axs = spec.subplots(sharex=True, sharey=False)
     
     for z,d,w in zip(redshift_galaxies, distance_galaxies, weight_galaxies):
-##        print(z,d,w)
-        ax.scatter(z,d,c=w,s=2,alpha=0.35,zorder=0, edgecolors='face')
-#    plt.show()
-#    exit()
+        axs[0].scatter(z,d,c=w,cmap = matplotlib.cm.rainbow,marker='o',s=4,alpha=0.35,zorder=0, edgecolors='face')
     
     for i,z,d in zip(range(len(redshift_posteriors)),redshift_posteriors,distance_posteriors):
         sys.stderr.write("processing event {0} of {1}\r".format(i+1,len(redshift_posteriors)))
         X, Y, Z = twod_kde(np.array(z)[::100],np.array(d)[::100])
         levels = FindHeightForLevel(np.log(Z), [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
-        C = ax.contourf(X, Y, np.log(Z), levels, alpha = 0.4, cmap=matplotlib.cm.hot)
-        C2 = ax.contour(C, levels, alpha = 0.25, colors = 'k', linewidths=(0.2,))
+        C = axs[0].contourf(X, Y, np.log(Z), levels, alpha = 0.4, cmap=matplotlib.cm.hot, zorder=10)
+        C2 = axs[0].contour(C, levels, alpha = 0.25, colors = 'k', linewidths=(0.2,))
     sys.stderr.write("\n")
-    cbar = fig.colorbar(C)
-    cbar.ax.set_ylabel(r'credible level', fontsize=15)
-    # Add the contour line levels to the colorbar
+    
+    cbar = fig.colorbar(C, orientation='horizontal', location='top', ax=axs[0], aspect=40, pad=0.01)
+    cbar.ax.set_xlabel(r'credible level', fontsize=15)
     cbar.add_lines(C2)
-    cbar.ax.set_yticklabels([0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1], fontsize=13)
+    cbar.ax.set_xticklabels([0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1], fontsize=13)
+    
+    cmap = matplotlib.cm.rainbow
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+    cbar2 = fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), orientation='vertical', location='right', ax=axs[0], aspect=20, pad=0.0)
+    cbar2.ax.set_ylabel(r'weights', fontsize=15)
+    cbar2.ax.tick_params(labelsize=13)
 
-#    # raw redshift and distance of GW for galaxies mean
-#    ax.errorbar(zmeasured,dlmeasured,xerr=dzmeasured,yerr=ddlmeasured,
-#                markersize=2,linewidth=0.5,color='r',fmt='o',zorder=0)
-    # true cosmology
-    ax.plot(redshift,[omega_true.LuminosityDistance(zi)/1e3 for zi in redshift],linestyle='dashed',color='r', linewidth=.7)
-    ax.plot(redshift,model50,color='k', linewidth=.7)
-    # true redshift and distance of GW
-#    ax.errorbar(ztrue, dl, yerr=deltadl, markersize=4,linewidth=1,color='r',fmt='o')
-    ax.fill_between(redshift,model2p5,model97p5,facecolor='lightgray')
-    ax.fill_between(redshift,model16,model84,facecolor='lightseagreen')
-    ax.set_xlabel(r"z", fontsize=15)
-    ax.set_ylabel(r"$d_L$/Gpc", fontsize=15)
-    ax.set_xlim(np.min(redshift)*0.95,0.9)
-    ax.set_ylim(0.0,4)
-    ax.tick_params(labelsize=13)
-    fig.savefig(os.path.join(opts.outdir,'regression.pdf'),bbox_inches='tight')
-#    plt.close(fig)
+    dtrue = np.array([omega_true.LuminosityDistance(zi)/1e3 for zi in redshift])
+    axs[0].plot(redshift,dtrue,linestyle='dashed',color='r', linewidth=.7)
+    axs[0].plot(redshift,model50,color='k', linewidth=.7)
+    axs[0].fill_between(redshift,model2p5,model97p5,facecolor='lightgray', zorder=1)
+    axs[0].fill_between(redshift,model16,model84,facecolor='lightseagreen', zorder=2)
+    axs[0].set_ylabel(r"d$_L$/Gpc", fontsize=15)
+    axs[0].set_xlim(np.min(redshift)*0.95,0.9)
+    axs[0].set_ylim(0.0,4)
+    axs[0].tick_params(labelsize=13)
+    
+    residuals = []
+    for i in range(models.shape[0]):
+        residuals.append((models[i,:]-dtrue)/dtrue)
+    residuals = np.array(residuals)
+    model2p5,model16,model50,model84,model97p5 = np.percentile(residuals,[2.5,16.0,50.0,84.0,97.5],axis = 0)
+    axs[1].plot(redshift,model50,color='k', linewidth=.7)
+    axs[1].fill_between(redshift,model2p5,model97p5,facecolor='lightgray')
+    axs[1].fill_between(redshift,model16,model84,facecolor='lightseagreen')
+    axs[1].set_ylim(-0.05,0.05)
+    axs[1].set_xlim(np.min(redshift)*0.95,0.9)
+    axs[1].set_xlabel(r"z", fontsize=15)
+    axs[1].tick_params(labelsize=13)
+    axs[1].set_ylabel(r"(d$_L$ - d$_L^{\rm true}$)/d$_L^{\rm true}$", fontsize=15)
+
+    for ax in axs:
+        ax.label_outer()
+    fig.savefig(os.path.join(opts.outdir,'regression_updated.pdf'),bbox_inches='tight')
