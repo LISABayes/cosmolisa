@@ -203,8 +203,11 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
                 event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
             except (ValueError):
                 event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
-                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19, 20, 21 #SOBH
+                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_,_,_ = event_file.readline().split(None)
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19 #EMRI
+                # event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
+
             ID              = np.int(event_id)
             dl              = np.float64(dl)
             sigma           = np.float64(sigma)*dl
@@ -293,11 +296,22 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
                 print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
 
         if (zhorizon is not None):
-            events = [e for e in events if e.z_true < zhorizon]
+            if (',' in zhorizon):
+                z_horizons = zhorizon.split(',')
+                z_hor_min = float(z_horizons[0])
+                z_hor_max = float(z_horizons[1])
+            else:
+                z_hor_min = 0.0
+                z_hor_max = float(zhorizon)
+                print(z_hor_min,z_hor_max)
+            events = [e for e in events if (z_hor_min <= e.z_true <= z_hor_max)]
             events = sorted(events, key=lambda x: getattr(x, 'z_true'))
-            print("\nSelected {} events from z={} to z={} (zhorizon={}):".format(len(events), events[0].z_true, events[len(events)-1].z_true, zhorizon))
-            for e in events:
-                print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))           
+            if len(events) != 0:
+                print("\nSelected {} events from z={} to z={} (z_hor_min, z_hor_max=[{},{}]):".format(len(events), events[0].z_true, events[len(events)-1].z_true, z_hor_min, z_hor_max))
+                for e in events:
+                    print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7))) 
+            else:
+                print("Zero events found in the redshift window [{},{}].".format(z_hor_min, z_hor_max))
 
         if (max_hosts is not None):
             events = [e for e in events if e.n_hosts < max_hosts]
@@ -306,7 +320,7 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
             for e in events:
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
 
-        if (snr_threshold is not 0.0):
+        if not (snr_threshold == 0.0):
             if snr_threshold > 0:
                 events = [e for e in events if e.snr > snr_threshold]
             else:

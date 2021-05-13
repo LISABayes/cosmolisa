@@ -366,9 +366,9 @@ if __name__=='__main__':
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
     parser.add_option('--corrections',       default='None',      type='string', metavar='corrections',      help='family of corrections (GW+EM)')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
-    parser.add_option('-z', '--zhorizon',    default=1000.0,      type='float',  metavar='zhorizon',         help='Horizon redshift corresponding to the SNR threshold.')
+    parser.add_option('-z', '--zhorizon',    default='1000.0',    type='string', metavar='zhorizon',         help='String to impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
-    parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select events according to redshift.')
+    parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select ad integer number of events according to redshift.')
     parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
     parser.add_option('--event_ID_list',     default=None,        type='string', metavar='event_ID_list',    help='String of specific ID events to be read.')
     parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
@@ -423,6 +423,8 @@ if __name__=='__main__':
     luminosity_function = opts.luminosity
     m_threshold         = opts.m_threshold
 
+    omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+
     if not (screen_output):
         if not (postprocess):
             directory = out_dir
@@ -442,7 +444,7 @@ if __name__=='__main__':
             events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection)
         elif (z_selection is not None):
             events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection)
-        elif (dl_cutoff > 0) and (zhorizon == 1000):
+        elif (dl_cutoff > 0) and (',' not in zhorizon) and (zhorizon is '1000.0'):
             all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
             events_selected = []
             print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
@@ -454,7 +456,7 @@ if __name__=='__main__':
             print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
-        elif (zhorizon < 1000):
+        elif (zhorizon is not '1000.0'):
             events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
         elif (max_hosts is not None):
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
