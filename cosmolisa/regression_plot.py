@@ -210,12 +210,16 @@ if __name__=="__main__":
     residuals = np.array(residuals)
     model2p5,model16,model50,model84,model97p5 = np.percentile(residuals,[2.5,16.0,50.0,84.0,97.5],axis = 0)
     axs[1].plot(redshift,model50,color='k', linewidth=.7)
+    axs[1].grid(alpha=0.2)
     axs[1].fill_between(redshift,model2p5,model97p5,facecolor='lightgray')
     axs[1].fill_between(redshift,model16,model84,facecolor='lightseagreen')
     axs[1].set_ylim(-0.05,0.05)
     axs[1].set_xlim(np.min(redshift)*0.95,0.9)
     axs[1].set_xlabel(r"z", fontsize=15)
     axs[1].tick_params(labelsize=13)
+    import matplotlib.ticker as mtick
+    axs[1].yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
+    axs[1].yaxis.set_ticks_position('both')
     axs[1].set_ylabel(r"(d$_L$ - d$_L^{\rm true}$)/d$_L^{\rm true}$", fontsize=15)
 
     for ax in axs:
