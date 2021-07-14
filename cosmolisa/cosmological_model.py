@@ -364,7 +364,7 @@ if __name__=='__main__':
     parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',      help='Class of the event(s) [MBH, EMRI, sBH].')
     parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',            help='Event number.')
     parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
-    parser.add_option('--corrections',       default='None',      type='string', metavar='corrections',      help='family of corrections (GW+EM)')
+    parser.add_option('--corrections',       default='None',      type='string', metavar='corrections',      help='Family of corrections (GW+EM)')
     parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
     parser.add_option('-z', '--zhorizon',    default='1000.0',    type='string', metavar='zhorizon',         help='String to impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.')
     parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
@@ -372,6 +372,7 @@ if __name__=='__main__':
     parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
     parser.add_option('--event_ID_list',     default=None,        type='string', metavar='event_ID_list',    help='String of specific ID events to be read.')
     parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
+    parser.add_option('--z_gal_cosmo',       default=0,           type='int',    metavar='z_gal_cosmo',      help='If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.')
     parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
     parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
     parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
@@ -381,10 +382,10 @@ if __name__=='__main__':
     parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
     parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
     parser.add_option('--detection_corr',    default=0,           type='int',    metavar='detection_corr',   help='Single-event likelihood including detection correction')
-    parser.add_option('--sfr',               default=0,           type='int',    metavar='sfr',              help='fit the sfr parameters too')
+    parser.add_option('--sfr',               default=0,           type='int',    metavar='sfr',              help='Fit the sfr parameters too')
     parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
     parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
-    parser.add_option('--luminosity',        default=0,           type='int',    metavar='luminosity',       help='infer also the luminosity function')
+    parser.add_option('--luminosity',        default=0,           type='int',    metavar='luminosity',       help='Infer also the luminosity function')
     parser.add_option('--m_threshold',       default=20,          type='float',  metavar='m_threshold',      help='apparent magnitude threshold')
     parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
@@ -405,6 +406,7 @@ if __name__=='__main__':
     time_redshifting    = opts.time_redshifting
     vc_normalization    = opts.vc_normalization
     max_hosts           = opts.max_hosts
+    z_gal_cosmo         = opts.z_gal_cosmo
     event_ID_list       = opts.event_ID_list
     one_host_selection  = opts.one_host_sel
     lk_sel_fun          = opts.lk_sel_fun
@@ -441,11 +443,11 @@ if __name__=='__main__':
 
     if ((event_class == "EMRI") or (event_class == "sBH")):
         if (snr_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
         elif (z_selection is not None):
-            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
         elif (dl_cutoff > 0) and (',' not in zhorizon) and (zhorizon is '1000.0'):
-            all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+            all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             events_selected = []
             print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
             for e in all_events:
@@ -457,16 +459,16 @@ if __name__=='__main__':
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif (zhorizon is not '1000.0'):
-            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
         elif (max_hosts is not None):
-            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
         elif (event_ID_list is not None):
-            events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
         elif (snr_threshold is not 0.0):
             if not reduced_catalog:
-                events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection)
+                events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             else:
-                events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+                events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
                 # Draw a number of events in the 4-year scenario
                 if (event_class == "sBH"):
                     N = np.int(np.random.poisson(len(events)*4./40.))
@@ -497,7 +499,7 @@ if __name__=='__main__':
                 for e in events:
                     print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
-            events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection)
+            events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
 
         if (joint != 0):
             N = joint
@@ -516,7 +518,7 @@ if __name__=='__main__':
                 print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
                 exit()
     else:
-        events = readdata.read_event(event_class, opts.data, opts.event)
+        events = readdata.read_event(event_class, opts.data, opts.event, z_gal_cosmo=z_gal_cosmo)
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")

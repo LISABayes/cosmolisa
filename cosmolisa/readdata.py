@@ -57,9 +57,11 @@ class Event(object):
         self.z_true                 = z_true
         if self.dmin < 0.0: self.dmin = 0.0
 
-def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = None):
+def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = None, **kwargs):
     
     all_files   = os.listdir(input_folder)
+    print("Reading {}".format(input_folder))
+
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
     
     if event_number is None:
@@ -81,8 +83,8 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
                 d_redshifts             = np.atleast_1d(d_redshifts)
                 weights                 = np.ones(len(redshifts))
                 magnitudes              = np.ones(len(redshifts))
-                zmin                    = np.maximum(redshifts - 5.0*d_redshifts, 0.0)
-                zmax                    = redshifts + 5.0*d_redshifts
+                zmin                    = np.float64(np.maximum(redshifts - 5.0*d_redshifts, 0.0))
+                zmax                    = np.float64(redshifts + 5.0*d_redshifts)
                 events.append(Event(ID,
                                     dl,
                                     sigma,
@@ -125,8 +127,8 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
             d_redshifts             = np.atleast_1d(d_redshifts)
             weights                 = np.atleast_1d(len(redshifts))
             magnitudes              = np.atleast_1d(len(redshifts))
-            zmin                    = np.maximum(redshifts - 10.0*d_redshifts, 0.0)
-            zmax                    = redshifts + 10.0*d_redshifts
+            zmin                    = np.float64(np.maximum(redshifts - 10.0*d_redshifts, 0.0))
+            zmax                    = np.float64(redshifts + 10.0*d_redshifts)
             analysis_events         = [Event(ID,
                                             dl,
                                             sigma,
@@ -149,7 +151,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None):
+def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -191,22 +193,28 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
     print("Reading {}".format(input_folder))
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
     pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
+    if not z_gal_cosmo:
+        print("Will read zobs\n")
+    else:
+        print("Will read zcosmo\n")
 
     if (event_number is None):
 
         events = []
         for ev in events_list:
-            # Some test catalogs have an additional unused column, so a try/except is needed
-            try:
-                event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
-                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
-            except (ValueError):
-                event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19, 20, 21 #SOBH
+            event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
+            if source == 'EMRI':
+                # Some test catalogs have an additional unused column, so a try/except is needed
+                try:
+                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
+                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
+                except (ValueError):
+                    event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
+                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
+                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+            elif source == 'sBH':
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      , , ,21
                 event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_,_,_ = event_file.readline().split(None)
-                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19 #EMRI
-                # event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
 
             ID              = np.int(event_id)
             dl              = np.float64(dl)
@@ -224,7 +232,10 @@ def read_EMRI_event(input_folder, event_number, max_hosts=None, one_host_selecti
                 except:
                     # 1    ,2      ,3  ,4   ,5      ,6    ,7         ,8     ,9  ,10      ,11  ,12     ,13       ,14, 15
                     best_dl,zcosmo,zobs,logM,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl,_ = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
-                redshifts       = np.atleast_1d(zobs)
+                if not z_gal_cosmo:
+                    redshifts   = np.atleast_1d(zobs)
+                else:
+                    redshifts   = np.atleast_1d(zcosmo)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)
                 magnitudes      = np.atleast_1d(logM) #Fictitious values since current catalogs do not have magnitudes 
@@ -411,8 +422,8 @@ def read_DEBUG_event(datafile, *args, **kwargs):
 
 def read_event(event_class,*args,**kwargs):
     if   (event_class == "MBH"):   return read_MBH_event(*args, **kwargs)
-    elif (event_class == "EMRI"):  return read_EMRI_event(*args, **kwargs)
-    elif (event_class == "sBH"):   return read_EMRI_event(*args, **kwargs)
+    elif (event_class == "EMRI"):  return read_EMRI_event(event_class, *args, **kwargs)
+    elif (event_class == "sBH"):   return read_EMRI_event(event_class, *args, **kwargs)
     elif (event_class == "DEBUG"): return read_DEBUG_event(*args, **kwargs)
     else:
         print("I do not know the class %s, exiting\n"%event_class)
