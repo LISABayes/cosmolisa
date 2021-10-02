@@ -166,6 +166,7 @@ class CosmologicalModel(cpnest.model.Model):
                
         print("==================================================")
         print("cpnest model initialised with:")
+        print("Event class: {0}".format(self.event_class))
         print("Analysis model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_correction))
