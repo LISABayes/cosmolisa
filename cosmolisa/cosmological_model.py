@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 from optparse import OptionParser
 from scipy.special import logsumexp
 from scipy.stats import norm
-import lal
 import cpnest.model
 import sys
 import os
@@ -443,11 +442,11 @@ if __name__=='__main__':
         events = readdata.read_event(event_class, opts.data, opts.event)
 
     if ((event_class == "EMRI") or (event_class == "sBH")):
-        if (snr_selection is not None):
+        if (snr_selection != None):
             events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
-        elif (z_selection is not None):
+        elif (z_selection != None):
             events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
-        elif (dl_cutoff > 0) and (',' not in zhorizon) and (zhorizon is '1000.0'):
+        elif (dl_cutoff > 0) and (',' not in zhorizon) and (zhorizon == '1000.0'):
             all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             events_selected = []
             print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
@@ -459,13 +458,13 @@ if __name__=='__main__':
             print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
-        elif (zhorizon is not '1000.0'):
+        elif (zhorizon != '1000.0'):
             events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
-        elif (max_hosts is not None):
+        elif (max_hosts != None):
             events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
-        elif (event_ID_list is not None):
+        elif (event_ID_list != None):
             events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
-        elif (snr_threshold is not 0.0):
+        elif (snr_threshold != 0.0):
             if not reduced_catalog:
                 events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             else:

@@ -1,5 +1,5 @@
 """
-# cython: profile=True
+# cython: profile=False
 # distutils: define_macros=CYTHON_TRACE_NOGIL=1
 """
 from __future__ import division
