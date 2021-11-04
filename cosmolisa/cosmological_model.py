@@ -7,17 +7,19 @@ from scipy.stats import norm
 import cpnest.model
 import sys
 import os
-import readdata
+import ray
+import time
+import subprocess
 import matplotlib
 import corner
-import subprocess
 import numpy as np
-import scipy.special as ss
 import matplotlib.pyplot as plt
+
+# Import internal scripts
+import readdata
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.galaxy as gal
-import cosmolisa.prior as pr
 
 class CosmologicalModel(cpnest.model.Model):
 
@@ -163,19 +165,19 @@ class CosmologicalModel(cpnest.model.Model):
             else:
                 self.em_correction = 0
                
-        print("==================================================")
-        print("cpnest model initialised with:")
+        print("\n====================================================================================================\n")
+        print("CPNest model initialised with:")
         print("Event class: {0}".format(self.event_class))
         print("Analysis model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
         print("EM correction: {0}".format(self.em_correction))
         print("GW correction: {0}".format(self.gw_correction))
         print("Free parameters: {0}".format(self.names))
-        print("==================================================")
+        print("\n====================================================================================================\n")
         print("Prior bounds:")
         for name,bound in zip(self.names, self.bounds):
             print("{}: {}".format(str(name).ljust(4), bound))
-        print("==================================================")
+        print("\n====================================================================================================\n")
 
     def _initialise_galaxy_hosts(self):
         self.hosts             = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
@@ -358,6 +360,8 @@ usage=""" %prog (options)"""
 
 if __name__=='__main__':
 
+    run_time = time.time()
+
     parser = OptionParser(usage)
     parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',             help='Galaxy data location.')
     parser.add_option('-o', '--out_dir',     default=None,        type='string', metavar='DIR',              help='Directory for output.')
@@ -391,7 +395,7 @@ if __name__=='__main__':
     parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
     parser.add_option('--nlive',             default=5000,        type='int',    metavar='nlive',            help='Number of live points.')
     parser.add_option('--poolsize',          default=256,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
-    parser.add_option('--maxmcmc',           default=1000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
+    parser.add_option('--maxmcmc',           default=5000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
     parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
     parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
     (opts,args)=parser.parse_args()
@@ -435,9 +439,9 @@ if __name__=='__main__':
             sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
 
-    print("The output will be saved in {}".format(out_dir))
+    print("\nOutput folder (relative path): {}".format(out_dir))
     if (event_class == "MBH"):
-        # if running on SMBH override the selection functions
+        # If running on MBH, override the selection functions
         em_selection = 0
         events = readdata.read_event(event_class, opts.data, opts.event)
 
@@ -507,13 +511,13 @@ if __name__=='__main__':
                 N = len(events)
                 print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {}".format(N, len(events)))
             events = np.random.choice(events, size = N, replace = False)
-            print("==================================================")
+            print("====================================================================================================")
             print("Selecting a random catalog of {0} events for joint analysis:".format(N))
-            print("==================================================")
+            print("====================================================================================================")
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
-                print("==================================================")
+                print("====================================================================================================")
             else:
                 print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
                 exit()
@@ -524,8 +528,8 @@ if __name__=='__main__':
         print("The passed catalog is empty. Exiting.\n")
         exit()
 
-    print("\nDetailed list of the %d selected events:\n"%len(events))
-    print("==================================================")
+    print("\nDetailed list of the %d selected event(s):"%len(events))
+    print("\n====================================================================================================")
     if event_class == 'MBH':
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
         for e in events:
@@ -544,8 +548,8 @@ if __name__=='__main__':
     else:
         output = out_dir
 
-    print("==================================================")
-    print("\nCPNest will be initialised with:")
+    print("====================================================================================================\n")
+    print("CPNest will be initialised with:")
     print("poolsize: {0}".format(opts.poolsize))
     print("nlive:    {0}".format(opts.nlive))
     print("maxmcmc:  {0}".format(opts.maxmcmc))
@@ -585,6 +589,8 @@ if __name__=='__main__':
 
         work.run()
         print('log Evidence {0}'.format(work.NS.logZ))
+        print("\n====================================================================================================\n")
+
         x = work.posterior_samples.ravel()
 
         # Save git info
@@ -595,6 +601,7 @@ if __name__=='__main__':
         x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
         from cpnest import nest2pos
         print("Drawing posterior samples...")
+        print("\n====================================================================================================\n")
         x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
     ###############################################
@@ -636,7 +643,7 @@ if __name__=='__main__':
 
                 # Plot the likelihood  
                 distance_likelihood = []
-                print("redshift plot of event", e.ID)
+                print("Making redshift plot of event", e.ID)
                 for i in range(x.shape[0])[::10]:
                     if ("LambdaCDM_h" in C.model): O = cs.CosmologicalParameters(x['h'][i],truths['om'],truths['ol'],truths['w0'],truths['w1'])
                     elif ("LambdaCDM" in C.model): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
@@ -923,7 +930,7 @@ if __name__=='__main__':
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         for i in range(x.shape[0]):
-            sys.stderr.write("processing {0} out of {1}\r".format(i+1,x.shape[0]))
+            sys.stderr.write("Processing {0} out of {1}\r".format(i+1,x.shape[0]))
             phistar0            = x['phistar0'][i]
             phistar_exponent    = x['phistar_exponent'][i]
             Mstar0              = x['Mstar0'][i]
@@ -1040,7 +1047,11 @@ if __name__=='__main__':
                                                     truths['alpha0'],truths['alpha_exponent']],
                         filename=os.path.join(output,'joint_luminosity_posterior.pdf'))
         fig.savefig(os.path.join(output,'joint_luminosity_posterior.pdf'), bbox_inches='tight')
-        
+
+    if (postprocess == 0):
+        run_time = (time.time() - run_time)/60.0
+        print('\nRun-time (min): {:.2f}\n'.format(run_time))
+    
 ############################################################
 ############################################################
 # UNUSED CODE
