@@ -190,13 +190,13 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
-    print("Reading {}".format(input_folder))
+    print("Input  folder (relative path): {}".format(input_folder))
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
     pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
     if not z_gal_cosmo:
-        print("Will read zobs\n")
+        print("\nWill read observed galaxy redshift zobs\n")
     else:
-        print("Will read zcosmo\n")
+        print("\nWill read cosmological galaxy redshift zcosmo\n")
 
     if (event_number is None):
 
@@ -213,8 +213,12 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
             elif source == 'sBH':
-                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      , , ,21
-                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_,_,_ = event_file.readline().split(None)
+                try:
+                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
+                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+                except:
+                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
+                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
 
             ID              = np.int(event_id)
             dl              = np.float64(dl)
