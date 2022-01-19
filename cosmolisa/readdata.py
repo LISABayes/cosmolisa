@@ -57,7 +57,7 @@ class Event(object):
         self.z_true                 = z_true
         if self.dmin < 0.0: self.dmin = 0.0
 
-def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = None, **kwargs):
+def read_MBHB_event(input_folder, event_number, max_distance = None, max_hosts = None, **kwargs):
     
     all_files   = os.listdir(input_folder)
     print("Reading {}".format(input_folder))
@@ -151,7 +151,7 @@ def read_MBH_event(input_folder, event_number, max_distance = None, max_hosts = 
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_selection=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
+def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_event_sel=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -190,13 +190,8 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
-    print("Input  folder (relative path): {}".format(input_folder))
     events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
     pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
-    if not z_gal_cosmo:
-        print("\nWill read observed galaxy redshift zobs\n")
-    else:
-        print("\nWill read cosmological galaxy redshift zcosmo\n")
 
     if (event_number is None):
 
@@ -299,13 +294,13 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
             #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
             # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
 
-        if (z_selection is not None):
+        if (z_event_sel is not None):
             new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
-            if (z_selection > 0):
-                events = new_list[:z_selection]
-            elif (z_selection < 0):
-                events = new_list[z_selection:]
-            print("\nSelected {} events from z={} to z={}:".format(len(events), events[0].z_true, events[abs(z_selection)-1].z_true))
+            if (z_event_sel > 0):
+                events = new_list[:z_event_sel]
+            elif (z_event_sel < 0):
+                events = new_list[z_event_sel:]
+            print("\nSelected {} events from z={} to z={}:".format(len(events), events[0].z_true, events[abs(z_event_sel)-1].z_true))
             for e in events:
                 print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
 
@@ -424,7 +419,7 @@ def read_DEBUG_event(datafile, *args, **kwargs):
     return events
 
 def read_event(event_class,*args,**kwargs):
-    if   (event_class == "MBH"):   return read_MBH_event(*args, **kwargs)
+    if   (event_class == "MBHB"):   return read_MBHB_event(*args, **kwargs)
     elif (event_class == "EMRI"):  return read_EMRI_event(event_class, *args, **kwargs)
     elif (event_class == "sBH"):   return read_EMRI_event(event_class, *args, **kwargs)
     elif (event_class == "DEBUG"): return read_DEBUG_event(*args, **kwargs)

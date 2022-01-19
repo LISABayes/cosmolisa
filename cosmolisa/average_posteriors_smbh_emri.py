@@ -13,6 +13,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import dill as pickle
 import corner
+import h5py
 
 matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 
@@ -154,38 +155,39 @@ if __name__=="__main__":
     if options.source == 'SMBH':
         catalogs = [c for c in os.listdir(options.data) if 'cat' in c]
     elif options.source == 'EMRI':
-        catalogs = [c for c in os.listdir(options.data) if ('M101' in c and 'averaged' not in c)]
+        catalogs = [c for c in os.listdir(options.data) if ('M106' in c and 'nensemble_40_nnest_5' in c and 'averaged' not in c)]
 
-    from cpnest import nest2pos
+        
     for i,c in enumerate(catalogs):
         print("\nprocessing",c)
-        samples = np.genfromtxt(os.path.join(options.data,c+"/chain_5000_1234.txt"),names=True)
-        posteriors = nest2pos.draw_posterior_many([samples], [5000], verbose=False)
+        filename = os.path.join(options.data,c,'CPNest','cpnest.h5')
+        h5_file = h5py.File(filename,'r')
+        posteriors = h5_file['combined'].get('posterior_samples')
         if options.model == "LambdaCDM":
             if i==0:
-                p1 = posteriors['h'][::5]
-                p2 = posteriors['om'][::5]
+                p1 = posteriors['h']
+                p2 = posteriors['om']
             else:
-                p1 = np.concatenate((p1,posteriors['h'][::5]))
-                p2 = np.concatenate((p2,posteriors['om'][::5]))
+                p1 = np.concatenate((p1,posteriors['h']))
+                p2 = np.concatenate((p2,posteriors['om']))
             print('elements {0} {1}'.format(len(p1),len(posteriors['h'])))           
         elif options.model == "CLambdaCDM":
             if i==0:
-                p1 = posteriors['h'][::5]
-                p2 = posteriors['om'][::5]
-                p3 = posteriors['ol'][::5]
+                p1 = posteriors['h']
+                p2 = posteriors['om']
+                p3 = posteriors['ol']
             else:
-                p1 = np.concatenate((p1,posteriors['h'][::5]))
-                p2 = np.concatenate((p2,posteriors['om'][::5]))
-                p3 = np.concatenate((p3,posteriors['ol'][::5]))
+                p1 = np.concatenate((p1,posteriors['h']))
+                p2 = np.concatenate((p2,posteriors['om']))
+                p3 = np.concatenate((p3,posteriors['ol']))
             print('elements {0} {1}'.format(len(p1),len(posteriors['h'])))     
         elif options.model == "DE":
             if i==0:
-                p1 = posteriors['w0'][::5]
-                p2 = posteriors['w1'][::5]
+                p1 = posteriors['w0']
+                p2 = posteriors['w1']
             else:
-                p1 = np.concatenate((p1,posteriors['w0'][::5]))
-                p2 = np.concatenate((p2,posteriors['w1'][::5]))
+                p1 = np.concatenate((p1,posteriors['w0']))
+                p2 = np.concatenate((p2,posteriors['w1']))
             print('elements {0} {1}'.format(len(p1),len(posteriors['w0'])))
 
     if options.model == "LambdaCDM":

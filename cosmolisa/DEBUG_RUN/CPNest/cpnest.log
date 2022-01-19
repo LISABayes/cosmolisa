@@ -1,0 +1,12 @@
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : Running with 25 parallel threads
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : Nested samplers: 5
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : Ensemble samplers: 20
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : Slice samplers: 0
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : Hamiltonian samplers: 0
+2021-12-04, 18:07:10 - cpnest.cpnest.CPNest                  : ray object store size: 2.0 GB
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : Running with 45 parallel threads
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : Nested samplers: 5
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : Ensemble samplers: 40
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : Slice samplers: 0
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : Hamiltonian samplers: 0
+2021-12-06, 11:11:42 - cpnest.cpnest.CPNest                  : ray object store size: 5.0 GB
