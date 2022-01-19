@@ -1,1 +1,0 @@
-python cosmological_model.py -m LambdaCDM+GW -c sBH -d ../data/Multiband_SOBHB/Multiband_good_realisations/Realization_2/ -o ./DEBUG_RUN/ --event_ID_list 460 --threads 20 --nlive 1000 --maxmcmc 500 --screen_output 1
