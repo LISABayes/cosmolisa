@@ -9,18 +9,14 @@ import sys
 import os
 import ray
 import time
-import configparser
 import subprocess
 import matplotlib
 import corner
 import numpy as np
 import matplotlib.pyplot as plt
 
-from configparser import ConfigParser
-
 # Import internal scripts
 import readdata
-# import plots
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.galaxy as gal
@@ -42,6 +38,12 @@ class CosmologicalModel(cpnest.model.Model):
         self.z_threshold         = kwargs['z_threshold']
         self.snr_threshold       = kwargs['snr_threshold']
         self.event_class         = kwargs['event_class']
+        self.redshift_prior      = kwargs['redshift_prior']
+        self.time_redshifting    = kwargs['time_redshifting']
+        self.vc_normalization    = kwargs['vc_normalization']
+        self.lk_sel_fun          = kwargs['lk_sel_fun']
+        self.detection_corr      = kwargs['detection_corr']
+        self.approx_int          = kwargs['approx_int']
         self.dl_cutoff           = kwargs['dl_cutoff']
         self.sfr                 = kwargs['sfr']
         self.T                   = kwargs['T']
@@ -164,7 +166,7 @@ class CosmologicalModel(cpnest.model.Model):
                 self.em_correction = 0
                
         print("\n====================================================================================================\n")
-        print("CosmologicalModel model initialised with:")
+        print("CPNest model initialised with:")
         print("Event class: {0}".format(self.event_class))
         print("Analysis model: {0}".format(self.model))
         print("Number of events: {0}".format(len(self.data)))
@@ -354,178 +356,127 @@ truths = {'h':0.73,
           'phistar_exponent':0.0,
           'Mstar_exponent':0.0,
           'alpha_exponent':0.0}
-#FIXME: udpate this --help list
-#FIXME: most of the options work only for EMRI and sBH. Extend them to MBHB as well.
-usage="""\n\n %prog --config-file config.ini\n
-    ######################################################################################################################################################
-    IMPORTANT: This code requires the installation of the CPNest branch 'massively_parallel': https://github.com/johnveitch/cpnest/tree/massively_parallel
-    ######################################################################################################################################################
-
-    #=======================#
-    # Input parameters      #
-    #=======================#
-
-    'data'                        Default: ''.                      Data location.
-    'outdir'                      Default: './default_dir'.         Directory for output.
-    'event_class'                 Default: ''.                      Class of the event(s) ['MBHB', 'EMRI', 'sBH'].
-    'model'                       Default: ''.                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
-    'corrections'                 Default: ''.                      Family of corrections ('GW', 'EM') separated by a '+'
-    'joint'                       Default: 0.                       Run a joint analysis for N events, randomly selected.
-    'zhorizon'                    Default: '1000.0'.                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'dl_cutoff'                   Default: -1.0.                    Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.
-    'z_event_sel'                 Default: 0.                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
-    'one_host_sel'                Default: 0.                       For each event, associate only the nearest-in-redshift host.
-    'event_ID_list'               Default: ''.                      String of specific ID events to be read.
-    'max_hosts'                   Default: 0.                       Select events according to the allowed maximum number of hosts.
-    'z_gal_cosmo'                 Default: 0.                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
-    'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
-    'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
-    'em_selection'                Default: 0.                       Use an EM selection function.
-    'T'                           Default: 10.                      Observation time (yr).
-    'sfr'                         Default: 0.                       Fit the star formation parameters too.
-    'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
-    'luminosity_function'         Default: 0.                       DOUBLE-CHECK IF IT CAN BE ELIMINATED. Infer also the luminosity function.
-    'm_threshold'                 Default: 20.                      Apparent magnitude threshold.
-    'postprocess'                 Default: 0.                       Run only the postprocessing. It works only with reduced_catalog=0.
-    'screen_output'               Default: 0.                       Print the output on screen or save it into a file.
-    'verbose'                     Default: 2.                       Sampler verbose.
-    'maxmcmc'                     Default: 5000.                    Maximum MCMC steps for MHS sampling chains.
-    'nensemble'                   Default: 1.                       Number of sampler threads using an ensemble sampler. It must be a positive multiple of nnest.
-    'nslice'                      Default: 0.                       Number of sampler threads using a slice sampler.
-    'nhamiltonian'                Default: 0.                       Number of sampler threads using a hamiltonian sampler.
-    'nnest'                       Default: 1.                       Number of parallel independent nested samplers.
-    'nlive'                       Default: 1000.                    Number of live points.
-    'seed'                        Default: 0.                       Random seed initialisation.
-    'obj_store_mem'               Default: 2e9.                     Amount of memory reserved for ray object store. Default: 2GB.
-
-"""
+usage=""" %prog (options)"""
 
 if __name__=='__main__':
 
-    run_time = time.perftime()
+    run_time = time.time()
+
     parser = OptionParser(usage)
-    parser.add_option('--config-file', type='string', metavar = 'config_file', default = None)
+    parser.add_option('-d', '--data',        default=None,        type='string', metavar='data',             help='Galaxy data location.')
+    parser.add_option('-o', '--out_dir',     default=None,        type='string', metavar='DIR',              help='Directory for output.')
+    parser.add_option('-c', '--event_class', default=None,        type='string', metavar='event_class',      help='Class of the event(s) [MBH, EMRI, sBH].')
+    parser.add_option('-e', '--event',       default=None,        type='int',    metavar='event',            help='Event number.')
+    parser.add_option('-m', '--model',       default='LambdaCDM', type='string', metavar='model',            help='Cosmological model to assume for the analysis (default LambdaCDM). Supports LambdaCDM, CLambdaCDM, LambdaCDMDE, and DE.')
+    parser.add_option('--corrections',       default='None',      type='string', metavar='corrections',      help='Family of corrections (GW+EM)')
+    parser.add_option('-j', '--joint',       default=0,           type='int',    metavar='joint',            help='Run a joint analysis for N events, randomly selected (EMRI only).')
+    parser.add_option('-z', '--zhorizon',    default='1000.0',    type='string', metavar='zhorizon',         help='String to impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.')
+    parser.add_option('--dl_cutoff',         default=-1.0,        type='float',  metavar='dl_cutoff',        help='Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.')
+    parser.add_option('--z_selection',       default=None,        type='int',    metavar='z_selection',      help='Select ad integer number of events according to redshift.')
+    parser.add_option('--one_host_sel',      default=0,           type='int',    metavar='one_host_sel',     help='Select only the nearest host in redshift for each EMRI.')
+    parser.add_option('--event_ID_list',     default=None,        type='string', metavar='event_ID_list',    help='String of specific ID events to be read.')
+    parser.add_option('--max_hosts',         default=None,        type='int',    metavar='max_hosts',        help='Select events according to the allowed maximum number of hosts.')
+    parser.add_option('--z_gal_cosmo',       default=0,           type='int',    metavar='z_gal_cosmo',      help='If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.')
+    parser.add_option('--snr_selection',     default=None,        type='int',    metavar='snr_selection',    help='Select events according to SNR.')
+    parser.add_option('--snr_threshold',     default=0.0,         type='float',  metavar='snr_threshold',    help='SNR detection threshold.')
+    parser.add_option('--em_selection',      default=0,           type='int',    metavar='em_selection',     help='Use EM selection function.')
+    parser.add_option('--redshift_prior',    default=0,           type='int',    metavar='redshift_prior',   help='Adopt a redshift prior with comoving volume factor.')
+    parser.add_option('--T',                 default=10,          type='float',  metavar='T',                help='Observation time')
+    parser.add_option('--time_redshifting',  default=0,           type='int',    metavar='time_redshifting', help='Add a factor 1/1+z_gw as redshift prior.')
+    parser.add_option('--vc_normalization',  default=0,           type='int',    metavar='vc_normalization', help='Add a covolume factor normalization to the redshift prior.')
+    parser.add_option('--lk_sel_fun',        default=0,           type='int',    metavar='lk_sel_fun',       help='Single-event likelihood a la Jon Gair.')
+    parser.add_option('--detection_corr',    default=0,           type='int',    metavar='detection_corr',   help='Single-event likelihood including detection correction')
+    parser.add_option('--sfr',               default=0,           type='int',    metavar='sfr',              help='Fit the sfr parameters too')
+    parser.add_option('--approx_int',        default=0,           type='int',    metavar='approx_int',       help='Approximate the in-catalog weight with the selection function.')
+    parser.add_option('--reduced_catalog',   default=0,           type='int',    metavar='reduced_catalog',  help='Select randomly only a fraction of the catalog.')
+    parser.add_option('--luminosity',        default=0,           type='int',    metavar='luminosity',       help='Infer also the luminosity function')
+    parser.add_option('--m_threshold',       default=20,          type='float',  metavar='m_threshold',      help='apparent magnitude threshold')
+    parser.add_option('--threads',           default=None,        type='int',    metavar='threads',          help='Number of threads (default = 1/core).')
+    parser.add_option('--seed',              default=0,           type='int',    metavar='seed',             help='Random seed initialisation.')
+    parser.add_option('--nlive',             default=5000,        type='int',    metavar='nlive',            help='Number of live points.')
+    parser.add_option('--poolsize',          default=256,         type='int',    metavar='poolsize',         help='Poolsize for the samplers.')
+    parser.add_option('--maxmcmc',           default=5000,        type='int',    metavar='maxmcmc',          help='Maximum number of mcmc steps.')
+    parser.add_option('--postprocess',       default=0,           type='int',    metavar='postprocess',      help='Run only the postprocessing. It works only with reduced_catalog=0.')
+    parser.add_option('--screen_output',     default=0,           type='int',    metavar='screen_output',    help='Print the output on screen or save it into a file.')
+    (opts,args)=parser.parse_args()
 
-    (opts,args) = parser.parse_args()
-    config_file = opts.config_file
-
-    if not(config_file):
-        parser.print_help()
-        parser.error('Please specify a config file.')
-    if not(os.path.exists(config_file)):
-        parser.error('Config file {} not found.'.format(config_file))
-    Config = configparser.ConfigParser()
-    Config.read(config_file)
-
-    config_par = {
-                'data'                      :  '',
-                'outdir'                    :  './default_dir',
-                'event_class'               :  '',
-                'model'                     :  '',
-                'corrections'               :  '',
-                'joint'                     :  0,
-                'zhorizon'                  :  '1000.0',
-                'dl_cutoff'                 :  -1.0,
-                'z_event_sel'               :  0,
-                'one_host_sel'              :  0,
-                'event_ID_list'             :  '',
-                'max_hosts'                 :  0,
-                'z_gal_cosmo'               :  0,
-                'snr_selection'             :  0,
-                'snr_threshold'             :  0.0,
-                'em_selection'              :  0,
-                'T'                         :  10,
-                'sfr'                       :  0,
-                'reduced_catalog'           :  0,
-                'luminosity_function'       :  0,
-                'm_threshold'               :  20,
-                'postprocess'               :  0,
-                'screen_output'             :  0,    
-                'verbose'                   :  2,
-                'maxmcmc'                   :  5000,
-                'nensemble'                 :  1,
-                'nslice'                    :  0,
-                'nhamiltonian'              :  0,
-                'nnest'                     :  1,
-                'nlive'                     :  1000,
-                'seed'                      :  0,
-                'obj_store_mem'             :  2e9,
-                }
-
-    for key in config_par:
-        keytype = type(config_par[key])
-        try: 
-            config_par[key]=keytype(Config.get("input parameters",key))
-        except (KeyError, configparser.NoOptionError, TypeError):
-            pass
-
-    try:
-        outdir = str(config_par['outdir'])
-    except(KeyError, ValueError):
-        outdir = 'default_dir'
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    os.system('mkdir -p {}/CPNest'.format(outdir))
-    os.system('mkdir -p {}/Plots'.format(outdir))
-    #FIXME: avoid cp command when reading the config file from the outdir directory to avoid the 'same file' cp error
-    os.system('cp {} {}/.'.format(opts.config_file, outdir))
-    output_sampler = os.path.join(outdir,'CPNest')
-
-    if not(config_par['screen_output']):
-        if not(config_par['postprocess']):
-            sys.stdout = open(os.path.join(outdir,'stdout.txt'), 'w')
-            sys.stderr = open(os.path.join(outdir,'stderr.txt'), 'w')
-
-    print("\n"+"cpnest installation version:", cpnest.__version__)
-    print("ray version:", ray.__version__)
-
-    max_len_keyword = len('luminosity_function')
-    print(('\nReading config file: {}\n'.format(config_file)))
-    for key in config_par:
-        print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
-
+    em_selection        = opts.em_selection
+    dl_cutoff           = opts.dl_cutoff
+    z_selection         = opts.z_selection
+    snr_selection       = opts.snr_selection
+    zhorizon            = opts.zhorizon
+    snr_threshold       = opts.snr_threshold
+    redshift_prior      = opts.redshift_prior
+    time_redshifting    = opts.time_redshifting
+    vc_normalization    = opts.vc_normalization
+    max_hosts           = opts.max_hosts
+    z_gal_cosmo         = opts.z_gal_cosmo
+    event_ID_list       = opts.event_ID_list
+    one_host_selection  = opts.one_host_sel
+    lk_sel_fun          = opts.lk_sel_fun
+    detection_corr      = opts.detection_corr
+    approx_int          = opts.approx_int
+    model               = opts.model
+    corrections         = opts.corrections
+    joint               = opts.joint
+    event_class         = opts.event_class
+    reduced_catalog     = opts.reduced_catalog
+    postprocess         = opts.postprocess
+    screen_output       = opts.screen_output
+    out_dir             = opts.out_dir
+    sfr                 = opts.sfr
+    T                   = opts.T
+    luminosity_function = opts.luminosity
+    m_threshold         = opts.m_threshold
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
 
-    formatting_string = "===================================================================================================="
+    if not (screen_output):
+        if not (postprocess):
+            directory = out_dir
+            os.system('mkdir -p {0}'.format(directory))
 
-    if (config_par['event_class'] == "MBHB"):
-        # If running on MBHB, override the selection functions
+            sys.stdout = open(os.path.join(directory,'stdout.txt'), 'w')
+            sys.stderr = open(os.path.join(directory,'stderr.txt'), 'w')
+
+    print("\nOutput folder (relative path): {}".format(out_dir))
+    if (event_class == "MBH"):
+        # If running on MBH, override the selection functions
         em_selection = 0
-        events = readdata.read_event(config_par['event_class'], config_par['data'])
+        events = readdata.read_event(event_class, opts.data, opts.event)
 
-    if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
-        if (config_par['snr_selection'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
-        elif (config_par['z_event_sel'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
-        elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
-            all_events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+    if ((event_class == "EMRI") or (event_class == "sBH")):
+        if (snr_selection != None):
+            events = readdata.read_event(event_class, opts.data, None, snr_selection=snr_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
+        elif (z_selection != None):
+            events = readdata.read_event(event_class, opts.data, None, z_selection=z_selection, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
+        elif (dl_cutoff > 0) and (',' not in zhorizon) and (zhorizon == '1000.0'):
+            all_events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             events_selected = []
-            print("\nSelecting events according to dl_cutoff={}:".format(config_par['dl_cutoff']))
+            print("\nSelecting events according to dl_cutoff={}:".format(dl_cutoff))
             for e in all_events:
-                if (omega_true.LuminosityDistance(e.zmax) < config_par['dl_cutoff']):
+                if (omega_true.LuminosityDistance(e.zmax) < dl_cutoff):
                     events_selected.append(e)
                     print("Event {} selected: dl(z_max)={}.".format(str(e.ID).ljust(3), omega_true.LuminosityDistance(e.zmax)))
             events = sorted(events_selected, key=lambda x: getattr(x, 'dl'))
             print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
-        elif (config_par['zhorizon'] != '1000.0'):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
-        elif (config_par['max_hosts'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
-        elif (config_par['event_ID_list'] != ''):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
-        elif (config_par['snr_threshold'] != 0.0):
-            if not config_par['reduced_catalog']:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+        elif (zhorizon != '1000.0'):
+            events = readdata.read_event(event_class, opts.data, None, zhorizon=zhorizon, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
+        elif (max_hosts != None):
+            events = readdata.read_event(event_class, opts.data, None, max_hosts=max_hosts, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
+        elif (event_ID_list != None):
+            events = readdata.read_event(event_class, opts.data, None, event_ID_list=event_ID_list, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
+        elif (snr_threshold != 0.0):
+            if not reduced_catalog:
+                events = readdata.read_event(event_class, opts.data, None, snr_threshold=snr_threshold, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
             else:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
                 # Draw a number of events in the 4-year scenario
-                if (config_par['event_class'] == "sBH"):
-                    N = np.int(np.random.poisson(len(events)*4./10.))
-                elif (config_par['event_class'] == "EMRI"):
+                if (event_class == "sBH"):
+                    N = np.int(np.random.poisson(len(events)*4./40.))
+                elif (event_class == "EMRI"):
                     N = np.int(np.random.poisson(len(events)*4./10.))
                 print("\nReduced number of events: {}".format(N))
                 selected_events = []
@@ -534,15 +485,15 @@ if __name__=='__main__':
                     idx = np.random.randint(len(events))
                     selected_event = events.pop(idx)
                     print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
-                    if config_par['snr_threshold'] > 0.0:
-                        if selected_event.snr > config_par['snr_threshold']:
-                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, config_par['snr_threshold']))
+                    if snr_threshold > 0.0:
+                        if selected_event.snr > snr_threshold:
+                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
                             selected_events.append(selected_event)
                         else: pass
                         k += 1
                     else:
-                        if selected_event.snr < abs(config_par['snr_threshold']):
-                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, config_par['snr_threshold']))
+                        if selected_event.snr < abs(snr_threshold):
+                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3), selected_event.snr, snr_threshold))
                             selected_events.append(selected_event)
                         else: pass
                         k += 1                        
@@ -552,34 +503,34 @@ if __name__=='__main__':
                 for e in events:
                     print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(event_class, opts.data, None, one_host_selection=one_host_selection, z_gal_cosmo=z_gal_cosmo)
 
-        if (config_par['joint'] != 0):
+        if (joint != 0):
             N = joint
             if (N > len(events)):
                 N = len(events)
                 print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {}".format(N, len(events)))
             events = np.random.choice(events, size = N, replace = False)
-            print(formatting_string)
+            print("====================================================================================================")
             print("Selecting a random catalog of {0} events for joint analysis:".format(N))
-            print(formatting_string)
+            print("====================================================================================================")
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
-                print(formatting_string)
+                print("====================================================================================================")
             else:
                 print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
                 exit()
     else:
-        events = readdata.read_event(config_par['event_class'], config_par['data'], z_gal_cosmo=config_par['z_gal_cosmo'])
+        events = readdata.read_event(event_class, opts.data, opts.event, z_gal_cosmo=z_gal_cosmo)
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")
         exit()
 
     print("\nDetailed list of the %d selected event(s):"%len(events))
-    print("\n"+formatting_string)
-    if config_par['event_class'] == 'MBHB':
+    print("\n====================================================================================================")
+    if event_class == 'MBH':
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
         for e in events:
             print("ID: {}  |  z_host: {} |  dl: {} Mpc  |  sigmadl: {} Mpc  | hosts: {}".format(
@@ -592,76 +543,79 @@ if __name__=='__main__':
             str(e.ID).ljust(3), str(e.snr).ljust(9), str(e.z_true).ljust(7), 
             str(e.dl).ljust(7), str(e.sigma)[:6].ljust(7), str(len(e.potential_galaxy_hosts)).ljust(4)))
 
+    if out_dir is None:
+        output = opts.data+"/EVENT_1%03d/"%(opts.event+1)
+    else:
+        output = out_dir
 
-    print(formatting_string+"\n")
+    print("====================================================================================================\n")
     print("CPNest will be initialised with:")
-    print("nensemble:           {0}".format(config_par['verbose']))
-    print("nensemble:           {0}".format(config_par['nensemble']))
-    print("nslice:              {0}".format(config_par['nslice']))
-    print("nhamiltonian:        {0}".format(config_par['nhamiltonian']))
-    print("nnest:               {0}".format(config_par['nnest']))
-    print("nlive:               {0}".format(config_par['nlive']))
-    print("maxmcmc:             {0}".format(config_par['maxmcmc']))
-    print("object_store_memory: {0}".format(config_par['obj_store_mem']))
+    print("poolsize: {0}".format(opts.poolsize))
+    print("nlive:    {0}".format(opts.nlive))
+    print("maxmcmc:  {0}".format(opts.maxmcmc))
+    print("nthreads: {0}".format(opts.threads))
 
-    C = CosmologicalModel(model               = config_par['model'],
-                          data                = events,
-                          corrections         = config_par['corrections'],
-                          em_selection        = config_par['em_selection'],
-                          snr_threshold       = config_par['snr_threshold'],
-                          z_threshold         = config_par['zhorizon'],
-                          event_class         = config_par['event_class'],
-                          dl_cutoff           = config_par['dl_cutoff'],
-                          sfr                 = config_par['sfr'],
-                          T                   = config_par['T'],
-                          luminosity_function = config_par['luminosity_function'],
-                          m_threshold         = config_par['m_threshold'])
+    C = CosmologicalModel(model,
+                          events,
+                          corrections,
+                          em_selection        = em_selection,
+                          snr_threshold       = snr_threshold,
+                          z_threshold         = zhorizon,
+                          event_class         = event_class,
+                          redshift_prior      = redshift_prior,
+                          time_redshifting    = time_redshifting,
+                          vc_normalization    = vc_normalization,
+                          lk_sel_fun          = lk_sel_fun,
+                          detection_corr      = detection_corr,
+                          approx_int          = approx_int,
+                          dl_cutoff           = dl_cutoff,
+                          sfr                 = sfr,
+                          T                   = T,
+                          luminosity_function = luminosity_function,
+                          m_threshold         = m_threshold)
 
     #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
-    if (config_par['postprocess'] == 0):
-        # Each NS can be located in different processors, but all the subprocesses of each NS live on the same processor
-
+    if (postprocess == 0):
         work=cpnest.CPNest(C,
-                           verbose             = config_par['verbose'],
-                           maxmcmc             = config_par['maxmcmc'],
-                           nensemble           = config_par['nensemble'],  # number of MCMC samplers. Equal to the number of LP evolved at each NS step. It must be a multiple of nnest, e.g., if nnest=3, nensemble=3,6,9,12...
-                           nslice              = config_par['nslice'],
-                           nhamiltonian        = config_par['nhamiltonian'],
-                           nnest               = config_par['nnest'],    # fix the number of nested sampler.
-                           nlive               = config_par['nlive'],  
-                           object_store_memory = config_par['obj_store_mem'],
-                           output              = output_sampler
+                           verbose      = 2, # To plot prior&posterior: verbose = 3, or prior-sampling = True
+                           poolsize     = opts.poolsize,
+                           nthreads     = opts.threads,
+                           nlive        = opts.nlive,
+                           maxmcmc      = opts.maxmcmc,
+                           output       = output,
+                           nhamiltonian = 0,
+                        #    nslice       = 0
                            )
 
         work.run()
-        print('log Evidence {0}'.format(work.logZ))
-        print("\n"+formatting_string+"\n")
+        print('log Evidence {0}'.format(work.NS.logZ))
+        print("\n====================================================================================================\n")
 
         x = work.posterior_samples.ravel()
 
-        ray.shutdown()
         # Save git info
-        with open("{}/git_info.txt".format(outdir), "w+") as fileout:
+        with open("{}/git_info.txt".format(out_dir), "w+") as fileout:
             subprocess.call(["git", "diff"], stdout=fileout)
     else:
-        print("Reading the .h5 file...")
-        import h5py
-        filename = os.path.join(outdir,'CPNest','cpnest.h5')
-        h5_file = h5py.File(filename,'r')
-        x = h5_file['combined'].get('posterior_samples')
+        print("Reading the chain...")
+        x = np.genfromtxt(os.path.join(output,"chain_"+str(opts.nlive)+"_1234.txt"), names=True)
+        from cpnest import nest2pos
+        print("Drawing posterior samples...")
+        print("\n====================================================================================================\n")
+        x = nest2pos.draw_posterior_many([x], [opts.nlive], verbose=False)
 
-    ############################################################################################################
-    #######################################          MAKE PLOTS         ########################################
-    ############################################################################################################
-
-    if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
+    ###############################################
+    ################# MAKE PLOTS ##################
+    ###############################################
+    
+    if ((event_class == "EMRI") or (event_class == "sBH")):
         if C.gw == 1:
             for e in C.data:
                 fig = plt.figure()
                 ax  = fig.add_subplot(111)
                 z   = np.linspace(e.zmin,e.zmax, 100)
 
-                if (config_par['em_selection']):
+                if (em_selection):
                     ax2 = ax.twinx()
                     
                     if ("DE" in C.model): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
@@ -722,10 +676,10 @@ if __name__=='__main__':
                     ax.plot(zg, pg, lw=0.5, color='k')
                 ax.set_xlabel('$z_{%d}$'%e.ID)
                 ax.set_ylabel('probability density')
-                plt.savefig(os.path.join(outdir,'Plots','redshift_%d'%e.ID+'.png'), bbox_inches='tight')
+                plt.savefig(os.path.join(output,'redshift_%d'%e.ID+'.png'), bbox_inches='tight')
                 plt.close()
     
-    if (config_par['event_class'] == "MBHB"):
+    if (event_class == "MBH"):
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
         dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
@@ -801,30 +755,28 @@ if __name__=='__main__':
         ax.set_ylabel(r"$D_L$/Gpc")
 #        ax.set_xlim(np.min(redshift),0.8)
 #        ax.set_ylim(0.0,4.0)
-        fig.savefig(os.path.join(outdir,'Plots','regression.pdf'),bbox_inches='tight')
+        fig.savefig(os.path.join(output,'regression.pdf'),bbox_inches='tight')
         plt.close()
     
     if C.cosmology == 1:
 
         if ("LambdaCDM_h" in C.model):
-            # plots.par_histogram(x['h'], 'h', truths['h'], outdir)
             fig = plt.figure()
             plt.hist(x['h'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
             plt.axvline(truths['h'], linestyle='dashed', color='r')
             quantiles = np.quantile(x['h'], [0.05, 0.5, 0.95])
             plt.title(r'$h = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
             plt.xlabel(r'$h$')
-            plt.savefig(os.path.join(outdir,'Plots','h_histogram.pdf'), bbox_inches='tight')
+            plt.savefig(os.path.join(output,'h_histogram.pdf'), bbox_inches='tight')
 
         if ("LambdaCDM_om" in C.model):
-            # plots.par_histogram(x['om'], '\Omega_m', truths['om'], outdir)
             fig = plt.figure()
             plt.hist(x['om'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
             plt.axvline(truths['om'], linestyle='dashed', color='r')
             quantiles = np.quantile(x['om'], [0.05, 0.5, 0.95])
             plt.title(r'$\Omega_m = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
             plt.xlabel(r'$\Omega_m$')
-            plt.savefig(os.path.join(outdir,'Plots','om_histogram.pdf'), bbox_inches='tight')        
+            plt.savefig(os.path.join(output,'om_histogram.pdf'), bbox_inches='tight')        
 
         if ("LambdaCDM" in C.model):
             samps = np.column_stack((x['h'],x['om']))
@@ -834,6 +786,11 @@ if __name__=='__main__':
                    quantiles=[0.05, 0.5, 0.95],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om']])
+    #        axes = fig.get_axes()
+    #        axes[0].set_xlim(0.69, 0.77)
+    #        axes[2].set_xlim(0.69, 0.77)
+    #        axes[3].set_xlim(0.04, 0.5)
+    #        axes[2].set_ylim(0.04, 0.5)    
 
         if ("CLambdaCDM" in C.model):
             samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
@@ -866,9 +823,13 @@ if __name__=='__main__':
                             quantiles=[0.05, 0.5, 0.95],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['w0'],truths['w1']])
-
+    #        axes = fig.get_axes()
+    #        axes[0].set_xlim(-1.22, -0.53)
+    #        axes[2].set_xlim(-1.22, -0.53)
+    #        axes[3].set_xlim(-1.0, 1.0)
+    #        axes[2].set_ylim(-1.0, 1.0)
         if(('LambdaCDM_h' not in C.model) and ('LambdaCDM_om' not in C.model)):
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot.pdf'), bbox_inches='tight')
+            fig.savefig(os.path.join(output,'corner_plot.pdf'), bbox_inches='tight')
 
     if ("Rate" in C.model):
         z   = np.linspace(0.0,C.z_threshold,100)
@@ -910,7 +871,7 @@ if __name__=='__main__':
         ax.plot(z,sfr_true,linestyle='dashed',color='red')
         ax.set_xlabel('redshift')
         ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','redshift_distribution.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'redshift_distribution.pdf'), bbox_inches='tight')
         
         tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
         nevents         = Rtot[:,None]*C.T*tmp
@@ -924,7 +885,8 @@ if __name__=='__main__':
         plt.yscale('log')
         ax.set_xlabel('redshift z')
         ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
-        plt.savefig(os.path.join(outdir,'Plots','number_of_events.pdf'), bbox_inches='tight')
+        plt.savefig(os.path.join(output,'number_of_events.pdf'), bbox_inches='tight')
+        
         
         fig = plt.figure()
         ax  = fig.add_subplot(111)
@@ -932,7 +894,7 @@ if __name__=='__main__':
         ax.axvline(Rtot_true, linestyle='dashed', color='r')
         ax.set_xlabel('global rate')
         ax.set_ylabel('number')
-        fig.savefig(os.path.join(outdir,'Plots','global_rate.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'global_rate.pdf'), bbox_inches='tight')
         print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
         
         true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true, Rtot_true)
@@ -942,7 +904,7 @@ if __name__=='__main__':
         ax.axvline(true_selection_prob, linestyle='dashed', color='r')
         ax.set_xlabel('selection probability')
         ax.set_ylabel('number')
-        fig.savefig(os.path.join(outdir,'Plots','selection_probability.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'selection_probability.pdf'), bbox_inches='tight')
 
         print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
 
@@ -955,8 +917,8 @@ if __name__=='__main__':
                         quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
-                        filename=os.path.join(outdir,'Plots','joint_rate_posterior.pdf'))
-        fig.savefig(os.path.join(outdir,'Plots','joint_rate_posterior.pdf'), bbox_inches='tight')
+                        filename=os.path.join(output,'joint_rate_posterior.pdf'))
+        fig.savefig(os.path.join(output,'joint_rate_posterior.pdf'), bbox_inches='tight')
     
     if ("Luminosity" in C.model):
         distributions = []
@@ -1048,7 +1010,7 @@ if __name__=='__main__':
         plt.legend(fancybox=True)
         ax.set_xlabel('magnitude')
         ax.set_ylabel('$\phi(M|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','luminosity_function.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'luminosity_function.pdf'), bbox_inches='tight')
         
         magnitude_probability = np.sum(pmzl*np.diff(Z)[0],axis=1),np.sum(pmzm*np.diff(Z)[0],axis=1),np.sum(pmzh*np.diff(Z)[0],axis=1)
         fig = plt.figure()
@@ -1058,7 +1020,7 @@ if __name__=='__main__':
         ax.hist(C.galaxy_magnitudes, 100, density = True, facecolor='turquoise')
         ax.set_xlabel('magnitude')
         ax.set_ylabel('$\phi(M|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','luminosity_probability.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'luminosity_probability.pdf'), bbox_inches='tight')
 
         redshift_probability = np.sum(pmzl*np.diff(M)[0],axis=0),np.sum(pmzm*np.diff(M)[0],axis=0),np.sum(pmzh*np.diff(M)[0],axis=0)
         fig = plt.figure()
@@ -1068,7 +1030,7 @@ if __name__=='__main__':
         ax.hist(C.galaxy_redshifts, 100, density = True, facecolor='turquoise')
         ax.set_xlabel('redshift')
         ax.set_ylabel('$\phi(z|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','galaxy_redshift_probability.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(output,'galaxy_redshift_probability.pdf'), bbox_inches='tight')
         
         samps = np.column_stack((x['phistar0'],x['phistar_exponent'],x['Mstar0'],x['Mstar_exponent'],x['alpha0'],x['alpha_exponent']))
         fig = corner.corner(samps,
@@ -1083,10 +1045,89 @@ if __name__=='__main__':
                         use_math_text=True, truths=[truths['phistar0'],truths['phistar_exponent'],
                                                     truths['Mstar0'],truths['Mstar_exponent'],
                                                     truths['alpha0'],truths['alpha_exponent']],
-                        filename=os.path.join(outdir,'Plots','joint_luminosity_posterior.pdf'))
-        fig.savefig(os.path.join(outdir,'Plots','joint_luminosity_posterior.pdf'), bbox_inches='tight')
+                        filename=os.path.join(output,'joint_luminosity_posterior.pdf'))
+        fig.savefig(os.path.join(output,'joint_luminosity_posterior.pdf'), bbox_inches='tight')
 
-    if (config_par['postprocess'] == 0):
-        run_time = (time.perftime() - run_time)/60.0
+    if (postprocess == 0):
+        run_time = (time.time() - run_time)/60.0
         print('\nRun-time (min): {:.2f}\n'.format(run_time))
     
+############################################################
+############################################################
+# UNUSED CODE
+
+#    redshifts = [e.z_true for e in events]
+#    galaxy_redshifts = [g.redshift for e in events for g in e.potential_galaxy_hosts]
+#
+#    import matplotlib
+#    import matplotlib.pyplot as plt
+#    fig = plt.figure(figsize=(10,8))
+#    z = np.linspace(0.0,0.63,100)
+#    normalisation = matplotlib.colors.Normalize(vmin=0.5, vmax=1.0)
+#    normalisation2 = matplotlib.colors.Normalize(vmin=0.04, vmax=1.0)
+#    # choose a colormap
+#    c_m = matplotlib.cm.cool
+#
+#    # create a ScalarMappable and initialize a data structure
+#    s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+#    s_m.set_array([])
+#
+#    # choose a colormap
+#    c_m2 = matplotlib.cm.rainbow
+#
+#    # create a ScalarMappable and initialize a data structure
+#    s_m2 = matplotlib.cm.ScalarMappable(cmap=c_m2, norm=normalisation2)
+#    s_m2.set_array([])
+#
+#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, facecolor="yellow", cumulative=True)
+#    plt.hist(redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", cumulative=True)
+##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, facecolor="green", cumulative=True)
+##    plt.hist(galaxy_redshifts, bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k", linestyle='dashed', cumulative=True)
+#    for _ in range(1000):
+#        h = np.random.uniform(0.5,1.0)
+#        om = np.random.uniform(0.04,1.0)
+#        ol = 1.0-om
+##        h = 0.73
+##        om = 0.25
+##        ol = 1.0-om
+#        O = cs.CosmologicalParameters(h,om,ol,-1.0,0.0)
+##        distances = np.array([O.LuminosityDistance(zi) for zi in z])
+##        plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.25, color=s_m.to_rgba(h), alpha = 0.75, linestyle='dashed')
+#        pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
+##        pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
+#        plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.15, color=s_m2.to_rgba(om), alpha = 0.5)
+#        O.DestroyCosmologicalParameters()
+#
+##        p = lal.CreateCosmologicalParametersAndRate()
+##        p.omega.h = h
+##        p.omega.om = om
+##        p.omega.ol = ol
+##        p.omega.w0 = -1.0
+##
+##        p.rate.r0 = 1e-12
+##        p.rate.W  = np.random.uniform(0.0,10.0)
+##        p.rate.Q  = np.random.normal(0.63,0.01)
+##        p.rate.R  = np.random.normal(1.0,0.1)
+##        pz = np.array([lal.RateWeightedUniformComovingVolumeDensity(zi, p) for zi in z])/lal.IntegrateRateWeightedComovingVolumeDensity(p,z.max())
+##        plt.plot(z, np.cumsum(pz)/pz.sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
+##        lal.DestroyCosmologicalParametersAndRate(p)
+##        plt.plot(z, pz/(pz*np.diff(z)[0]).sum(), color=s_m2.to_rgba(om), linewidth = 0.5, linestyle='solid', alpha = 0.5)
+#
+#
+#
+#    O = cs.CosmologicalParameters(0.73,0.25,0.75,-1.0,0.0)
+#    pz = np.array([O.ComovingVolumeElement(zi) for zi in z])/O.IntegrateComovingVolume(z.max())
+#    pz = np.array([O.UniformComovingVolumeDensity(zi) for zi in z])/O.IntegrateComovingVolumeDensity(z.max())
+#    distances = np.array([O.LuminosityDistance(zi) for zi in z])
+#    plt.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.5, color='k', linestyle='dashed')
+#    O.DestroyCosmologicalParameters()
+#    plt.plot(z,np.cumsum(pz)/pz.sum(), lw = 0.5, color='k')
+##    plt.plot(z,pz/(pz*np.diff(z)[0]).sum(), lw = 0.5, color='k')
+#    CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+#    CB.set_label(r'$h$')
+#    CB = plt.colorbar(s_m2, orientation='horizontal', pad=0.15)
+#    CB.set_label(r'$\Omega_m$')
+#    plt.xlabel('redshift')
+##    plt.xlim(0.,0.3)
+#    plt.show()
+#    exit()

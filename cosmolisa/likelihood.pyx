@@ -111,8 +111,8 @@ cdef double _em_selection_function(double dl) nogil:
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
 
-def logLikelihood_single_event_sel_fun(const double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, GalaxyDistribution gal, double event_redshift, double zmin = 0.0, double zmax = 1.0):
-    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, gal, event_redshift, zmin = zmin, zmax = zmax)
+def logLikelihood_single_event_sel_fun(const double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, GalaxyDistribution gal, double event_redshift, int approx_int = 0, double zmin = 0.0, double zmax = 1.0):
+    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, gal, event_redshift, approx_int = approx_int, zmin = zmin, zmax = zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -124,6 +124,7 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
                                                 CosmologicalParameters omega,
                                                 GalaxyDistribution gal,
                                                 double event_redshift,
+                                                int approx_int = 0,
                                                 double zmin = 0.0,
                                                 double zmax = 1.0) nogil:
     """
@@ -136,6 +137,7 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
     sigmadl:          :obj: 'numpy.double'.              Standard deviation of the DL marginal likelihood
     omega:            :obj: 'lal.CosmologicalParameter'. Cosmological parameter structure
     event_redshift:   :obj: 'numpy.double'.              Redshift of the GW event
+    approx_int:       :obj: 'numpy.int'.                 Flag to choose whether or not to approximate the in-catalogue integral
     zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
     """
     cdef double logL      = -HUGE_VAL
@@ -145,6 +147,26 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
 
     return logL+log1p(-p_out_cat)
 
+#################
+## UNUSED CODE ##
+#################
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cpdef double em_selection_function_number_density(double dl):
+    return (1.0)/(1.0+(dl/3700.0)**7)**1.35
+
+cpdef double em_selection_function_normalisation(double zmin, double zmax, CosmologicalParameters omega, int N = 1):
+    cdef double tmp
+    cdef int i      = 0
+    cdef double z   = zmin, dz = (zmax-zmin)/100.
+    cdef double res = -HUGE_VAL
+    for i in range(0,100):
+        dl  = omega.LuminosityDistance(z)
+        tmp = N*(log(1.0-_em_selection_function(dl))+log(omega._ComovingVolumeElement(z)))#
+        res = log_add(res,tmp)
+        z  += dz
+    return res+log(dz)
 
 cpdef double find_redshift(CosmologicalParameters omega, double dl):
     return newton(objective,1.0,args=(omega,dl))
