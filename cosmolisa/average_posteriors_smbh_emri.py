@@ -1,19 +1,23 @@
 import numpy as np
 import os
-import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
-from optparse import OptionParser
 import sys
-import readdata
-from dpgmm import *
-import multiprocessing as mp
-from scipy.special import logsumexp
-from cosmolisa.cosmology import *
 import matplotlib
 import matplotlib.pyplot as plt
-import dill as pickle
 import corner
 import h5py
+from optparse import OptionParser
+
+import multiprocessing as mp
+import dill as pickle
+from scipy.special import logsumexp
+
+import readdata
+from cosmolisa.cosmology import *
+
+COSMOLISA_PATH = os.getcwd()
+sys.path.insert(1, os.path.join(COSMOLISA_PATH,'DPGMM'))
+from dpgmm import *
+sys.path.insert(1, COSMOLISA_PATH)
 
 matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 
