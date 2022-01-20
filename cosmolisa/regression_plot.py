@@ -1,19 +1,14 @@
-import numpy as np
 import os
+import sys
+import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 from optparse import OptionParser
-import sys, os
-import readdata
-
-import multiprocessing as mp
 from scipy.special import logsumexp
+
+import readdata
 from cosmolisa.cosmology import *
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
-import matplotlib
-import _pickle as pickle
-from optparse import OptionParser
 
 def init_plotting():
     plt.rcParams['figure.figsize'] = (4*3.4, 2*3.4)

@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+
 from optparse import OptionParser
 
 if __name__=="__main__":
@@ -35,7 +36,6 @@ if __name__=="__main__":
         for pi in p:
             confidence_levels[pi].append(np.percentile(posteriors[pi],[5,50,95]))
             print(c,pi, confidence_levels[pi][-1])
-    import matplotlib.pyplot as plt
 
     def average_confidence(confidence_levels, p):
         y = np.array(confidence_levels[p])
@@ -47,7 +47,7 @@ if __name__=="__main__":
         print("%s = %.2f_{-%.2f\pm %.2f}^{+%.2f\pm %.2f}\n"%(p,m,lm,dlm,hm,dhm))
 
     for pi in p: average_confidence(confidence_levels,pi)
-    exit()
+
     x = range(len(catalogs))
     f = plt.figure(1)
     ax = f.add_subplot(211)

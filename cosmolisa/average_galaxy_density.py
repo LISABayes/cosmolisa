@@ -8,7 +8,7 @@ densities = np.array([e.n_hosts/e.VC for e in events])
 densities.sort()
 print([d for d in densities])
 print(np.average(densities, weights = [e.VC for e in events]))
-exit()
+
 import matplotlib.pyplot as plt
 zs = []
 for e in events:
