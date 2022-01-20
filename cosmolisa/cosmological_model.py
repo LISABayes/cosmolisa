@@ -402,7 +402,7 @@ usage="""\n\n %prog --config-file config.ini\n
 
 if __name__=='__main__':
 
-    run_time = time.perftime()
+    run_time = time.perf_counter()
     parser = OptionParser(usage)
     parser.add_option('--config-file', type='string', metavar = 'config_file', default = None)
 
@@ -1087,6 +1087,6 @@ if __name__=='__main__':
         fig.savefig(os.path.join(outdir,'Plots','joint_luminosity_posterior.pdf'), bbox_inches='tight')
 
     if (config_par['postprocess'] == 0):
-        run_time = (time.perftime() - run_time)/60.0
+        run_time = (time.perf_counter() - run_time)/60.0
         print('\nRun-time (min): {:.2f}\n'.format(run_time))
     
