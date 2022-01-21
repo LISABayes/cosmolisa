@@ -381,7 +381,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
     'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'em_selection'                Default: 0.                       Use an EM selection function.
-    'T'                           Default: 10.                      Observation time (yr).
+    'T'                           Default: 10.0.                      Observation time (yr).
     'sfr'                         Default: 0.                       Fit the star formation parameters too.
     'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
     'luminosity_function'         Default: 0.                       DOUBLE-CHECK IF IT CAN BE ELIMINATED. Infer also the luminosity function.
@@ -434,7 +434,7 @@ if __name__=='__main__':
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
                 'em_selection'              :  0,
-                'T'                         :  10,
+                'T'                         :  10.0,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
                 'luminosity_function'       :  0,
@@ -609,7 +609,7 @@ if __name__=='__main__':
                           corrections         = config_par['corrections'],
                           em_selection        = config_par['em_selection'],
                           snr_threshold       = config_par['snr_threshold'],
-                          z_threshold         = config_par['zhorizon'],
+                          z_threshold         = float(config_par['zhorizon']),
                           event_class         = config_par['event_class'],
                           dl_cutoff           = config_par['dl_cutoff'],
                           sfr                 = config_par['sfr'],
