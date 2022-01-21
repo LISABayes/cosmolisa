@@ -34,7 +34,6 @@ def logLikelihood_single_event(const double[:,::1] hosts,
     sigma: :obj:'numpy.double': standard deviation of the DL marginal likelihood
     omega: :obj:'lal.CosmologicalParameter': cosmological parameter structure
     event_redshift: :obj:'numpy.double': redshift for the the GW event
-    em_selection :obj:'numpy.int': apply em selection function. optional. default = 0
     zmin: :obj:'numpy.double': minimum redshift
     zmax: :obj:'numpy.double': maximum redshift
     """
