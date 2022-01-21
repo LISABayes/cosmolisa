@@ -45,7 +45,6 @@ class CosmologicalModel(cpnest.model.Model):
         self.dl_cutoff           = kwargs['dl_cutoff']
         self.sfr                 = kwargs['sfr']
         self.T                   = kwargs['T']
-        self.luminosity_function = kwargs['luminosity_function']
         self.magnitude_threshold = kwargs['m_threshold']
         self.O                   = None
         
@@ -384,7 +383,6 @@ usage="""\n\n %prog --config-file config.ini\n
     'T'                           Default: 10.0.                      Observation time (yr).
     'sfr'                         Default: 0.                       Fit the star formation parameters too.
     'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
-    'luminosity_function'         Default: 0.                       DOUBLE-CHECK IF IT CAN BE ELIMINATED. Infer also the luminosity function.
     'm_threshold'                 Default: 20.                      Apparent magnitude threshold.
     'postprocess'                 Default: 0.                       Run only the postprocessing. It works only with reduced_catalog=0.
     'screen_output'               Default: 0.                       Print the output on screen or save it into a file.
@@ -437,7 +435,6 @@ if __name__=='__main__':
                 'T'                         :  10.0,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
-                'luminosity_function'       :  0,
                 'm_threshold'               :  20,
                 'postprocess'               :  0,
                 'screen_output'             :  0,    
@@ -479,7 +476,7 @@ if __name__=='__main__':
     print("\n"+"cpnest installation version:", cpnest.__version__)
     print("ray version:", ray.__version__)
 
-    max_len_keyword = len('luminosity_function')
+    max_len_keyword = len('reduced_catalog')
     print(('\nReading config file: {}\n'.format(config_file)))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
@@ -614,7 +611,6 @@ if __name__=='__main__':
                           dl_cutoff           = config_par['dl_cutoff'],
                           sfr                 = config_par['sfr'],
                           T                   = config_par['T'],
-                          luminosity_function = config_par['luminosity_function'],
                           m_threshold         = config_par['m_threshold'])
 
     #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
