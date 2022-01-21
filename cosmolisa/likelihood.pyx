@@ -5,15 +5,12 @@
 from __future__ import division
 import numpy as np
 cimport numpy as np
-from numpy cimport ndarray
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL,log1p
 cimport cython
-from scipy.special import logsumexp
+from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL,log1p
 from scipy.optimize import newton
-from scipy.integrate import quad
+
 from cosmolisa.cosmology cimport CosmologicalParameters, _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
 from cosmolisa.galaxy cimport GalaxyDistribution
-from libc.math cimport isfinite
 
 cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
 
@@ -134,6 +131,7 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
     meandl:           :obj: 'numpy.double'.              Mean of the DL marginal likelihood
     sigmadl:          :obj: 'numpy.double'.              Standard deviation of the DL marginal likelihood
     omega:            :obj: 'lal.CosmologicalParameter'. Cosmological parameter structure
+    gal:              :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution function 
     event_redshift:   :obj: 'numpy.double'.              Redshift of the GW event
     zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
     """
