@@ -107,22 +107,14 @@ class CosmologicalModel(cpnest.model.Model):
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.rate = 1
             self.gw_correction = 1
-#            self.names.append('log10r0')
-#            self.bounds.append([-20,-7])
-#            self.names.append('W')
-#            self.bounds.append([0.0,100.0])
-#            self.names.append('Q')
-#            self.bounds.append([0.0,10.0])
-#            self.names.append('R')
-#            self.bounds.append([0.0,10.0])
             self.names.append('log10r0')
-            self.bounds.append([np.log10(4e-11),np.log10(6e-11)])
+            self.bounds.append([np.log10(1e-14),np.log10(1e-9)])
             self.names.append('W')
-            self.bounds.append([40.0,42.0])
+            self.bounds.append([0.0,100.0])
             self.names.append('Q')
-            self.bounds.append([2.3,2.5])
+            self.bounds.append([0.0,10.0])
             self.names.append('R')
-            self.bounds.append([5.1,5.3])
+            self.bounds.append([0.0,10.0])
             
         if ("Luminosity" in self.model):
         
@@ -434,7 +426,7 @@ if __name__=='__main__':
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
                 'em_selection'              :  0,
-                'T'                         :  10,
+                'T'                         :  10.,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
                 'luminosity_function'       :  0,
@@ -609,7 +601,7 @@ if __name__=='__main__':
                           corrections         = config_par['corrections'],
                           em_selection        = config_par['em_selection'],
                           snr_threshold       = config_par['snr_threshold'],
-                          z_threshold         = config_par['zhorizon'],
+                          z_threshold         = float(config_par['zhorizon']),
                           event_class         = config_par['event_class'],
                           dl_cutoff           = config_par['dl_cutoff'],
                           sfr                 = config_par['sfr'],
