@@ -424,7 +424,7 @@ if __name__=='__main__':
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
                 'em_selection'              :  0,
-                'T'                         :  10.0,
+                'T'                         :  10.,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
                 'm_threshold'               :  20,
