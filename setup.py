@@ -1,9 +1,9 @@
 import numpy
-from setuptools import setup, find_packages
+import os
+from setuptools import setup
 from distutils.extension import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from Cython.Build import cythonize
-import os
 
 if not("LAL_PREFIX" in os.environ):
     print("No LAL installation found, please install LAL from source or source your LAL installation")
@@ -38,21 +38,21 @@ ext_modules=[
                        extra_compile_args=["-O3","-ffast-math"],
                        include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                        ),
-            Extension("cosmolisa.prior",
+             Extension("cosmolisa.prior",
                       sources=["cosmolisa/prior.pyx"],
                       libraries=["m","lal"], # Unix-like specific
                       library_dirs = [lal_libs],
                       extra_compile_args=["-O3","-ffast-math"],
                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                       ),
-            Extension("cosmolisa.galaxy",
+             Extension("cosmolisa.galaxy",
                       sources=["cosmolisa/galaxy.pyx"],
                       libraries=["m","lal"], # Unix-like specific
                       library_dirs = [lal_libs],
                       extra_compile_args=["-O3","-ffast-math"],
                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                       )
-             ]
+            ]
 
 setup(
       name = "cosmolisa",
