@@ -106,22 +106,14 @@ class CosmologicalModel(cpnest.model.Model):
 #           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.rate = 1
             self.gw_correction = 1
-#            self.names.append('log10r0')
-#            self.bounds.append([-20,-7])
-#            self.names.append('W')
-#            self.bounds.append([0.0,100.0])
-#            self.names.append('Q')
-#            self.bounds.append([0.0,10.0])
-#            self.names.append('R')
-#            self.bounds.append([0.0,10.0])
             self.names.append('log10r0')
-            self.bounds.append([np.log10(4e-11),np.log10(6e-11)])
+            self.bounds.append([-15,-8])
             self.names.append('W')
-            self.bounds.append([40.0,42.0])
+            self.bounds.append([0.0,300.0])
             self.names.append('Q')
-            self.bounds.append([2.3,2.5])
+            self.bounds.append([0.0,15.0])
             self.names.append('R')
-            self.bounds.append([5.1,5.3])
+            self.bounds.append([0.0,15.0])
             
         if ("Luminosity" in self.model):
         
@@ -353,8 +345,8 @@ truths = {'h':0.73,
           'phistar_exponent':0.0,
           'Mstar_exponent':0.0,
           'alpha_exponent':0.0}
-#FIXME: udpate this --help list
-#FIXME: most of the options work only for EMRI and sBH. Extend them to MBHB as well.
+
+#FIXME: most of the options work only for EMRI and sBH. Extend to MBHB.
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
     IMPORTANT: This code requires the installation of the CPNest branch 'massively_parallel': https://github.com/johnveitch/cpnest/tree/massively_parallel
@@ -380,7 +372,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
     'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'em_selection'                Default: 0.                       Use an EM selection function.
-    'T'                           Default: 10.0.                      Observation time (yr).
+    'T'                           Default: 10.0.                    Observation time (yr).
     'sfr'                         Default: 0.                       Fit the star formation parameters too.
     'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
     'm_threshold'                 Default: 20.                      Apparent magnitude threshold.
@@ -388,7 +380,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'screen_output'               Default: 0.                       Print the output on screen or save it into a file.
     'verbose'                     Default: 2.                       Sampler verbose.
     'maxmcmc'                     Default: 5000.                    Maximum MCMC steps for MHS sampling chains.
-    'nensemble'                   Default: 1.                       Number of sampler threads using an ensemble sampler. It must be a positive multiple of nnest.
+    'nensemble'                   Default: 1.                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
     'nslice'                      Default: 0.                       Number of sampler threads using a slice sampler.
     'nhamiltonian'                Default: 0.                       Number of sampler threads using a hamiltonian sampler.
     'nnest'                       Default: 1.                       Number of parallel independent nested samplers.
@@ -508,13 +500,14 @@ if __name__=='__main__':
             print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
-        elif (config_par['zhorizon'] != '1000.0'):
+        elif ((config_par['zhorizon'] != '1000.0') and (config_par['snr_threshold'] == 0.0)):
             events = readdata.read_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['max_hosts'] != 0):
             events = readdata.read_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['event_ID_list'] != ''):
             events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
+            print("\nSelecting events according to snr_threshold={}:".format(config_par['snr_threshold']))
             if not config_par['reduced_catalog']:
                 events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
@@ -565,7 +558,7 @@ if __name__=='__main__':
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
                 print(formatting_string)
             else:
-                print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(zhorizon))
+                print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(config_par['zhorizon']))
                 exit()
     else:
         events = readdata.read_event(config_par['event_class'], config_par['data'], z_gal_cosmo=config_par['z_gal_cosmo'])
@@ -620,10 +613,10 @@ if __name__=='__main__':
         work=cpnest.CPNest(C,
                            verbose             = config_par['verbose'],
                            maxmcmc             = config_par['maxmcmc'],
-                           nensemble           = config_par['nensemble'],  # number of MCMC samplers. Equal to the number of LP evolved at each NS step. It must be a multiple of nnest, e.g., if nnest=3, nensemble=3,6,9,12...
+                           nensemble           = config_par['nensemble'],
                            nslice              = config_par['nslice'],
                            nhamiltonian        = config_par['nhamiltonian'],
-                           nnest               = config_par['nnest'],    # fix the number of nested sampler.
+                           nnest               = config_par['nnest'],   
                            nlive               = config_par['nlive'],  
                            object_store_memory = config_par['obj_store_mem'],
                            output              = output_sampler
@@ -942,17 +935,19 @@ if __name__=='__main__':
 
         print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
 
-        samps = np.column_stack((x['log10r0'],x['W'],x['R'],x['Q']))
+        samps = np.column_stack((x['h'],x['om'],x['log10r0'],x['W'],x['R'],x['Q']))
         fig = corner.corner(samps,
-                        labels= [r'$\log_{10} r_0$',
+                        labels= [r'$h$',
+                                 r'$\Omega_m$',
+                                 r'$\log_{10} r_0$',
                                  r'$W$',
                                  r'$R$',
                                  r'$Q$'],
                         quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
+                        show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 12},
+                        use_math_text=True, #truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
                         filename=os.path.join(outdir,'Plots','joint_rate_posterior.pdf'))
-        fig.savefig(os.path.join(outdir,'Plots','joint_rate_posterior.pdf'), bbox_inches='tight')
+        fig.savefig(os.path.join(outdir,'Plots','corner_plot_rate.pdf'), bbox_inches='tight')
     
     if ("Luminosity" in C.model):
         distributions = []
