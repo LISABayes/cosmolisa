@@ -1,26 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from optparse import OptionParser
-from scipy.special import logsumexp
-from scipy.stats import norm
-import cpnest.model
 import sys
 import os
 import ray
 import time
 import configparser
 import subprocess
+import numpy as np
 import matplotlib
 import corner
-import numpy as np
 import matplotlib.pyplot as plt
-
+from optparse import OptionParser
 from configparser import ConfigParser
+from scipy.stats import norm
 
-# Import internal scripts
+# Import external and internal scripts
+import cpnest.model
 import readdata
-# import plots
 import cosmolisa.cosmology as cs
 import cosmolisa.likelihood as lk
 import cosmolisa.galaxy as gal
@@ -585,7 +582,7 @@ if __name__=='__main__':
 
     print(formatting_string+"\n")
     print("CPNest will be initialised with:")
-    print("nensemble:           {0}".format(config_par['verbose']))
+    print("verbose:             {0}".format(config_par['verbose']))
     print("nensemble:           {0}".format(config_par['nensemble']))
     print("nslice:              {0}".format(config_par['nslice']))
     print("nhamiltonian:        {0}".format(config_par['nhamiltonian']))
@@ -604,7 +601,8 @@ if __name__=='__main__':
                           dl_cutoff           = config_par['dl_cutoff'],
                           sfr                 = config_par['sfr'],
                           T                   = config_par['T'],
-                          m_threshold         = config_par['m_threshold'])
+                          m_threshold         = config_par['m_threshold']
+                          )
 
     #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
     if (config_par['postprocess'] == 0):
@@ -820,7 +818,7 @@ if __name__=='__main__':
             fig = corner.corner(samps,
                    labels= [r'$h$',
                             r'$\Omega_m$'],
-                   quantiles=[0.05, 0.5, 0.95],
+                   quantiles=[0.16, 0.5, 0.84],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om']])
 
@@ -831,7 +829,7 @@ if __name__=='__main__':
                             r'$\Omega_m$',
                             r'$\Omega_\Lambda$',
                             r'$\Omega_k$'],
-                   quantiles=[0.05, 0.5, 0.95],
+                   quantiles=[0.16, 0.5, 0.84],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0])
                    
@@ -843,7 +841,7 @@ if __name__=='__main__':
                                      r'$\Omega_\Lambda$',
                                      r'$w_0$',
                                      r'$w_a$'],
-                            quantiles=[0.05, 0.5, 0.95],
+                            quantiles=[0.16, 0.5, 0.84],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']])
 
@@ -852,7 +850,7 @@ if __name__=='__main__':
             fig = corner.corner(samps,
                             labels= [r'$w_0$',
                                      r'$w_a$'],
-                            quantiles=[0.05, 0.5, 0.95],
+                            quantiles=[0.16, 0.5, 0.84],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['w0'],truths['w1']])
 
@@ -943,7 +941,7 @@ if __name__=='__main__':
                                  r'$W$',
                                  r'$R$',
                                  r'$Q$'],
-                        quantiles=[0.05, 0.5, 0.95],
+                        quantiles=[0.16, 0.5, 0.84],
                         show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 12},
                         use_math_text=True, #truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
                         filename=os.path.join(outdir,'Plots','joint_rate_posterior.pdf'))
@@ -1069,7 +1067,7 @@ if __name__=='__main__':
                                  r'$b$',
                                  r'$\alpha$',
                                  r'$c$'],
-                        quantiles=[0.05, 0.5, 0.95],
+                        quantiles=[0.16, 0.5, 0.84],
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[truths['phistar0'],truths['phistar_exponent'],
                                                     truths['Mstar0'],truths['Mstar_exponent'],
