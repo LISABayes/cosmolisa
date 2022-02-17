@@ -12,6 +12,7 @@ from scipy.integrate import quad
 from scipy.special.cython_special cimport gammaln
 from cosmolisa.cosmology cimport CosmologicalParameters
 from scipy.optimize import newton
+from sys import exit
 
 ctypedef double (*model_pointer)(double, double, double)
 
