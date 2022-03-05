@@ -55,8 +55,8 @@ ext_modules=[
 
 setup(
       name="cosmolisa",
-      ext_modules=cythonize(ext_modules, 
-      language_level="3"),
+      ext_modules=cythonize(ext_modules, language_level="3"),
+      entry_points={"console_scripts": ["cosmoLISA = cosmolisa.cosmological_model:main"]},
       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa/cosmolisa"],
       description='cosmolisa: a cpnest model for cosmological inference with LISA',
       author='Walter Del Pozzo, Danny Laghi',

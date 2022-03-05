@@ -15,12 +15,12 @@ from optparse import OptionParser
 from configparser import ConfigParser
 from scipy.stats import norm
 
-# Import external and internal scripts
+# Import internal and external modules
+from cosmolisa import readdata
+from cosmolisa import cosmology as cs
+from cosmolisa import likelihood as lk
+from cosmolisa import galaxy as gal
 import cpnest.model
-import readdata
-import cosmolisa.cosmology as cs
-import cosmolisa.likelihood as lk
-import cosmolisa.galaxy as gal
 
 class CosmologicalModel(cpnest.model.Model):
 
@@ -343,7 +343,7 @@ truths = {'h':0.73,
           'Mstar_exponent':0.0,
           'alpha_exponent':0.0}
 
-#FIXME: most of the options work only for EMRI and sBH. Extend to MBHB.
+#IMPROVEME: most of the options work only for EMRI and sBH. Extend to MBHB.
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
     IMPORTANT: This code requires the installation of the CPNest branch 'massively_parallel': https://github.com/johnveitch/cpnest/tree/massively_parallel
@@ -387,7 +387,7 @@ usage="""\n\n %prog --config-file config.ini\n
 
 """
 
-if __name__=='__main__':
+def main():
 
     run_time = time.perf_counter()
     parser = OptionParser(usage)
@@ -1078,4 +1078,7 @@ if __name__=='__main__':
     if (config_par['postprocess'] == 0):
         run_time = (time.perf_counter() - run_time)/60.0
         print('\nRun-time (min): {:.2f}\n'.format(run_time))
-    
+
+
+if __name__=='__main__':
+    main()
