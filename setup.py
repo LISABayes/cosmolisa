@@ -19,44 +19,44 @@ class build_ext(_build_ext):
         __builtins__.__NUMPY_SETUP__ = False
         self.include_dirs.append(numpy.get_include())
         
-    
 lal_includes = lal_prefix+"/include"
 lal_libs = lal_prefix+"/lib"
 
 ext_modules=[
-             Extension("cosmolisa.cosmology",
+             Extension(name="cosmolisa.cosmology",
                        sources=["cosmolisa/cosmology.pyx"],
                        libraries=["m","lal"], # Unix-like specific
-                       library_dirs = [lal_libs],
+                       library_dirs=[lal_libs],
                        extra_compile_args=["-O3","-ffast-math"],
                        include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                        ),
-             Extension("cosmolisa.likelihood",
+             Extension(name="cosmolisa.likelihood",
                        sources=["cosmolisa/likelihood.pyx"],
                        libraries=["m","lal"], # Unix-like specific
-                       library_dirs = [lal_libs],
+                       library_dirs=[lal_libs],
                        extra_compile_args=["-O3","-ffast-math"],
                        include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
                        ),
-             Extension("cosmolisa.prior",
-                      sources=["cosmolisa/prior.pyx"],
-                      libraries=["m","lal"], # Unix-like specific
-                      library_dirs = [lal_libs],
-                      extra_compile_args=["-O3","-ffast-math"],
-                      include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
-                      ),
+             Extension(name="cosmolisa.prior",
+                       sources=["cosmolisa/prior.pyx"],
+                       libraries=["m","lal"], # Unix-like specific
+                       library_dirs=[lal_libs],
+                       extra_compile_args=["-O3","-ffast-math"],
+                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
+                       ),
              Extension("cosmolisa.galaxy",
-                      sources=["cosmolisa/galaxy.pyx"],
-                      libraries=["m","lal"], # Unix-like specific
-                      library_dirs = [lal_libs],
-                      extra_compile_args=["-O3","-ffast-math"],
-                      include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
-                      )
+                       sources=["cosmolisa/galaxy.pyx"],
+                       libraries=["m","lal"], # Unix-like specific
+                       library_dirs=[lal_libs],
+                       extra_compile_args=["-O3","-ffast-math"],
+                       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa"]
+                       )
             ]
 
 setup(
-      name = "cosmolisa",
-      ext_modules = cythonize(ext_modules, language_level = "3"),
+      name="cosmolisa",
+      ext_modules=cythonize(ext_modules, 
+      language_level="3"),
       include_dirs=[numpy.get_include(),lal_includes,"cosmolisa/cosmolisa"],
       description='cosmolisa: a cpnest model for cosmological inference with LISA',
       author='Walter Del Pozzo, Danny Laghi',
@@ -80,4 +80,3 @@ setup(
       install_requires=['numpy', 'scipy', 'corner', 'cython'],
       package_data={"": ['*.pyx', '*.pxd']},
       )
-
