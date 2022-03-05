@@ -9,16 +9,16 @@ from optparse import OptionParser
 
 if __name__=="__main__":
     parser=OptionParser()
-    parser.add_option('-o','--out',              action='store', type='string', default=None,                 help='Output folder',                                                                                           dest='output')
-    parser.add_option('-d',                      action='store', type='string', default=None,                 help='data folder',                                                                                             dest='data')
-    parser.add_option('-m',                      action='store', type='string', default='LambdaCDM',          help='model (LambdaCDM, LambdaCDMDE, DE, CLambdaCDM)',                                                          dest='model', metavar='model')
-    parser.add_option('-c',                      action='store', type='string', default='EMRI',               help='source class (SMBH, EMRI)',                                                                               dest='source')
-    parser.add_option('-N',                      action='store', type='int',    default=256,                  help='Number of bins for the grid sampling (only used for dpgmm)',                                                                    dest='N')
-    parser.add_option('--dpgmm',                 action='store', type='int',    default=False,                help='DPGMM average plot',                                                                                      dest='dpgmm')
-    parser.add_option('--cat_name',              action='store', type='string', default=False,                help='Catalog name',                                                                                            dest='cat_name')
-    parser.add_option('--corner_68',             action='store', type='int',    default=False,                help='Corner plot bugged (only showing 68%CI)',                                                                 dest='corner_68')
-    parser.add_option('--corner_90',             action='store', type='int',    default=False,                help='Corner plot without bug (90%CI)',                                                                         dest='corner_90')
-    parser.add_option('--produce_averaged_post', action='store', type='int',    default=True,                 help='Read different catalog realisations. If 0, read averaged posterior produced at the time of the analysis', dest='produce_averaged_post')
+    parser.add_option('-o','--out',              action='store', type='string', default=None,        help='Output folder',                                                                                           dest='output')
+    parser.add_option('-d',                      action='store', type='string', default=None,        help='data folder',                                                                                             dest='data')
+    parser.add_option('-m',                      action='store', type='string', default='LambdaCDM', help='model (LambdaCDM, LambdaCDMDE, DE, CLambdaCDM)',                                                          dest='model', metavar='model')
+    parser.add_option('-c',                      action='store', type='string', default='EMRI',      help='source class (MBHB, EMRI)',                                                                               dest='source')
+    parser.add_option('-N',                      action='store', type='int',    default=256,         help='Number of bins for the grid sampling (only used for dpgmm)',                                              dest='N')
+    parser.add_option('--dpgmm',                 action='store', type='int',    default=False,       help='DPGMM average plot',                                                                                      dest='dpgmm')
+    parser.add_option('--cat_name',              action='store', type='string', default=False,       help='Catalog name',                                                                                            dest='cat_name')
+    parser.add_option('--corner_68',             action='store', type='int',    default=False,       help='Corner plot bugged (only showing 68%CI)',                                                                 dest='corner_68')
+    parser.add_option('--corner_90',             action='store', type='int',    default=False,       help='Corner plot without bug (90%CI)',                                                                         dest='corner_90')
+    parser.add_option('--produce_averaged_post', action='store', type='int',    default=1,           help='Read different catalog realisations. If 0, read averaged posterior produced at the time of the analysis', dest='produce_averaged_post')
     (options,args)=parser.parse_args()
 
     dpgmm_average         = options.dpgmm
@@ -26,12 +26,8 @@ if __name__=="__main__":
     produce_averaged_post = options.produce_averaged_post
     corner_68             = options.corner_68
     corner_90             = options.corner_90
-    out_folder            = options.output
-
-    os.system("mkdir -p %s"%out_folder)
-
-    truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0}
-
+    out_folder            = os.path.join(options.output,catalog_name+'_averaged')
+    
     # Read or not reduced (in years of observation) catalogs
     if 'reduced' in options.data:
         reduced_string = '_reduced'
@@ -40,12 +36,16 @@ if __name__=="__main__":
 
     final_posterior_name = 'averaged_posterior_'+options.model+'_'+catalog_name+reduced_string+'.dat'
 
+    os.system("mkdir -p %s"%out_folder)
+
+    truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0}
+
     # Average posteriors from different runs or read previously averaged posterior 
     if produce_averaged_post:
-        if options.source == 'SMBH':
-            catalogs = [c for c in os.listdir(options.data) if 'cat' in c]
+        if options.source == 'MBHB':
+            catalogs = [c for c in os.listdir(options.data) if ('cat' in c and 'averaged' not in c)]
         elif options.source == 'EMRI':
-            catalogs = [c for c in os.listdir(options.data) if (catalog_name in c and 'nensemble_15_nnest_5_nlive_1000' in c and 'averaged' not in c)]
+            catalogs = [c for c in os.listdir(options.data) if (catalog_name in c and 'averaged' not in c)]
 
         for i,c in enumerate(catalogs):
             print("\nprocessing", options.source, options.model, c)
@@ -116,7 +116,7 @@ if __name__=="__main__":
     elif options.model == "DE":
         p1_name, p2_name = 'w0','w1'
 
-    file_path = os.path.join(options.output,'quantiles_{}_{}{}.txt'.format(options.model, catalog_name, reduced_string))
+    file_path = os.path.join(out_folder,'quantiles_{}_{}{}.txt'.format(options.model, catalog_name, reduced_string))
     print("Will save .5, .16, .50, .84, .95 quantiles in {}".format(file_path))
     sys.stdout = open(file_path, "w+")
 
@@ -186,7 +186,7 @@ if __name__=="__main__":
                                 quantiles=[0.05, 0.5, 0.95], show_titles=False, label_kwargs={"fontsize": 16}, truths=[truths['w0'],truths['w1']])
             plt.text(0.127, 0.875, r"$w_0 = {{{0}}}_{{-{1}}}^{{+{2}}}$".format(fmt(p1_median), fmt(p1_inf_90), fmt(p1_sup_90)), ha='center', va='center', fontsize=16, transform=ax.transAxes)
             plt.text(0.432, 0.466, r"$w_a = {{{0}}}_{{-{1}}}^{{+{2}}}$".format(fmt(p2_median), fmt(p2_inf_90), fmt(p2_sup_90)), ha='center', va='center', fontsize=16, transform=ax.transAxes)
-        plt.savefig(os.path.join(options.output,"average_posterior_corner_90CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight', pad_inches=0.16)
+        plt.savefig(os.path.join(out_folder,"average_posterior_corner_90CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight', pad_inches=0.16)
         plt.close()
 
     if corner_68:
@@ -215,7 +215,7 @@ if __name__=="__main__":
                                 quantiles=[0.16, 0.5, 0.84],
                                 show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                                 use_math_text=True, truths=[truths['w0'],truths['w1']])
-        plt.savefig(os.path.join(options.output,"average_posterior_corner_68CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
+        plt.savefig(os.path.join(out_folder,"average_posterior_corner_68CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
         plt.close()
 
     # Currently unused, it works for 2D models if the parameter space is well-constrained.
@@ -315,10 +315,10 @@ if __name__=="__main__":
         model = initialise_dpgmm(2,np.column_stack((p1,p2)))
         logdensity = compute_dpgmm(model,max_sticks=8)
         single_posterior = evaluate_grid(logdensity,x_flat,y_flat)
-        pickle.dump(single_posterior,open(os.path.join(options.output,"average_posterior_dpgmm_{0}.p".format(model)),"wb"))
+        pickle.dump(single_posterior,open(os.path.join(out_folder,"average_posterior_dpgmm_{0}.p".format(model)),"wb"))
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        levs = np.sort(FindHeightForLevel(single_posterior.T,[0.68,0.95]))
+        levs = np.sort(FindHeightForLevel(single_posterior.T,[0.68,0.90]))
         ax.contourf(X,Y,single_posterior.T,100, cmap = matplotlib.cm.gray_r, alpha = 0.5, zorder=1)
         C = ax.contour(X,Y,single_posterior.T,levs,linewidths=0.75,colors='white', zorder = 22, linestyles = 'dashed')
         C = ax.contour(X,Y,single_posterior.T,levs,linewidths=1.0,colors='black')
@@ -333,5 +333,5 @@ if __name__=="__main__":
             ax.axhline(truths['w1'],color='k',linestyle='dashed',lw=0.5)
             ax.set_xlabel(r"$w_0$",fontsize=18)
             ax.set_ylabel(r"$w_a$",fontsize=18)
-        plt.savefig(os.path.join(options.output,"average_posterior_{0}_{1}{2}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
+        plt.savefig(os.path.join(out_folder,"average_posterior_{0}_{1}{2}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
         plt.close()
