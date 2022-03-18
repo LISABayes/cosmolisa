@@ -89,6 +89,9 @@ def marginalise(pdf, dx, axis):
 def renormalise(pdf, dx):
     return pdf / (pdf*dx).sum()
 
+def par_dic(a1, a2):
+    return {'p1': a1, 'p2': a2}
+
 if __name__=="__main__":
 
     out_dir = './'
@@ -146,9 +149,12 @@ if __name__=="__main__":
                         p1_MBHB = posteriors['w0']
                         p2_MBHB = posteriors['w1']
 
+            EMRI_dic = par_dic(p1_EMRI, p2_EMRI)
+            MBHB_dic = par_dic(p1_MBHB, p2_MBHB)
+
             all_sources = {
-                           "EMRI": {'p1': p1_EMRI, 'p2': p2_EMRI}, 
-                           "MBHB": {'p1': p1_MBHB, 'p2': p2_MBHB}, 
+                           "EMRI": EMRI_dic, 
+                           "MBHB": MBHB_dic, 
                           }
 
             joint_posterior = np.zeros((Nbins,Nbins), dtype=np.float64)
