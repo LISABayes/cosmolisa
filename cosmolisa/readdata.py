@@ -204,6 +204,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
                 except(ValueError):
+                    event_file = open(input_folder+"/"+ev+"/ID.dat","r")
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
             elif (source == 'sBH'):
@@ -211,6 +212,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
                 except(ValueError):
+                    event_file = open(input_folder+"/"+ev+"/ID.dat","r")
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
 
@@ -354,7 +356,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                     if (z_diff == min(z_differences)):
                         selected_gal = gal 
                 e.potential_galaxy_hosts = [selected_gal]
-            print("\nUsing only the nearest host to the EMRI:")
+            print("\nUsing only the nearest host to the GW source:")
             events = sorted(events, key=lambda x: getattr(x, 'ID'))
             for e in events:
                 print("ID: {}  |  SNR: {}  |  dl: {} Mpc  |  z_true: {} |  z_host: {} |  hosts: {}".format(
