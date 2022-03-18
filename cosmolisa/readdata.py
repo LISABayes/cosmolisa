@@ -57,7 +57,7 @@ class Event(object):
         self.z_true                 = z_true
         if self.dmin < 0.0: self.dmin = 0.0
 
-def read_MBHB_event(input_folder, event_number, max_distance = None, max_hosts = None, **kwargs):
+def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_hosts = None, **kwargs):
     
     all_files   = os.listdir(input_folder)
     print("Reading {}".format(input_folder))
