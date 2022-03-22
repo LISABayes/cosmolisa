@@ -1,15 +1,9 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 from optparse import OptionParser
-import sys
-import readdata
-from dpgmm import *
 import multiprocessing as mp
-from scipy.misc import logsumexp
 from cosmology import *
-import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib
 import matplotlib.cm as cm
@@ -59,8 +53,8 @@ if __name__ == "__main__":
     (options,args)=parser.parse_args()
 
     eps = 1e-3
-    x_flat = np.linspace(0.5+eps,1.0-eps,Nbins)
-    y_flat = np.linspace(0.04+eps,1.0-eps,Nbins)
+    x_flat = np.linspace(0.6+eps,0.86-eps,Nbins)
+    y_flat = np.linspace(0.04+eps,0.5-eps,Nbins)
     dx = np.diff(x_flat)[0]
     dy = np.diff(y_flat)[0]
     X,Y = np.meshgrid(x_flat,y_flat)
@@ -126,7 +120,7 @@ if __name__ == "__main__":
     black_line = mlines.Line2D([], [], color = 'k', marker = '.', markersize=1, label=r"$\mathrm{total}$" )
     ax.legend(handles = [red_line,green_line,blue_line], loc='upper right')#
     ax.set_ylabel(r"$\Omega_m$",fontsize=18)
-    plt.xlim(0.65,0.8)
-    plt.ylim(0.1,0.6)
+    plt.xlim(0.6,0.86)
+    plt.ylim(0.04,0.5)
     ax.set_xlabel(r"$H_0/100\,km\,s^{-1}\,Mpc^{-1}$",fontsize=18)
     plt.savefig('best_posteriors_for_all.pdf',bbox_inches='tight')
