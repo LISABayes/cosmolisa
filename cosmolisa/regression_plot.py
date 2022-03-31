@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 from optparse import OptionParser
 from scipy.special import logsumexp
+import h5py
 
 import readdata
 from cosmolisa.cosmology import *
@@ -87,16 +88,10 @@ if __name__=="__main__":
     # Read in the events
     events = readdata.read_event(opts.source, opts.data, None, snr_threshold=100.0)
     # Read in the posterior samples
-    try:
-        posteriors = np.genfromtxt(os.path.join(opts.posteriors,'posterior.dat'),names=True)
-    except:
-        sys.stderr.write("{0} not found. Generating posteriors from the chain ...\n".format(os.path.join(opts.posteriors,'posterior.dat')))
-        from cpnest import nest2pos
-        x = np.genfromtxt(os.path.join(opts.posteriors,'chain_5000_1234.txt'),names=True)
-        posteriors = nest2pos.draw_posterior_many([x], [5000], verbose=False)
-        names = ''
-        for n in posteriors.dtype.names: names += n+ '\t'
-        np.savetxt(os.path.join(opts.posteriors,'posterior.dat'), posteriors, header = names)
+    filename = os.path.join(opts.posteriors, 'CPNest', 'cpnest.h5')
+    print("\nReading {} averaged posterior stored in {}".format(opts.source, filename))
+    h5_file = h5py.File(filename, 'r')
+    posteriors = h5_file['combined'].get('posterior_samples')
     
     # Injected cosmology
     omega_true = CosmologicalParameters(0.73,0.25,0.75,-1,0)
