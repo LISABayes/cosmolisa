@@ -369,6 +369,8 @@ usage="""\n\n %prog --config-file config.ini\n
     'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
     'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'em_selection'                Default: 0.                       Use an EM selection function.
+    'split_data_num'              Default: 1.                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
+    'split_data_chunk'            Default: 0.                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
     'T'                           Default: 10.0.                    Observation time (yr).
     'sfr'                         Default: 0.                       Fit the star formation parameters too.
     'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
@@ -421,6 +423,8 @@ def main():
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
                 'em_selection'              :  0,
+                'split_data_num'            :  1,
+                'split_data_chunk'          :  0,
                 'T'                         :  10.,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
@@ -465,7 +469,7 @@ def main():
     print("\n"+"cpnest installation version:", cpnest.__version__)
     print("ray version:", ray.__version__)
 
-    max_len_keyword = len('reduced_catalog')
+    max_len_keyword = len('split_data_chunk')
     print(('\nReading config file: {}\n'.format(config_file)))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
@@ -559,6 +563,14 @@ def main():
                 exit()
     else:
         events = readdata.read_event(config_par['event_class'], config_par['data'], z_gal_cosmo=config_par['z_gal_cosmo'])
+
+    if not (config_par['split_data_num'] <= 1):
+        assert config_par['split_data_chunk'] <= config_par['split_data_num'], "Data split in {} chunks; chunk number {} has been chosen".format(config_par['split_data_num'], config_par['split_data_chunk'])
+        events = sorted(events, key=lambda x: getattr(x, 'ID'))
+        q, r = divmod(len(events), config_par['split_data_num'])
+        split_events = list([events[i*q + min(i, r):(i+1)*q + min(i+1, r)] for i in range(config_par['split_data_num'])])
+        print("\nInitial list of {} events split into {} chunks. \nChunk number {} is chosen.".format(len(events), len(split_events), config_par['split_data_chunk']))
+        events = split_events[config_par['split_data_chunk']-1]
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")
