@@ -269,7 +269,7 @@ class CosmologicalModel(cpnest.model.Model):
                                                                     self.r0, self.W, self.R, self.Q,
                                                                     self.snr_threshold, self.O, Ntot)
             # compute the rate for the observed events
-            Rdet      = Rtot*selection_probability
+            # Rdet      = Rtot*selection_probability
             Ndet      = Ntot*selection_probability
             logL_rate = -Ndet+self.N*np.log(Ntot)
 #            print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
