@@ -818,6 +818,12 @@ def main():
             fig = corner.corner(samps,
                    labels= [r'$h$',
                             r'$\Omega_m$'],
+                   quantiles=[0.05, 0.5, 0.95],
+                   show_titles=False, use_math_text=True, truths=[truths['h'],truths['om']])
+            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90.pdf'), bbox_inches='tight')
+            fig = corner.corner(samps,
+                   labels= [r'$h$',
+                            r'$\Omega_m$'],
                    quantiles=[0.16, 0.5, 0.84],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om']])
@@ -856,6 +862,7 @@ def main():
 
         if(('LambdaCDM_h' not in C.model) and ('LambdaCDM_om' not in C.model)):
             fig.savefig(os.path.join(outdir,'Plots','corner_plot.pdf'), bbox_inches='tight')
+            fig.savefig(os.path.join(outdir,'Plots','corner_plot.png'), bbox_inches='tight')
 
     if ("Rate" in C.model):
         z   = np.linspace(0.0,C.z_threshold,100)
