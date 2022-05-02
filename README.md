@@ -40,3 +40,9 @@ You should be able to visualise the help message by giving the following one-lin
 ```
 cosmoLISA --help
 ```
+
+To run the EMRI example (or any other analysis), specify the config file with the `--config-file` option:
+
+```
+cosmoLISA --config-file /path/where/you/saved/the/repository/cosmolisa/cosmolisa/config_EMRI.ini
+```
