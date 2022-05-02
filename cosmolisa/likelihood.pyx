@@ -89,13 +89,14 @@ def sigma_weak_lensing(const double z, const double dl):
 
 cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
     """
-    Weak lensing error. From <arXiv:1601.07112v3>
+    Weak lensing error. From <arXiv:1601.07112v3>, Eq. (7.3) corrected
+    by a factor 0.5 to match <arXiv:1004.3988v2>
     Parameters:
     ===============
     z: :obj:'numpy.double': redshift
     dl: :obj:'numpy.double': luminosity distance
     """
-    return 0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
+    return 0.5*0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
 
 def em_selection_function(double dl):
     return _em_selection_function(dl)
