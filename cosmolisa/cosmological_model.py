@@ -9,6 +9,7 @@ import configparser
 import subprocess
 import numpy as np
 import matplotlib
+import json
 import corner
 import matplotlib.pyplot as plt
 from optparse import OptionParser
@@ -35,6 +36,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.N                   = len(self.data)
         self.model               = model.split('+')
         self.corrections         = corrections.split('+')
+        self.truths              = kwargs['truths']
         self.em_selection        = kwargs['em_selection']
         self.z_threshold         = kwargs['z_threshold']
         self.snr_threshold       = kwargs['snr_threshold']
@@ -179,19 +181,19 @@ class CosmologicalModel(cpnest.model.Model):
             
             # check for the cosmological model
             if ("LambdaCDM_h" in self.model):
-                self.O = cs.CosmologicalParameters(x['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])  
+                self.O = cs.CosmologicalParameters(x['h'],self.truths['om'],self.truths['ol'],self.truths['w0'],self.truths['w1'])
             elif ("LambdaCDM_om" in self.model):
-                self.O = cs.CosmologicalParameters(truths['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])                                
+                self.O = cs.CosmologicalParameters(self.truths['h'],x['om'],1.0-x['om'],self.truths['w0'],self.truths['w1'])
             elif  ("LambdaCDM" in self.model):
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],truths['w0'],truths['w1'])
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],1.0-x['om'],self.truths['w0'],self.truths['w1'])
             elif ("CLambdaCDM" in self.model):
-                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],truths['w0'],truths['w1'])
+                self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],self.truths['w0'],self.truths['w1'])
             elif ("LambdaCDMDE" in self.model):
                 self.O = cs.CosmologicalParameters(x['h'],x['om'],x['ol'],x['w0'],x['w1'])
             elif ("DE" in self.model):
-                self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'],x['w1'])
+                self.O = cs.CosmologicalParameters(self.truths['h'],self.truths['om'],self.truths['ol'],x['w0'],x['w1'])
             else:
-                self.O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
+                self.O = cs.CosmologicalParameters(self.truths['h'],self.truths['om'],self.truths['ol'],self.truths['w0'],self.truths['w1'])
             # check for the rate model or GW corrections
             if ("Rate" in self.model):
                 self.r0 = 10**x['log10r0']
@@ -204,10 +206,10 @@ class CosmologicalModel(cpnest.model.Model):
                     return -np.inf
             
             elif self.gw_correction == 1:
-                self.r0 = truths['r0']
-                self.W  = truths['W']
-                self.Q  = truths['Q']
-                self.R  = truths['R']
+                self.r0 = self.truths['r0']
+                self.W  = self.truths['W']
+                self.Q  = self.truths['Q']
+                self.R  = self.truths['R']
             # check for the luminosity model or EM corrections
             if ("Luminosity" in self.model):
                 self.phistar0            = x['phistar0']
@@ -217,12 +219,12 @@ class CosmologicalModel(cpnest.model.Model):
                 self.alpha0              = x['alpha0']
                 self.alpha_exponent      = x['alpha_exponent']
             elif self.em_correction == 1:
-                self.phistar0            = truths['phistar0']
-                self.phistar_exponent    = truths['phistar_exponent']
-                self.Mstar0              = truths['Mstar0']
-                self.Mstar_exponent      = truths['Mstar_exponent']
-                self.alpha0              = truths['alpha0']
-                self.alpha_exponent      = truths['alpha_exponent']
+                self.phistar0            = self.truths['phistar0']
+                self.phistar_exponent    = self.truths['phistar_exponent']
+                self.Mstar0              = self.truths['Mstar0']
+                self.Mstar_exponent      = self.truths['Mstar_exponent']
+                self.alpha0              = self.truths['alpha0']
+                self.alpha_exponent      = self.truths['alpha_exponent']
         
         return logP
 
@@ -327,21 +329,6 @@ class CosmologicalModel(cpnest.model.Model):
 
         return logL_GW+logL_rate+logL_luminosity
 
-truths = {'h':0.73,
-          'om':0.25,
-          'ol':0.75,
-          'w0':-1.0,
-          'w1':0.0,
-          'r0':5e-10,
-          'Q':2.4,
-          'W':41.,
-          'R':5.2,
-          'phistar0':1e-2,
-          'Mstar0':-20.7,
-          'alpha0':-1.23,
-          'phistar_exponent':0.0,
-          'Mstar_exponent':0.0,
-          'alpha_exponent':0.0}
 
 #IMPROVEME: most of the options work only for EMRI and sBH. Extend to MBHB.
 usage="""\n\n %prog --config-file config.ini\n
@@ -353,40 +340,41 @@ usage="""\n\n %prog --config-file config.ini\n
     # Input parameters      #
     #=======================#
 
-    'data'                        Default: ''.                      Data location.
-    'outdir'                      Default: './default_dir'.         Directory for output.
-    'event_class'                 Default: ''.                      Class of the event(s) ['MBHB', 'EMRI', 'sBH'].
-    'model'                       Default: ''.                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
-    'corrections'                 Default: ''.                      Family of corrections ('GW', 'EM') separated by a '+'
-    'joint'                       Default: 0.                       Run a joint analysis for N events, randomly selected.
-    'zhorizon'                    Default: '1000.0'.                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'dl_cutoff'                   Default: -1.0.                    Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.
-    'z_event_sel'                 Default: 0.                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
-    'one_host_sel'                Default: 0.                       For each event, associate only the nearest-in-redshift host.
-    'event_ID_list'               Default: ''.                      String of specific ID events to be read.
-    'max_hosts'                   Default: 0.                       Select events according to the allowed maximum number of hosts.
-    'z_gal_cosmo'                 Default: 0.                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
-    'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
-    'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
-    'sigma_pv'                    Default: 0.0023                   Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
-    'em_selection'                Default: 0.                       Use an EM selection function.
-    'split_data_num'              Default: 1.                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
-    'split_data_chunk'            Default: 0.                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
-    'T'                           Default: 10.0.                    Observation time (yr).
-    'sfr'                         Default: 0.                       Fit the star formation parameters too.
-    'reduced_catalog'             Default: 0.                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
-    'm_threshold'                 Default: 20.                      Apparent magnitude threshold.
-    'postprocess'                 Default: 0.                       Run only the postprocessing. It works only with reduced_catalog=0.
-    'screen_output'               Default: 0.                       Print the output on screen or save it into a file.
-    'verbose'                     Default: 2.                       Sampler verbose.
-    'maxmcmc'                     Default: 5000.                    Maximum MCMC steps for MHS sampling chains.
-    'nensemble'                   Default: 1.                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
-    'nslice'                      Default: 0.                       Number of sampler threads using a slice sampler.
-    'nhamiltonian'                Default: 0.                       Number of sampler threads using a hamiltonian sampler.
-    'nnest'                       Default: 1.                       Number of parallel independent nested samplers.
-    'nlive'                       Default: 1000.                    Number of live points.
-    'seed'                        Default: 0.                       Random seed initialisation.
-    'obj_store_mem'               Default: 2e9.                     Amount of memory reserved for ray object store. Default: 2GB.
+    'data'                        Default: ''.                                      Data location.
+    'outdir'                      Default: './default_dir'.                         Directory for output.
+    'event_class'                 Default: ''.                                      Class of the event(s) ['MBHB', 'EMRI', 'sBH'].
+    'model'                       Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
+    'truths'                      Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
+    'corrections'                 Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
+    'joint'                       Default: 0.                                       Run a joint analysis for N events, randomly selected.
+    'zhorizon'                    Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
+    'dl_cutoff'                   Default: -1.0.                                    Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.
+    'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
+    'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host.
+    'event_ID_list'               Default: ''.                                      String of specific ID events to be read.
+    'max_hosts'                   Default: 0.                                       Select events according to the allowed maximum number of hosts.
+    'z_gal_cosmo'                 Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
+    'snr_selection'               Default: 0.                                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
+    'snr_threshold'               Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
+    'sigma_pv'                    Default: 0.0023.                                  Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
+    'em_selection'                Default: 0.                                       Use an EM selection function.
+    'split_data_num'              Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
+    'split_data_chunk'            Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
+    'T'                           Default: 10.0.                                    Observation time (yr).
+    'sfr'                         Default: 0.                                       Fit the star formation parameters too.
+    'reduced_catalog'             Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
+    'm_threshold'                 Default: 20.                                      Apparent magnitude threshold.
+    'postprocess'                 Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
+    'screen_output'               Default: 0.                                       Print the output on screen or save it into a file.
+    'verbose'                     Default: 2.                                       Sampler verbose.
+    'maxmcmc'                     Default: 5000.                                    Maximum MCMC steps for MHS sampling chains.
+    'nensemble'                   Default: 1.                                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
+    'nslice'                      Default: 0.                                       Number of sampler threads using a slice sampler.
+    'nhamiltonian'                Default: 0.                                       Number of sampler threads using a hamiltonian sampler.
+    'nnest'                       Default: 1.                                       Number of parallel independent nested samplers.
+    'nlive'                       Default: 1000.                                    Number of live points.
+    'seed'                        Default: 0.                                       Random seed initialisation.
+    'obj_store_mem'               Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
 
 """
 
@@ -412,6 +400,7 @@ def main():
                 'outdir'                    :  './default_dir',
                 'event_class'               :  '',
                 'model'                     :  '',
+                'truth_par'                 :  {"h": 0.673, "om": 0.315, "ol": 0.685},
                 'corrections'               :  '',
                 'joint'                     :  0,
                 'zhorizon'                  :  '1000.0',
@@ -447,7 +436,10 @@ def main():
     for key in config_par:
         keytype = type(config_par[key])
         try: 
-            config_par[key]=keytype(Config.get("input parameters",key))
+            if "truth_par" in key:
+                config_par[key]=json.loads(Config.get("input parameters",'{}'.format(key)))
+            else:
+                config_par[key]=keytype(Config.get("input parameters",key))
         except (KeyError, configparser.NoOptionError, TypeError):
             pass
 
@@ -475,6 +467,26 @@ def main():
     print(('\nReading config file: {}\n'.format(config_file)))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
+
+    truths = {'h':config_par['truth_par']['h'],
+            'om':config_par['truth_par']['om'],
+            'ol':config_par['truth_par']['ol'],
+            'w0':-1.0,
+            'w1':0.0,
+            'r0':5e-10,
+            'Q':2.4,
+            'W':41.,
+            'R':5.2,
+            'phistar0':1e-2,
+            'Mstar0':-20.7,
+            'alpha0':-1.23,
+            'phistar_exponent':0.0,
+            'Mstar_exponent':0.0,
+            'alpha_exponent':0.0}
+
+    print("\nTruths:")
+    for key in truths:
+        print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=truths[key])))
     print("")
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
@@ -608,6 +620,7 @@ def main():
     C = CosmologicalModel(model               = config_par['model'],
                           data                = events,
                           corrections         = config_par['corrections'],
+                          truths              = truths,
                           em_selection        = config_par['em_selection'],
                           snr_threshold       = config_par['snr_threshold'],
                           z_threshold         = float(config_par['zhorizon']),
