@@ -225,8 +225,8 @@ if __name__=="__main__":
                 levs = np.sort(FindHeightForLevel(single_posterior.T, [0.0,0.68,0.90]))
                 C = ax.contourf(X, Y, single_posterior.T, levs[:-1], colors=colors_dict[source], zorder=5, linestyles='solid', alpha=0.1)
                 C = ax.contourf(X, Y, single_posterior.T, levs[1:], colors=colors_dict[source], zorder=5, linestyles='solid', alpha=0.3)
-                C = ax.contour(X, Y, single_posterior.T, levs[:-1], linewidths=1., colors=colors_dict[source], zorder=6, linestyles='solid')
-                C.collections[0].set_label(source)
+                C1 = ax.contour(X, Y, single_posterior.T, levs[:-1], linewidths=1., colors=colors_dict[source], zorder=6, linestyles='solid')
+                C1.collections[0].set_label(source)
 
             levs = np.sort(FindHeightForLevel(joint_posterior.T,[0.0,0.68,0.90]))
             C = ax.contourf(X, Y, joint_posterior.T, levs[:-1], colors='whitesmoke', zorder=10, linestyles='solid', alpha=0.85)

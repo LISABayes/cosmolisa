@@ -190,7 +190,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
-    events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
+    events_list = [f for f in all_files if 'EVENT' in f]
     pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
 
     if (event_number is None):
@@ -325,7 +325,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                 print("Zero events found in the redshift window [{},{}].".format(z_hor_min, z_hor_max))
 
         if (max_hosts is not None):
-            events = [e for e in events if e.n_hosts < max_hosts]
+            events = [e for e in events if e.n_hosts <= max_hosts]
             events = sorted(events, key=lambda x: getattr(x, 'n_hosts'))
             print("\nSelected {} events having hosts from n={} to n={} (max hosts imposed={}):".format(len(events), events[0].n_hosts, events[len(events)-1].n_hosts, max_hosts))
             for e in events:
