@@ -27,7 +27,7 @@ if __name__=="__main__":
     corner_68             = options.corner_68
     corner_90             = options.corner_90
     out_folder            = os.path.join(options.output,catalog_name+'_averaged')
-    
+
     # Read or not reduced (in years of observation) catalogs
     if 'reduced' in options.data:
         reduced_string = '_reduced'
@@ -38,14 +38,15 @@ if __name__=="__main__":
 
     os.system("mkdir -p %s"%out_folder)
 
-    truths = {'h':0.73,'om':0.25,'ol':0.75,'w0':-1.0,'w1':0.0}
+    truths = {'h':0.673,'om':0.315,'ol':0.685,'w0':-1.0,'w1':0.0}
 
     # Average posteriors from different runs or read previously averaged posterior 
     if produce_averaged_post:
         if options.source == 'MBHB':
             catalogs = [c for c in os.listdir(options.data) if ('cat' in c and 'averaged' not in c)]
         elif options.source == 'EMRI':
-            catalogs = [c for c in os.listdir(options.data) if (catalog_name in c and 'averaged' not in c)]
+            catalogs = [c for c in os.listdir(options.data) if (catalog_name in c and 'averaged' not in c and 'matrix' not in c)]
+        print("Will read", len(catalogs), "catalogs")
 
         for i,c in enumerate(catalogs):
             print("\nprocessing", options.source, options.model, c)
@@ -187,6 +188,7 @@ if __name__=="__main__":
             plt.text(0.127, 0.875, r"$w_0 = {{{0}}}_{{-{1}}}^{{+{2}}}$".format(fmt(p1_median), fmt(p1_inf_90), fmt(p1_sup_90)), ha='center', va='center', fontsize=16, transform=ax.transAxes)
             plt.text(0.432, 0.466, r"$w_a = {{{0}}}_{{-{1}}}^{{+{2}}}$".format(fmt(p2_median), fmt(p2_inf_90), fmt(p2_sup_90)), ha='center', va='center', fontsize=16, transform=ax.transAxes)
         plt.savefig(os.path.join(out_folder,"average_posterior_corner_90CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight', pad_inches=0.16)
+        plt.savefig(os.path.join(out_folder,"average_posterior_corner_90CI_{}_{}{}.png".format(options.model, catalog_name, reduced_string)),bbox_inches='tight', pad_inches=0.16)
         plt.close()
 
     if corner_68:
@@ -216,6 +218,7 @@ if __name__=="__main__":
                                 show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                                 use_math_text=True, truths=[truths['w0'],truths['w1']])
         plt.savefig(os.path.join(out_folder,"average_posterior_corner_68CI_{}_{}{}.pdf".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
+        plt.savefig(os.path.join(out_folder,"average_posterior_corner_68CI_{}_{}{}.png".format(options.model, catalog_name, reduced_string)),bbox_inches='tight')
         plt.close()
 
     # Currently unused, it works for 2D models if the parameter space is well-constrained.
