@@ -151,7 +151,7 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
     sys.stderr.write("Read %d events\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_event_sel=None, snr_selection=None, snr_threshold=0.0, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
+def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_event_sel=None, snr_selection=None, snr_threshold=0.0, sigma_pv=0.0023, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -191,7 +191,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
     """
     all_files   = os.listdir(input_folder)
     events_list = [f for f in all_files if 'EVENT' in f]
-    pv = 0.0015 # redshift error associated to peculiar velocity value (https://arxiv.org/abs/1703.01300)
+    pv = sigma_pv
 
     if (event_number is None):
 

@@ -368,6 +368,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'z_gal_cosmo'                 Default: 0.                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
     'snr_selection'               Default: 0.                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
     'snr_threshold'               Default: 0.0.                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
+    'sigma_pv'                    Default: 0.0023                   Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
     'em_selection'                Default: 0.                       Use an EM selection function.
     'split_data_num'              Default: 1.                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
     'split_data_chunk'            Default: 0.                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
@@ -422,6 +423,7 @@ def main():
                 'z_gal_cosmo'               :  0,
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
+                'sigma_pv'                  :  0.0023,
                 'em_selection'              :  0,
                 'split_data_num'            :  1,
                 'split_data_chunk'          :  0,
@@ -473,7 +475,7 @@ def main():
     print(('\nReading config file: {}\n'.format(config_file)))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
-
+    print("")
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
 
@@ -486,11 +488,11 @@ def main():
 
     if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
         if (config_par['snr_selection'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['z_event_sel'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
-            all_events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            all_events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             events_selected = []
             print("\nSelecting events according to dl_cutoff={}:".format(config_par['dl_cutoff']))
             for e in all_events:
@@ -502,17 +504,17 @@ def main():
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif ((config_par['zhorizon'] != '1000.0') and (config_par['snr_threshold'] == 0.0)):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['max_hosts'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['event_ID_list'] != ''):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
             print("\nSelecting events according to snr_threshold={}:".format(config_par['snr_threshold']))
             if not config_par['reduced_catalog']:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
                 # Draw a number of events in the 4-year scenario
                 if (config_par['event_class'] == "sBH"):
                     N = np.int(np.random.poisson(len(events)*4./10.))
@@ -543,7 +545,7 @@ def main():
                 for e in events:
                     print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
         if (config_par['joint'] != 0):
             N = joint
