@@ -115,8 +115,8 @@ if __name__=="__main__":
 
             catalog_name_EMRI = catalog_emri
             catalog_name_MBHB = catalog_mbhb
-            EMRI_data_path = 
-            MBHB_data_path = 
+            EMRI_data_path = ''
+            MBHB_data_path = ''
 
             # Read or not reduced (in years of observation) catalogs
             if 'reduced' in EMRI_data_path:
