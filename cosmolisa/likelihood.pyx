@@ -185,9 +185,8 @@ def gw_selection_probability_sfr(const double zmin,
                                  const double R,
                                  const double Q,
                                  const double SNR_threshold,
-                                 CosmologicalParameters omega,
-                                 const double norm):
-    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, SNR_threshold, omega, norm)
+                                 CosmologicalParameters omega):
+    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, SNR_threshold, omega)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -200,8 +199,7 @@ cdef double _gw_selection_probability_sfr(const double zmin,
                                           const double R,
                                           const double Q,
                                           const double SNR_threshold,
-                                          CosmologicalParameters omega,
-                                          double norm) nogil:
+                                          CosmologicalParameters omega) nogil:
 
     cdef int i
     cdef int N = 64
@@ -211,7 +209,7 @@ cdef double _gw_selection_probability_sfr(const double zmin,
     for i in range(N):
         I += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, SNR_threshold, omega)
         z += dz
-    return I*dz/norm
+    return I*dz
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -267,12 +267,11 @@ class CosmologicalModel(cpnest.model.Model):
             Ntot    = Rtot*self.T
             
             # compute the probability of observing the events we observed
-            selection_probability = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                                    self.r0, self.W, self.R, self.Q,
-                                                                    self.snr_threshold, self.O, Ntot)
+            Ndet = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
+                                                   self.r0, self.W, self.R, self.Q,
+                                                   self.snr_threshold, self.O)
             # compute the rate for the observed events
             # Rdet      = Rtot*selection_probability
-            Ndet      = Ntot*selection_probability
             logL_rate = -Ndet+self.N*np.log(Ntot)
 #            print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
             # if we do not care about GWs, compute the rate density at the known gw redshifts and return
@@ -431,6 +430,7 @@ def main():
                 'nlive'                     :  1000,
                 'seed'                      :  0,
                 'obj_store_mem'             :  2e9,
+                'periodic_checkpoint_interval': 3600
                 }
 
     for key in config_par:
@@ -616,6 +616,7 @@ def main():
     print("nlive:               {0}".format(config_par['nlive']))
     print("maxmcmc:             {0}".format(config_par['maxmcmc']))
     print("object_store_memory: {0}".format(config_par['obj_store_mem']))
+    print("periodic_checkpoint_interval: {0}".format(config_par['periodic_checkpoint_interval'])) 
 
     C = CosmologicalModel(model               = config_par['model'],
                           data                = events,
@@ -644,7 +645,8 @@ def main():
                            nnest               = config_par['nnest'],   
                            nlive               = config_par['nlive'],  
                            object_store_memory = config_par['obj_store_mem'],
-                           output              = output_sampler
+                           output              = output_sampler,
+                           periodic_checkpoint_interval = config_par['periodic_checkpoint_interval']
                            )
 
         work.run()
@@ -916,7 +918,7 @@ def main():
             # compute the expected rate parameter integrated to the maximum redshift
             # this will also serve as normalisation constant for the individual dR/dz_i
             Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
-            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O, Rtot[i])
+            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O)/Rtot[i]
             v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
 #            ax.plot(z,v,color='k', linewidth=.3)
             sfr.append(v)
@@ -956,7 +958,7 @@ def main():
         fig.savefig(os.path.join(outdir,'Plots','global_rate.pdf'), bbox_inches='tight')
         print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
         
-        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true, Rtot_true)
+        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true)/Rtot_true
         fig = plt.figure()
         ax  = fig.add_subplot(111)
         ax.hist(selection_probability, bins = 100, histtype='step')
