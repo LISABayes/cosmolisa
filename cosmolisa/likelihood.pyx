@@ -30,7 +30,7 @@ def logLikelihood_single_event(const double[:,::1] hosts,
     meandl: :obj: 'numpy.double': mean of the DL marginal likelihood
     sigma: :obj:'numpy.double': standard deviation of the DL marginal likelihood
     omega: :obj:'lal.CosmologicalParameter': cosmological parameter structure
-    event_redshift: :obj:'numpy.double': redshift for the the GW event
+    event_redshift: :obj:'numpy.double': redshift for the GW event
     zmin: :obj:'numpy.double': minimum redshift
     zmax: :obj:'numpy.double': maximum redshift
     """

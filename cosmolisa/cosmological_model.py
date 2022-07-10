@@ -350,7 +350,8 @@ usage="""\n\n %prog --config-file config.ini\n
     'dl_cutoff'                   Default: -1.0.                                    Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
     'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host.
-    'event_ID_list'               Default: ''.                                      String of specific ID events to be read.
+    'single_z_from_GW'            Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
+    'event_ID_list'               Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
     'max_hosts'                   Default: 0.                                       Select events according to the allowed maximum number of hosts.
     'z_gal_cosmo'                 Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
     'snr_selection'               Default: 0.                                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
@@ -407,6 +408,7 @@ def main():
                 'dl_cutoff'                 :  -1.0,
                 'z_event_sel'               :  0,
                 'one_host_sel'              :  0,
+                'single_z_from_GW'          :  0,
                 'event_ID_list'             :  '',
                 'max_hosts'                 :  0,
                 'z_gal_cosmo'               :  0,
@@ -464,7 +466,7 @@ def main():
     print("\n"+"cpnest installation version:", cpnest.__version__)
     print("ray version:", ray.__version__)
 
-    max_len_keyword = len('split_data_chunk')
+    max_len_keyword = len('periodic_checkpoint_int')
     print(('\nReading config file: {}\n'.format(config_file)))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
@@ -578,6 +580,12 @@ def main():
                 exit()
     else:
         events = readdata.read_event(config_par['event_class'], config_par['data'], z_gal_cosmo=config_par['z_gal_cosmo'])
+
+    if (config_par['single_z_from_GW'] != 0) and (config_par['one_host_sel'] == 1):
+        print("\nSimulating a single potential host with redshift equal to z_true.") 
+        for e in events:
+            e.potential_galaxy_hosts[0].redshift = e.z_true
+            e.potential_galaxy_hosts[0].weight = 1.0
 
     if not (config_par['split_data_num'] <= 1):
         assert config_par['split_data_chunk'] <= config_par['split_data_num'], "Data split in {} chunks; chunk number {} has been chosen".format(config_par['split_data_num'], config_par['split_data_chunk'])
