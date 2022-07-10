@@ -9,7 +9,7 @@ Run the following lines from terminal:
 ```
 yes | conda env create -f environment.yml
 conda activate cosmolisa_env
-pip install git+https://github.com/johnveitch/cpnest@massively_parallel
+pip install git+https://github.com/johnveitch/cpnest@6f6f63102619d12f90a591898772dffb9feeff97
 export LAL_PREFIX=/place/of/your/home/directory/.conda/envs/cosmolisa_env
 python setup.py install
 ```

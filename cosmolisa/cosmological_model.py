@@ -374,6 +374,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'nlive'                       Default: 1000.                                    Number of live points.
     'seed'                        Default: 0.                                       Random seed initialisation.
     'obj_store_mem'               Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
+    'periodic_checkpoint_int'     Default: 21600.                                   Time interval between sampler checkpoint in seconds. Defaut: 21600 (6h).
 
 """
 
@@ -430,7 +431,7 @@ def main():
                 'nlive'                     :  1000,
                 'seed'                      :  0,
                 'obj_store_mem'             :  2e9,
-                'periodic_checkpoint_interval': 3600
+                'periodic_checkpoint_int'   :  21600
                 }
 
     for key in config_par:
@@ -608,15 +609,15 @@ def main():
 
     print(formatting_string+"\n")
     print("CPNest will be initialised with:")
-    print("verbose:             {0}".format(config_par['verbose']))
-    print("nensemble:           {0}".format(config_par['nensemble']))
-    print("nslice:              {0}".format(config_par['nslice']))
-    print("nhamiltonian:        {0}".format(config_par['nhamiltonian']))
-    print("nnest:               {0}".format(config_par['nnest']))
-    print("nlive:               {0}".format(config_par['nlive']))
-    print("maxmcmc:             {0}".format(config_par['maxmcmc']))
-    print("object_store_memory: {0}".format(config_par['obj_store_mem']))
-    print("periodic_checkpoint_interval: {0}".format(config_par['periodic_checkpoint_interval'])) 
+    print("verbose:                 {0}".format(config_par['verbose']))
+    print("nensemble:               {0}".format(config_par['nensemble']))
+    print("nslice:                  {0}".format(config_par['nslice']))
+    print("nhamiltonian:            {0}".format(config_par['nhamiltonian']))
+    print("nnest:                   {0}".format(config_par['nnest']))
+    print("nlive:                   {0}".format(config_par['nlive']))
+    print("maxmcmc:                 {0}".format(config_par['maxmcmc']))
+    print("object_store_memory:     {0}".format(config_par['obj_store_mem']))
+    print("periodic_checkpoint_int: {0}".format(config_par['periodic_checkpoint_int'])) 
 
     C = CosmologicalModel(model               = config_par['model'],
                           data                = events,
@@ -637,16 +638,16 @@ def main():
         # Each NS can be located in different processors, but all the subprocesses of each NS live on the same processor
 
         work=cpnest.CPNest(C,
-                           verbose             = config_par['verbose'],
-                           maxmcmc             = config_par['maxmcmc'],
-                           nensemble           = config_par['nensemble'],
-                           nslice              = config_par['nslice'],
-                           nhamiltonian        = config_par['nhamiltonian'],
-                           nnest               = config_par['nnest'],   
-                           nlive               = config_par['nlive'],  
-                           object_store_memory = config_par['obj_store_mem'],
-                           output              = output_sampler,
-                           periodic_checkpoint_interval = config_par['periodic_checkpoint_interval']
+                           verbose                      = config_par['verbose'],
+                           maxmcmc                      = config_par['maxmcmc'],
+                           nensemble                    = config_par['nensemble'],
+                           nslice                       = config_par['nslice'],
+                           nhamiltonian                 = config_par['nhamiltonian'],
+                           nnest                        = config_par['nnest'],   
+                           nlive                        = config_par['nlive'],  
+                           object_store_memory          = config_par['obj_store_mem'],
+                           output                       = output_sampler,
+                           periodic_checkpoint_interval = config_par['periodic_checkpoint_int']
                            )
 
         work.run()
