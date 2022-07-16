@@ -465,6 +465,7 @@ def main():
 
     print("\n"+"cpnest installation version:", cpnest.__version__)
     print("ray version:", ray.__version__)
+    print("cosmolisa likelihood version:", lk.__file__)
 
     max_len_keyword = len('periodic_checkpoint_int')
     print(('\nReading config file: {}\n'.format(config_file)))
