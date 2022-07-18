@@ -376,6 +376,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'seed'                        Default: 0.                                       Random seed initialisation.
     'obj_store_mem'               Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
     'periodic_checkpoint_int'     Default: 21600.                                   Time interval between sampler checkpoint in seconds. Defaut: 21600 (6h).
+    'resume'                      Default: 0.                                       If set to 1, resume a run reading the checkpoint files, otherwise run from scratch. Default: 0.
 
 """
 
@@ -433,7 +434,8 @@ def main():
                 'nlive'                     :  1000,
                 'seed'                      :  0,
                 'obj_store_mem'             :  2e9,
-                'periodic_checkpoint_int'   :  21600
+                'periodic_checkpoint_int'   :  21600,
+                'resume'                    :  0
                 }
 
     for key in config_par:
@@ -627,6 +629,7 @@ def main():
     print("maxmcmc:                 {0}".format(config_par['maxmcmc']))
     print("object_store_memory:     {0}".format(config_par['obj_store_mem']))
     print("periodic_checkpoint_int: {0}".format(config_par['periodic_checkpoint_int'])) 
+    print("resume:                  {0}".format(config_par['resume'])) 
 
     C = CosmologicalModel(model               = config_par['model'],
                           data                = events,
@@ -656,7 +659,8 @@ def main():
                            nlive                        = config_par['nlive'],  
                            object_store_memory          = config_par['obj_store_mem'],
                            output                       = output_sampler,
-                           periodic_checkpoint_interval = config_par['periodic_checkpoint_int']
+                           periodic_checkpoint_interval = config_par['periodic_checkpoint_int'],
+                           resume                       = config_par['resume']
                            )
 
         work.run()
