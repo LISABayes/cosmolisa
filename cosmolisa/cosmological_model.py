@@ -351,6 +351,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
     'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host.
     'single_z_from_GW'            Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
+    'equal_wj'                    Default: 0.                                       Impose all galaxy angular weights equal to 1.
     'event_ID_list'               Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
     'max_hosts'                   Default: 0.                                       Select events according to the allowed maximum number of hosts.
     'z_gal_cosmo'                 Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
@@ -410,6 +411,7 @@ def main():
                 'z_event_sel'               :  0,
                 'one_host_sel'              :  0,
                 'single_z_from_GW'          :  0,
+                'equal_wj'                  :  0,
                 'event_ID_list'             :  '',
                 'max_hosts'                 :  0,
                 'z_gal_cosmo'               :  0,
@@ -589,6 +591,12 @@ def main():
         for e in events:
             e.potential_galaxy_hosts[0].redshift = e.z_true
             e.potential_galaxy_hosts[0].weight = 1.0
+
+    if (config_par['equal_wj'] == 1):
+        print("\nImposing all the galaxy angular weights equal to 1.")
+        for e in events:
+            for g in e.potential_galaxy_hosts:
+                g.weight = 1.0
 
     if not (config_par['split_data_num'] <= 1):
         assert config_par['split_data_chunk'] <= config_par['split_data_num'], "Data split in {} chunks; chunk number {} has been chosen".format(config_par['split_data_num'], config_par['split_data_chunk'])
