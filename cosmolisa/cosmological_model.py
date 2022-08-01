@@ -869,13 +869,14 @@ def main():
             fig = corner.corner(samps,
                    labels= [r'$h$',
                             r'$\Omega_m$'],
-                   quantiles=[0.05, 0.5, 0.95],
-                   show_titles=False, use_math_text=True, truths=[truths['h'],truths['om']])
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90.pdf'), bbox_inches='tight')
+                   quantiles=[0.16, 0.5, 0.84],
+                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
+                   use_math_text=True, truths=[truths['h'],truths['om']])
+            fig.savefig(os.path.join(outdir,'Plots','corner_plot_68CI.pdf'), bbox_inches='tight')
             fig = corner.corner(samps,
                    labels= [r'$h$',
                             r'$\Omega_m$'],
-                   quantiles=[0.16, 0.5, 0.84],
+                   quantiles=[0.05, 0.5, 0.95],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om']])
 
@@ -886,7 +887,7 @@ def main():
                             r'$\Omega_m$',
                             r'$\Omega_\Lambda$',
                             r'$\Omega_k$'],
-                   quantiles=[0.16, 0.5, 0.84],
+                   quantiles=[0.05, 0.5, 0.95],
                    show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                    use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0])
                    
@@ -898,7 +899,7 @@ def main():
                                      r'$\Omega_\Lambda$',
                                      r'$w_0$',
                                      r'$w_a$'],
-                            quantiles=[0.16, 0.5, 0.84],
+                            quantiles=[0.05, 0.5, 0.95],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']])
 
@@ -907,13 +908,13 @@ def main():
             fig = corner.corner(samps,
                             labels= [r'$w_0$',
                                      r'$w_a$'],
-                            quantiles=[0.16, 0.5, 0.84],
+                            quantiles=[0.05, 0.5, 0.95],
                             show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
                             use_math_text=True, truths=[truths['w0'],truths['w1']])
 
         if(('LambdaCDM_h' not in C.model) and ('LambdaCDM_om' not in C.model)):
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot.pdf'), bbox_inches='tight')
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot.png'), bbox_inches='tight')
+            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90CI.pdf'), bbox_inches='tight')
+            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90CI.png'), bbox_inches='tight')
 
     if ("Rate" in C.model):
         z   = np.linspace(0.0,C.z_threshold,100)
@@ -999,11 +1000,11 @@ def main():
                                  r'$W$',
                                  r'$R$',
                                  r'$Q$'],
-                        quantiles=[0.16, 0.5, 0.84],
+                        quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 12},
                         use_math_text=True, #truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
-                        filename=os.path.join(outdir,'Plots','joint_rate_posterior.pdf'))
-        fig.savefig(os.path.join(outdir,'Plots','corner_plot_rate.pdf'), bbox_inches='tight')
+                        )
+        fig.savefig(os.path.join(outdir,'Plots','corner_plot_rate_90CI.pdf'), bbox_inches='tight')
     
     if ("Luminosity" in C.model):
         distributions = []
@@ -1125,13 +1126,13 @@ def main():
                                  r'$b$',
                                  r'$\alpha$',
                                  r'$c$'],
-                        quantiles=[0.16, 0.5, 0.84],
+                        quantiles=[0.05, 0.5, 0.95],
                         show_titles=True, title_kwargs={"fontsize": 12},
                         use_math_text=True, truths=[truths['phistar0'],truths['phistar_exponent'],
                                                     truths['Mstar0'],truths['Mstar_exponent'],
                                                     truths['alpha0'],truths['alpha_exponent']],
-                        filename=os.path.join(outdir,'Plots','joint_luminosity_posterior.pdf'))
-        fig.savefig(os.path.join(outdir,'Plots','joint_luminosity_posterior.pdf'), bbox_inches='tight')
+                        )
+        fig.savefig(os.path.join(outdir,'Plots','corner_plot_luminosity_90CI.pdf'), bbox_inches='tight')
 
     if (config_par['postprocess'] == 0):
         run_time = (time.perf_counter() - run_time)/60.0
