@@ -10,7 +10,6 @@ import subprocess
 import numpy as np
 import matplotlib
 import json
-import corner
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 from configparser import ConfigParser
@@ -18,6 +17,7 @@ from scipy.stats import norm
 
 # Import internal and external modules
 from cosmolisa import readdata
+from cosmolisa import plots
 from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
@@ -639,18 +639,18 @@ def main():
     print("periodic_checkpoint_int: {0}".format(config_par['periodic_checkpoint_int'])) 
     print("resume:                  {0}".format(config_par['resume'])) 
 
-    C = CosmologicalModel(model               = config_par['model'],
-                          data                = events,
-                          corrections         = config_par['corrections'],
-                          truths              = truths,
-                          em_selection        = config_par['em_selection'],
-                          snr_threshold       = config_par['snr_threshold'],
-                          z_threshold         = float(config_par['zhorizon']),
-                          event_class         = config_par['event_class'],
-                          dl_cutoff           = config_par['dl_cutoff'],
-                          sfr                 = config_par['sfr'],
-                          T                   = config_par['T'],
-                          m_threshold         = config_par['m_threshold']
+    C = CosmologicalModel(model         = config_par['model'],
+                          data          = events,
+                          corrections   = config_par['corrections'],
+                          truths        = truths,
+                          em_selection  = config_par['em_selection'],
+                          snr_threshold = config_par['snr_threshold'],
+                          z_threshold   = float(config_par['zhorizon']),
+                          event_class   = config_par['event_class'],
+                          dl_cutoff     = config_par['dl_cutoff'],
+                          sfr           = config_par['sfr'],
+                          T             = config_par['T'],
+                          m_threshold   = config_par['m_threshold']
                           )
 
     #IMPROVEME: postprocess doesn't work when events are randomly selected, since 'events' in C are different from the ones read from chain.txt
@@ -691,6 +691,22 @@ def main():
     ############################################################################################################
     #######################################          MAKE PLOTS         ########################################
     ############################################################################################################
+
+    if C.cosmology == 1:
+
+        print("Making corner plots...")
+        if ("LambdaCDM_h" in C.model):
+            plots.histogram(x, model='LambdaCDM_h', truths=truths, outdir=outdir)
+        elif ("LambdaCDM_om" in C.model):
+            plots.histogram(x, model='LambdaCDM_om', truths=truths, outdir=outdir)
+        elif ("LambdaCDM" in C.model):
+            plots.corner_plot(x, model='LambdaCDM', truths=truths, outdir=outdir)
+        elif ("CLambdaCDM" in C.model):
+            plots.corner_plot(x, model='CLambdaCDM', truths=truths, outdir=outdir)
+        elif ("LambdaCDMDE" in C.model):
+            plots.corner_plot(x, model='LambdaCDMDE', truths=truths, outdir=outdir)
+        elif ("DE" in C.model):
+            plots.corner_plot(x, model='DE', truths=truths, outdir=outdir)
 
     if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
         if C.gw == 1:
@@ -763,7 +779,7 @@ def main():
                 plt.savefig(os.path.join(outdir,'Plots','redshift_%d'%e.ID+'.png'), bbox_inches='tight')
                 plt.close()
     
-    if (config_par['event_class'] == "MBHB"):
+    elif (config_par['event_class'] == "MBHB"):
         dl = [e.dl/1e3 for e in C.data]
         ztrue = [e.potential_galaxy_hosts[0].redshift for e in C.data]
         dztrue = np.squeeze([[ztrue[i]-e.zmin,e.zmax-ztrue[i]] for i,e in enumerate(C.data)]).T
@@ -842,81 +858,11 @@ def main():
         fig.savefig(os.path.join(outdir,'Plots','regression.pdf'),bbox_inches='tight')
         plt.close()
     
-    if C.cosmology == 1:
-
-        if ("LambdaCDM_h" in C.model):
-            # plots.par_histogram(x['h'], 'h', truths['h'], outdir)
-            fig = plt.figure()
-            plt.hist(x['h'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
-            plt.axvline(truths['h'], linestyle='dashed', color='r')
-            quantiles = np.quantile(x['h'], [0.05, 0.5, 0.95])
-            plt.title(r'$h = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
-            plt.xlabel(r'$h$')
-            plt.savefig(os.path.join(outdir,'Plots','h_histogram.pdf'), bbox_inches='tight')
-
-        if ("LambdaCDM_om" in C.model):
-            # plots.par_histogram(x['om'], '\Omega_m', truths['om'], outdir)
-            fig = plt.figure()
-            plt.hist(x['om'], density=True, alpha = 1.0, histtype='step', edgecolor="black")
-            plt.axvline(truths['om'], linestyle='dashed', color='r')
-            quantiles = np.quantile(x['om'], [0.05, 0.5, 0.95])
-            plt.title(r'$\Omega_m = {med:.3f}({low:.3f},+{up:.3f})$'.format(med=quantiles[1], low=quantiles[0]-quantiles[1], up=quantiles[2]-quantiles[1]), size = 16)
-            plt.xlabel(r'$\Omega_m$')
-            plt.savefig(os.path.join(outdir,'Plots','om_histogram.pdf'), bbox_inches='tight')        
-
-        if ("LambdaCDM" in C.model):
-            samps = np.column_stack((x['h'],x['om']))
-            fig = corner.corner(samps,
-                   labels= [r'$h$',
-                            r'$\Omega_m$'],
-                   quantiles=[0.16, 0.5, 0.84],
-                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                   use_math_text=True, truths=[truths['h'],truths['om']])
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot_68CI.pdf'), bbox_inches='tight')
-            fig = corner.corner(samps,
-                   labels= [r'$h$',
-                            r'$\Omega_m$'],
-                   quantiles=[0.05, 0.5, 0.95],
-                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                   use_math_text=True, truths=[truths['h'],truths['om']])
-
-        if ("CLambdaCDM" in C.model):
-            samps = np.column_stack((x['h'],x['om'],x['ol'],1.0-x['om']-x['ol']))
-            fig = corner.corner(samps,
-                   labels= [r'$h$',
-                            r'$\Omega_m$',
-                            r'$\Omega_\Lambda$',
-                            r'$\Omega_k$'],
-                   quantiles=[0.05, 0.5, 0.95],
-                   show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                   use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],0.0])
-                   
-        if ("LambdaCDMDE" in C.model):
-            samps = np.column_stack((x['h'],x['om'],x['ol'],x['w0'],x['w1']))
-            fig = corner.corner(samps,
-                            labels= [r'$h$',
-                                     r'$\Omega_m$',
-                                     r'$\Omega_\Lambda$',
-                                     r'$w_0$',
-                                     r'$w_a$'],
-                            quantiles=[0.05, 0.5, 0.95],
-                            show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                            use_math_text=True, truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']])
-
-        if ("DE" in C.model):
-            samps = np.column_stack((x['w0'],x['w1']))
-            fig = corner.corner(samps,
-                            labels= [r'$w_0$',
-                                     r'$w_a$'],
-                            quantiles=[0.05, 0.5, 0.95],
-                            show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16},
-                            use_math_text=True, truths=[truths['w0'],truths['w1']])
-
-        if(('LambdaCDM_h' not in C.model) and ('LambdaCDM_om' not in C.model)):
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90CI.pdf'), bbox_inches='tight')
-            fig.savefig(os.path.join(outdir,'Plots','corner_plot_90CI.png'), bbox_inches='tight')
-
     if ("Rate" in C.model):
+
+        print("Making corner plots...")
+        plots.corner_plot(x, model='Rate', truths=truths, outdir=outdir)
+
         z   = np.linspace(0.0,C.z_threshold,100)
         fig = plt.figure()
         ax  = fig.add_subplot(111)
@@ -992,21 +938,11 @@ def main():
 
         print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
 
-        samps = np.column_stack((x['h'],x['om'],x['log10r0'],x['W'],x['R'],x['Q']))
-        fig = corner.corner(samps,
-                        labels= [r'$h$',
-                                 r'$\Omega_m$',
-                                 r'$\log_{10} r_0$',
-                                 r'$W$',
-                                 r'$R$',
-                                 r'$Q$'],
-                        quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_fmt='.3f', title_kwargs={"fontsize": 12},
-                        use_math_text=True, #truths=[np.log10(truths['r0']),truths['W'],truths['R'],truths['Q']],
-                        )
-        fig.savefig(os.path.join(outdir,'Plots','corner_plot_rate_90CI.pdf'), bbox_inches='tight')
-    
     if ("Luminosity" in C.model):
+
+        print("Making corner plots...")
+        plots.corner_plot(x, model='Luminosity', truths=truths, outdir=outdir)
+
         distributions = []
         Z   = np.linspace(0.0,C.z_threshold,100)
         M   = np.linspace(C.Mmin,C.Mmax,100)
@@ -1117,22 +1053,6 @@ def main():
         ax.set_xlabel('redshift')
         ax.set_ylabel('$\phi(z|\Omega,I)$')
         fig.savefig(os.path.join(outdir,'Plots','galaxy_redshift_probability.pdf'), bbox_inches='tight')
-        
-        samps = np.column_stack((x['phistar0'],x['phistar_exponent'],x['Mstar0'],x['Mstar_exponent'],x['alpha0'],x['alpha_exponent']))
-        fig = corner.corner(samps,
-                        labels= [r'$\phi^{*}/Mpc^{3}$',
-                                 r'$a$',
-                                 r'$M^{*}$',
-                                 r'$b$',
-                                 r'$\alpha$',
-                                 r'$c$'],
-                        quantiles=[0.05, 0.5, 0.95],
-                        show_titles=True, title_kwargs={"fontsize": 12},
-                        use_math_text=True, truths=[truths['phistar0'],truths['phistar_exponent'],
-                                                    truths['Mstar0'],truths['Mstar_exponent'],
-                                                    truths['alpha0'],truths['alpha_exponent']],
-                        )
-        fig.savefig(os.path.join(outdir,'Plots','corner_plot_luminosity_90CI.pdf'), bbox_inches='tight')
 
     if (config_par['postprocess'] == 0):
         run_time = (time.perf_counter() - run_time)/60.0
