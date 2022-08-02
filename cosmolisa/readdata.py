@@ -37,6 +37,7 @@ class Event(object):
                  zmax,
                  snr,
                  z_true,
+                 z_cosmo_true_host,
                  dl_host,
                  snr_threshold = 8.0,
                  VC = None):
@@ -55,6 +56,7 @@ class Event(object):
         self.snr                    = snr
         self.VC                     = VC
         self.z_true                 = z_true
+        self.z_cosmo_true_host      = z_cosmo_true_host
         if self.dmin < 0.0: self.dmin = 0.0
 
 def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_hosts = None, **kwargs):
@@ -62,7 +64,7 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
     all_files   = os.listdir(input_folder)
     print("Reading {}".format(input_folder))
 
-    events_list = [f for f in all_files if 'EVENT' in f or 'event' in f]
+    events_list = [f for f in all_files if ('EVENT' in f or 'event' in f)]
     
     if event_number is None:
         
@@ -98,6 +100,7 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
                                     zmax,
                                     -1,
                                     -1,
+                                    [0],
                                     [0]))
                 sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
@@ -142,6 +145,7 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
                                             zmax,
                                             -1,
                                             -1,
+                                            [0],
                                             [0])]
             sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
         except:
@@ -223,6 +227,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
             zmax            = np.float64(zmax)
             snr             = np.float64(snr)
             VC              = np.float64(Vc)
+            z_cosmo_true_host = np.float64(z_observed_true) 
             z_true          = np.float64(z_true)
             event_file.close()
             try:
@@ -256,6 +261,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                                     zmax,
                                     snr,
                                     z_true,
+                                    z_cosmo_true_host,
                                     dl_host,
                                     VC = VC))
                 print("Reading event %s at a distance %s (error %s), hosts %d"%(event_id,dl,sigma,len(redshifts)))
