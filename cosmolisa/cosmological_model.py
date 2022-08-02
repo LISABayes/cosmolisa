@@ -8,9 +8,7 @@ import time
 import configparser
 import subprocess
 import numpy as np
-import matplotlib
 import json
-import matplotlib.pyplot as plt
 from optparse import OptionParser
 from configparser import ConfigParser
 
@@ -706,11 +704,9 @@ def main():
         elif ("DE" in C.model):
             plots.corner_plot(x, model='DE', truths=truths, outdir=outdir)
 
-    if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
-        if C.gw == 1:
-            for e in C.data:
-                plots.redshift_ev_plot(x, model=C.model, event=e, em_sel=config_par['em_selection'], truths=truths, omega_true=omega_true, outdir=outdir)
-    
+    if (((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")) and (C.gw == 1)):
+        for e in C.data:
+            plots.redshift_ev_plot(x, model=C.model, event=e, em_sel=config_par['em_selection'], truths=truths, omega_true=omega_true, outdir=outdir)    
     elif (config_par['event_class'] == "MBHB"):
         plots.MBHB_regression(x, model=C.model, data=C.data, truths=truths, omega_true=omega_true, outdir=outdir)
     
@@ -722,117 +718,8 @@ def main():
     if ("Luminosity" in C.model):
 
         plots.corner_plot(x, model='Luminosity', truths=truths, outdir=outdir)
+        plots.luminosity_plots(x, cosmo_model=C, truths=truths, outdir=outdir)
 
-        distributions = []
-        Z   = np.linspace(0.0,C.z_threshold,100)
-        M   = np.linspace(C.Mmin,C.Mmax,100)
-        luminosity_function_0 = []
-        luminosity_function_1 = []
-        luminosity_function_2 = []
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        for i in range(x.shape[0]):
-            sys.stderr.write("Processing {0} out of {1}\r".format(i+1,x.shape[0]))
-            phistar0            = x['phistar0'][i]
-            phistar_exponent    = x['phistar_exponent'][i]
-            Mstar0              = x['Mstar0'][i]
-            Mstar_exponent      = x['Mstar_exponent'][i]
-            alpha0              = x['alpha0'][i]
-            alpha_exponent      = x['alpha_exponent'][i]
-            if ("LambdaCDM" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-            elif ("CLambdaCDM" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-            elif ("LambdaCDMDE" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-            elif ("DE" in C.model):
-                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-            else:
-                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-            S = gal.GalaxyDistribution(O,
-                                       phistar0,
-                                       phistar_exponent,
-                                       Mstar0,
-                                       Mstar_exponent,
-                                       alpha0,
-                                       alpha_exponent,
-                                       C.Mmin,
-                                       C.Mmax,
-                                       0.0,
-                                       C.z_threshold,
-                                       0.0,
-                                       2.0*np.pi,
-                                       -0.5*np.pi,
-                                       0.5*np.pi,
-                                       C.magnitude_threshold,
-                                       4.0*np.pi,
-                                       1,1,1)
-
-            PMZ = np.array([S.pdf(Mi, Zj, 1) for Mi in M for Zj in Z]).reshape(100,100)
-            distributions.append(PMZ)
-            luminosity_function_0.append(np.array([S.luminosity_function(Mi, 1e-5, 0) for Mi in M]))
-            luminosity_function_1.append(np.array([S.luminosity_function(Mi, S.zmax/2., 0) for Mi in M]))
-            luminosity_function_2.append(np.array([S.luminosity_function(Mi, S.zmax, 0) for Mi in M]))
-
-        sys.stderr.write("\n")
-        distributions = np.array(distributions)
-        pmzl,pmzm,pmzh = np.percentile(distributions,[5,50,95],axis=0)
-        pl,pm,ph = np.percentile(luminosity_function_0,[5,50,95],axis=0)
-        ax.fill_between(M,pl,ph,facecolor='magenta',alpha=0.5)
-        ax.plot(M,pm,linestyle='dashed',color='r',label="z = 0.0")
-        
-        pl,pm,ph = np.percentile(luminosity_function_1,[5,50,95],axis=0)
-        ax.fill_between(M,pl,ph,facecolor='green',alpha=0.5)
-        ax.plot(M,pm,linestyle='dashed',color='g',label="z = {0:.1f}".format(S.zmax/2.))
-        
-        pl,pm,ph = np.percentile(luminosity_function_2,[5,50,95],axis=0)
-        ax.fill_between(M,pl,ph,facecolor='turquoise',alpha=0.5)
-        ax.plot(M,pm,linestyle='dashed',color='b',label="z = {0:.1f}".format(S.zmax))
-        
-        St = gal.GalaxyDistribution(cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']),
-                                    truths['phistar0'],
-                                    truths['phistar_exponent'],
-                                    truths['Mstar0'],
-                                    truths['Mstar_exponent'],
-                                    truths['alpha0'],
-                                    truths['alpha_exponent'],
-                                    C.Mmin,
-                                    C.Mmax,
-                                    0.0,
-                                    C.z_threshold,
-                                    0.0,
-                                    2.0*np.pi,
-                                    -0.5*np.pi,
-                                    0.5*np.pi,
-                                    C.magnitude_threshold,
-                                    4.0*np.pi,
-                                    1,1,1)
-        
-        ax.plot(M,np.array([St.luminosity_function(Mi, 1e-5, 0) for Mi in M]),linestyle='solid',color='k',lw=1.5,zorder=0)
-        plt.legend(fancybox=True)
-        ax.set_xlabel('magnitude')
-        ax.set_ylabel('$\phi(M|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','luminosity_function.pdf'), bbox_inches='tight')
-        
-        magnitude_probability = np.sum(pmzl*np.diff(Z)[0],axis=1),np.sum(pmzm*np.diff(Z)[0],axis=1),np.sum(pmzh*np.diff(Z)[0],axis=1)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.fill_between(M,magnitude_probability[0],magnitude_probability[2],facecolor='lightgray')
-        ax.plot(M,magnitude_probability[1],linestyle='dashed',color='k')
-        ax.hist(C.galaxy_magnitudes, 100, density = True, facecolor='turquoise')
-        ax.set_xlabel('magnitude')
-        ax.set_ylabel('$\phi(M|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','luminosity_probability.pdf'), bbox_inches='tight')
-
-        redshift_probability = np.sum(pmzl*np.diff(M)[0],axis=0),np.sum(pmzm*np.diff(M)[0],axis=0),np.sum(pmzh*np.diff(M)[0],axis=0)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.fill_between(Z,redshift_probability[0],redshift_probability[2],facecolor='lightgray')
-        ax.plot(Z,redshift_probability[1],linestyle='dashed',color='k')
-        ax.hist(C.galaxy_redshifts, 100, density = True, facecolor='turquoise')
-        ax.set_xlabel('redshift')
-        ax.set_ylabel('$\phi(z|\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','galaxy_redshift_probability.pdf'), bbox_inches='tight')
 
     if (config_par['postprocess'] == 0):
         run_time = (time.perf_counter() - run_time)/60.0

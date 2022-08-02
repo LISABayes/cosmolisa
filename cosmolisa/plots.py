@@ -1,12 +1,14 @@
 import numpy as np
 import corner
 import os
+import sys
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
 from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
+from cosmolisa import galaxy as gal
 
 truth_color = '#4682b4'
 
@@ -77,7 +79,7 @@ def corner_config(model, samps_tuple, quantiles_plot, outdir, name, truths=None)
 
 def corner_plot(x, **kwargs):
 
-    print("Making corner plots...")
+    print("Making corner plot...")
     if (kwargs['model'] == "LambdaCDM"): 
         corner_config(model=kwargs['model'], 
                     samps_tuple=(x['h'],x['om']),
@@ -318,3 +320,117 @@ def rate_plots(x, **kwargs):
     ax.set_xlabel('selection probability', fontsize=16)
     ax.set_ylabel('number', fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'selection_probability.pdf'), bbox_inches='tight')
+
+
+def luminosity_plots(x, **kwargs):
+
+    print("Making luminosity plots...")
+    distributions = []
+    luminosity_function_0 = []
+    luminosity_function_1 = []
+    luminosity_function_2 = []    
+    Z = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 100)
+    M = np.linspace(kwargs['cosmo_model'].Mmin, kwargs['cosmo_model'].Mmax, 100)
+
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    for i in range(x.shape[0]):
+        sys.stderr.write("Processing {0} out of {1} samples\r".format(i+1, x.shape[0]))
+        phistar0         = x['phistar0'][i]
+        phistar_exponent = x['phistar_exponent'][i]
+        Mstar0           = x['Mstar0'][i]
+        Mstar_exponent   = x['Mstar_exponent'][i]
+        alpha0           = x['alpha0'][i]
+        alpha_exponent   = x['alpha_exponent'][i]
+
+        if   ("LambdaCDM_h" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][k], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM_om" in kwargs['cosmo_model'].model): O = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['cosmo_model'].model):    O = cs.CosmologicalParameters(x['h'][i], x['om'][i], 1.0-x['om'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['cosmo_model'].model):   O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
+        elif ("DE" in kwargs['cosmo_model'].model):           O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+
+        S = gal.GalaxyDistribution(O,
+                                   phistar0,
+                                   phistar_exponent,
+                                   Mstar0,
+                                   Mstar_exponent,
+                                   alpha0,
+                                   alpha_exponent,
+                                   kwargs['cosmo_model'].Mmin,
+                                   kwargs['cosmo_model'].Mmax,
+                                   0.0,
+                                   kwargs['cosmo_model'].z_threshold,
+                                   0.0,
+                                   2.0*np.pi,
+                                   -0.5*np.pi,
+                                   0.5*np.pi,
+                                   kwargs['cosmo_model'].magnitude_threshold,
+                                   4.0*np.pi,
+                                   1,1,1)
+
+        PMZ = np.array([S.pdf(Mi, Zj, 1) for Mi in M for Zj in Z]).reshape(100,100)
+        distributions.append(PMZ)
+        luminosity_function_0.append(np.array([S.luminosity_function(Mi, 1e-5, 0) for Mi in M]))
+        luminosity_function_1.append(np.array([S.luminosity_function(Mi, S.zmax/2., 0) for Mi in M]))
+        luminosity_function_2.append(np.array([S.luminosity_function(Mi, S.zmax, 0) for Mi in M]))
+
+    sys.stderr.write("\n")
+    distributions = np.array(distributions)
+    pmzl, pmzm, pmzh = np.percentile(distributions, [5,50,95], axis=0)
+    pl_0, pm_0, ph_0 = np.percentile(luminosity_function_0, [5,50,95], axis=0)
+    ax.fill_between(M, pl_0, ph_0, facecolor='magenta', alpha=0.5)
+    ax.plot(M, pm_0, linestyle='dashed', color='r', label="z = 0.0")
+    
+    pl_1, pm_1, ph_1 = np.percentile(luminosity_function_1, [5,50,95], axis=0)
+    ax.fill_between(M, pl_1, ph_1, facecolor='green', alpha=0.5)
+    ax.plot(M, pm_1, linestyle='dashed', color='g', label="z = {0:.1f}".format(S.zmax/2.))
+    
+    pl_2, pm_2, ph_2 = np.percentile(luminosity_function_2, [5,50,95], axis=0)
+    ax.fill_between(M, pl_2, ph_2, facecolor='turquoise', alpha=0.5)
+    ax.plot(M, pm_2, linestyle='dashed', color='b', label="z = {0:.1f}".format(S.zmax))
+    
+    St = gal.GalaxyDistribution(cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1']),
+                                kwargs['truths']['phistar0'],
+                                kwargs['truths']['phistar_exponent'],
+                                kwargs['truths']['Mstar0'],
+                                kwargs['truths']['Mstar_exponent'],
+                                kwargs['truths']['alpha0'],
+                                kwargs['truths']['alpha_exponent'],
+                                kwargs['cosmo_model'].Mmin,
+                                kwargs['cosmo_model'].Mmax,
+                                0.0,
+                                kwargs['cosmo_model'].z_threshold,
+                                0.0,
+                                2.0*np.pi,
+                                -0.5*np.pi,
+                                0.5*np.pi,
+                                kwargs['cosmo_model'].magnitude_threshold,
+                                4.0*np.pi,
+                                1,1,1)
+    
+    ax.plot(M, np.array([St.luminosity_function(Mi, 1e-5, 0) for Mi in M]), linestyle='solid', color='k', lw=1.5, zorder=0)
+    plt.legend(fancybox=True)
+    ax.set_xlabel('magnitude', fontsize=16)
+    ax.set_ylabel('$\phi(M|\Omega,I)$', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'luminosity_function.pdf'), bbox_inches='tight')
+    
+    magnitude_probability = np.sum(pmzl*np.diff(Z)[0], axis=1), np.sum(pmzm*np.diff(Z)[0], axis=1), np.sum(pmzh*np.diff(Z)[0], axis=1)
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    ax.fill_between(M, magnitude_probability[0], magnitude_probability[2], facecolor='lightgray')
+    ax.plot(M, magnitude_probability[1], linestyle='dashed', color='k')
+    ax.hist(kwargs['cosmo_model'].galaxy_magnitudes, 100, density=True, facecolor='turquoise')
+    ax.set_xlabel('magnitude', fontsize=16)
+    ax.set_ylabel('$\phi(M|\Omega,I)$', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'luminosity_probability.pdf'), bbox_inches='tight')
+
+    redshift_probability = np.sum(pmzl*np.diff(M)[0], axis=0), np.sum(pmzm*np.diff(M)[0], axis=0), np.sum(pmzh*np.diff(M)[0], axis=0)
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    ax.fill_between(Z, redshift_probability[0], redshift_probability[2], facecolor='lightgray')
+    ax.plot(Z, redshift_probability[1], linestyle='dashed', color='k')
+    ax.hist(kwargs['cosmo_model'].galaxy_redshifts, 100, density=True, facecolor='turquoise')
+    ax.set_xlabel('redshift', fontsize=16)
+    ax.set_ylabel('$\phi(z|\Omega,I)$', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'galaxy_redshift_probability.pdf'), bbox_inches='tight')
