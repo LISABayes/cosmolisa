@@ -1,7 +1,13 @@
 import numpy as np
 import corner
 import os
+import matplotlib
 import matplotlib.pyplot as plt
+from scipy.stats import norm
+
+from cosmolisa import cosmology as cs
+from cosmolisa import likelihood as lk
+
 
 # Mathematical labels used by the different models
 labels_plot = {'LambdaCDM_h':  ['h'],
@@ -121,3 +127,70 @@ def corner_plot(x, **kwargs):
                     name='corner_plot_luminosity_90CI')         
 
 
+def redshift_ev_plot(x, **kwargs):
+
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    z   = np.linspace(kwargs['event'].zmin, kwargs['event'].zmax, 100)
+
+    #FIXME: Fix positions of colorbar and axes 
+    if (kwargs['em_sel']):
+        ax3 = ax.twinx()
+        
+        if ("DE" in kwargs['model']): normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']), vmax=np.max(x['w0']))
+        else:                         normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']), vmax=np.max(x['h']))
+        # choose a colormap
+        c_m = matplotlib.cm.cool
+        # create a ScalarMappable and initialize a data structure
+        s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
+        s_m.set_array([])
+        for i in range(x.shape[0])[::10]:
+            if ("LambdaCDM_h" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],kwargs['truths']['om'],kwargs['truths']['ol'],kwargs['truths']['w0'],kwargs['truths']['w1'])
+            elif ("LambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],kwargs['truths']['w0'],kwargs['truths']['w1'])
+            elif ("CLambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],kwargs['truths']['w0'],kwargs['truths']['w1'])
+            elif ("LambdaCDMDE" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
+            elif ("DE" in kwargs['model']): O = cs.CosmologicalParameters(kwargs['truths']['h'],kwargs['truths']['om'],kwargs['truths']['ol'],x['w0'][i],x['w1'][i])
+            distances = np.array([O.LuminosityDistance(zi) for zi in z])
+            if ("DE" in kwargs['model']):  
+                ax3.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['w0'][i]), alpha = 0.5)
+            else: 
+                ax3.plot(z, [lk.em_selection_function(d) for d in distances], lw = 0.15, color=s_m.to_rgba(x['h'][i]), alpha = 0.5)
+            O.DestroyCosmologicalParameters()
+        CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
+        if ("DE" in kwargs['model']): CB.set_label('w_0')
+        else: CB.set_label('h')
+        ax3.set_ylim(0.0, 1.0)
+        ax3.set_ylabel('selection function')
+
+    # Plot the likelihood  
+    distance_likelihood = []
+    print("Making redshift plot of event", kwargs['event'].ID)
+    for i in range(x.shape[0])[::10]:
+        if ("LambdaCDM_h" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], 1.0-x['om'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
+        elif ("DE" in kwargs['model']): O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+        # distance_likelihood.append(np.array([lk.logLikelihood_single_event(C.hosts[kwargs['event'].ID], kwargs['event'].dl, kwargs['event'].sigma, O, zi) for zi in z]))
+        distance_likelihood.append(np.array([-0.5*((O.LuminosityDistance(zi) - kwargs['event'].dl)/kwargs['event'].sigma)**2 for zi in z]))
+        O.DestroyCosmologicalParameters()
+    distance_likelihood = np.exp(np.array(distance_likelihood))
+    l, m, h = np.percentile(distance_likelihood,[5,50,95], axis = 0)
+
+    ax2 = ax.twinx()
+    ax2.plot(z, m, linestyle='dashed', color='k', lw=0.75)
+    ax2.fill_between(z, l, h,facecolor='magenta', alpha=0.5)
+    ax2.plot(z, np.exp(np.array([-0.5*((kwargs['omega_true'].LuminosityDistance(zi)-kwargs['event'].dl)/kwargs['event'].sigma)**2 for zi in z])), linestyle = 'dashed', color='gold', lw=1.5)
+    ax.axvline(lk.find_redshift(kwargs['omega_true'],kwargs['event'].dl), linestyle='dotted', lw=0.8, color='red')
+    ax.axvline(kwargs['event'].z_true, linestyle='dotted', lw=0.8, color='k')
+    ax.hist(x['z%d'%kwargs['event'].ID], bins=z, density=True, alpha = 0.5, facecolor="green")
+    ax.hist(x['z%d'%kwargs['event'].ID], bins=z, density=True, alpha = 0.5, histtype='step', edgecolor="k")
+
+    for g in kwargs['event'].potential_galaxy_hosts:
+        zg = np.linspace(g.redshift - 5*g.dredshift, g.redshift+5*g.dredshift, 100)
+        pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift))*g.weight
+        ax.plot(zg, pg, lw=0.5, color='k')
+    ax.set_xlabel('$z_{%d}$'%kwargs['event'].ID, fontsize=16)
+    ax.set_ylabel('probability density', fontsize=16)
+    plt.savefig(os.path.join(kwargs['outdir'], 'Plots', 'redshift_{}'.format(kwargs['event'].ID)+'.png'), bbox_inches='tight')
+    plt.close()
