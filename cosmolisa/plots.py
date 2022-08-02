@@ -8,6 +8,7 @@ from scipy.stats import norm
 from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 
+truth_color = '#4682b4'
 
 # Mathematical labels used by the different models
 labels_plot = {'LambdaCDM_h':  ['h'],
@@ -32,7 +33,7 @@ def par_hist(model, samples, outdir, name, bins=20, truths=None):
     plt.axvline(quantiles[0], linestyle='dashed', color='k', lw=1.5)
     plt.axvline(quantiles[1], linestyle='dashed', color='k', lw=1.5)
     plt.axvline(quantiles[2], linestyle='dashed', color='k', lw=1.5)
-    plt.axvline(truths, linestyle='dashed', color='#4682b4', lw=1.5)
+    plt.axvline(truths, linestyle='dashed', color=truth_color, lw=1.5)
     med, low, up = quantiles[1], quantiles[0]-quantiles[1], quantiles[2]-quantiles[1]
     plt.title(r"${par} = {{{med}}}_{{{low}}}^{{+{up}}}$".format(par=labels_plot[model][0], med=fmt(med), low=fmt(low), up=fmt(up)), size = 16)
     plt.xlabel(r'${}$'.format(labels_plot[model][0]), fontsize=16)
@@ -76,6 +77,7 @@ def corner_config(model, samps_tuple, quantiles_plot, outdir, name, truths=None)
 
 def corner_plot(x, **kwargs):
 
+    print("Making corner plots...")
     if (kwargs['model'] == "LambdaCDM"): 
         corner_config(model=kwargs['model'], 
                     samps_tuple=(x['h'],x['om']),
@@ -95,7 +97,7 @@ def corner_plot(x, **kwargs):
                     samps_tuple=(x['h'],x['om'],x['ol']),
                     quantiles_plot=[0.05, 0.5, 0.95], 
                     truths=[truths['h'],truths['om'],truths['ol']],
-                    outdir=outdir,
+                    outdir=kwargs['outdir'],
                     name='corner_plot_90CI')
 
     elif (kwargs['model'] == 'LambdaCDMDE'):    
@@ -103,7 +105,7 @@ def corner_plot(x, **kwargs):
                     samps_tuple=(x['h'],x['om'],x['ol'],x['w0'],x['w1']),
                     quantiles_plot=[0.05, 0.5, 0.95], 
                     truths=[truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1']],
-                    outdir=outdir,
+                    outdir=kwargs['outdir'],
                     name='corner_plot_90CI')
 
     elif (kwargs['model'] == 'DE'):
@@ -111,21 +113,21 @@ def corner_plot(x, **kwargs):
                     samps_tuple=(x['w0'],x['w1']),
                     quantiles_plot=[0.05, 0.5, 0.95], 
                     truths=[truths['w0'],truths['w1']],
-                    outdir=outdir,
+                    outdir=kwargs['outdir'],
                     name='corner_plot_90CI')
 
     elif (kwargs['model'] == 'Rate'):
         corner_config(model=kwargs['model'], 
                     samps_tuple=(x['h'],x['om'],x['log10r0'],x['W'],x['R'],x['Q']),
                     quantiles_plot=[0.05, 0.5, 0.95], 
-                    outdir=outdir,
+                    outdir=kwargs['outdir'],
                     name='corner_plot_rate_90CI')       
 
     elif (kwargs['model'] == 'Luminosity'):
         corner_config(model=kwargs['model'], 
                     samps_tuple=(x['phistar0'],x['phistar_exponent'],x['Mstar0'],x['Mstar_exponent'],x['alpha0'],x['alpha_exponent']),
                     quantiles_plot=[0.05, 0.5, 0.95], 
-                    outdir=outdir,
+                    outdir=kwargs['outdir'],
                     name='corner_plot_luminosity_90CI')         
 
 
@@ -202,6 +204,7 @@ def redshift_ev_plot(x, **kwargs):
 
 def MBHB_regression(x, **kwargs):
 
+    print("Making MBHB regression plot...")
     dl = [e.dl/1e3 for e in kwargs['data']]
     ztrue = [e.potential_galaxy_hosts[0].redshift for e in kwargs['data']]
     if not len(kwargs['data']) == 1:
@@ -216,12 +219,12 @@ def MBHB_regression(x, **kwargs):
     # loop over the posterior samples to get all models to then average for the plot
     models = []
     for k in range(x.shape[0]):
-        if   ("LambdaCDM_h" in kwargs['model']): omega = cs.CosmologicalParameters(x['h'][k], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("LambdaCDM_om" in kwargs['data']): omega = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("LambdaCDM" in kwargs['data']):    omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("CLambdaCDM" in kwargs['data']):   omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("LambdaCDMDE" in kwargs['data']):  omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], x['w0'][k], x['w1'][k])
-        elif ("DE" in kwargs['data']):           omega = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][k], x['w1'][k])
+        if   ("LambdaCDM_h" in kwargs['model']):  omega = cs.CosmologicalParameters(x['h'][k], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM_om" in kwargs['model']): omega = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['model']):    omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['model']):   omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['model']):  omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], x['w0'][k], x['w1'][k])
+        elif ("DE" in kwargs['model']):           omega = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][k], x['w1'][k])
         models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
         omega.DestroyCosmologicalParameters()
 
@@ -240,3 +243,78 @@ def MBHB_regression(x, **kwargs):
     ax.set_ylabel(r"$D_L$/Gpc", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'MBHB_regression_68_95CI.pdf'), bbox_inches='tight')
     plt.close()
+
+
+def rate_plots(x, **kwargs):
+
+    print("Making rate plots...")
+    sfr = []
+    z   = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 100)
+
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    Rtot = np.zeros(x.shape[0], dtype=np.float64)
+    selection_probability = np.zeros(x.shape[0], dtype=np.float64)
+    for i in range(x.shape[0]):
+        r0  = 10**x['log10r0'][i]
+        W   = x['W'][i]
+        Q   = x['Q'][i]
+        R   = x['R'][i]
+        if   ("LambdaCDM_h" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][k], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM_om" in kwargs['cosmo_model'].model): O = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['cosmo_model'].model):    O = cs.CosmologicalParameters(x['h'][i], x['om'][i], 1.0-x['om'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['cosmo_model'].model):   O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
+        elif ("DE" in kwargs['cosmo_model'].model):           O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+        # compute the expected rate parameter integrated to the maximum redshift
+        # this will also serve as normalisation constant for the individual dR/dz_i
+        Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, kwargs['cosmo_model'].z_threshold)
+        selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, kwargs['cosmo_model'].z_threshold, r0, W, R, Q, kwargs['cosmo_model'].snr_threshold, O)/Rtot[i]
+        v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
+#            ax.plot(z,v,color='k', linewidth=.3)
+        sfr.append(v)
+
+    Rtot_true = lk.integrated_rate(kwargs['truths']['r0'], kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'], kwargs['omega_true'], 0.0, kwargs['cosmo_model'].z_threshold)
+    true_selection_prob = lk.gw_selection_probability_sfr(1e-5, kwargs['cosmo_model'].z_threshold, kwargs['truths']['r0'], kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'], kwargs['cosmo_model'].snr_threshold, kwargs['omega_true'])/Rtot_true
+    sfr_true = np.array([cs.StarFormationDensity(zi, kwargs['truths']['r0'], kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'])*kwargs['omega_true'].UniformComovingVolumeDensity(zi)/Rtot_true for zi in z])
+    nevents_true = Rtot_true*kwargs['cosmo_model'].T*np.cumsum(sfr_true)*np.diff(z)[0]
+    sfr = np.array(sfr)
+    tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
+    nevents = Rtot[:,None]*kwargs['cosmo_model'].T*tmp
+    l_sfr, m_sfr, h_sfr = np.percentile(sfr, [5,50,95], axis=0)
+    l_nev, m_nev, h_nev = np.percentile(nevents, [5,50,95], axis=0)
+    print('Merger rate =', np.percentile(Rtot, [5,50,95]), 'true = ', Rtot_true)
+    print('p_det =', np.percentile(selection_probability, [5,50,95]), 'true = ', true_selection_prob)    
+
+    ax.plot(z, m_sfr, color='k', linewidth=.7)
+    ax.fill_between(z, l_sfr, h_sfr, facecolor='lightgray')
+    ax.plot(z, sfr_true, linestyle='dashed', color=truth_color)
+    ax.set_xlabel('redshift', fontsize=16)
+    ax.set_ylabel('$p(z|\Lambda,\Omega,I)$', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'redshift_distribution.pdf'), bbox_inches='tight')
+    
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    ax.plot(z, m_nev, color='k', linewidth=.7)
+    ax.fill_between(z, l_nev, h_nev, facecolor='lightgray')
+    ax.plot(z, nevents_true, color=truth_color, linestyle='dashed')
+    plt.yscale('log')
+    ax.set_xlabel('redshift z', fontsize=16)
+    ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$', fontsize=16)
+    plt.savefig(os.path.join(kwargs['outdir'], 'Plots', 'number_of_events.pdf'), bbox_inches='tight')
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.hist(Rtot, bins = 100, histtype='step')
+    ax.axvline(Rtot_true, linestyle='dashed', color=truth_color)
+    ax.set_xlabel('global rate', fontsize=16)
+    ax.set_ylabel('number', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'global_rate.pdf'), bbox_inches='tight')
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.hist(selection_probability, bins = 100, histtype='step')
+    ax.axvline(true_selection_prob, linestyle='dashed', color=truth_color)
+    ax.set_xlabel('selection probability', fontsize=16)
+    ax.set_ylabel('number', fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'selection_probability.pdf'), bbox_inches='tight')

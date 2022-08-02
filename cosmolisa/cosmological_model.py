@@ -693,7 +693,6 @@ def main():
 
     if C.cosmology == 1:
 
-        print("Making corner plots...")
         if ("LambdaCDM_h" in C.model):
             plots.histogram(x, model='LambdaCDM_h', truths=truths, outdir=outdir)
         elif ("LambdaCDM_om" in C.model):
@@ -717,87 +716,11 @@ def main():
     
     if ("Rate" in C.model):
 
-        print("Making corner plots...")
         plots.corner_plot(x, model='Rate', truths=truths, outdir=outdir)
-
-        z   = np.linspace(0.0,C.z_threshold,100)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        sfr = []
-        Rtot = np.zeros(x.shape[0],dtype=np.float64)
-        selection_probability = np.zeros(x.shape[0],dtype=np.float64)
-        for i in range(x.shape[0]):
-            r0  = 10**x['log10r0'][i]
-            W   = x['W'][i]
-            Q   = x['Q'][i]
-            R   = x['R'][i]
-            if ("LambdaCDM" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],truths['w0'],truths['w1'])
-            elif ("CLambdaCDM" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],truths['w0'],truths['w1'])
-            elif ("LambdaCDMDE" in C.model):
-                O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
-            elif ("DE" in C.model):
-                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],x['w0'][i],x['w1'][i])
-            else:
-                O = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
-            # compute the expected rate parameter integrated to the maximum redshift
-            # this will also serve as normalisation constant for the individual dR/dz_i
-            Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, C.z_threshold)
-            selection_probability[i] = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, r0, W, R, Q, C.snr_threshold, O)/Rtot[i]
-            v = np.array([cs.StarFormationDensity(zi, r0, W, R, Q)*O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
-#            ax.plot(z,v,color='k', linewidth=.3)
-            sfr.append(v)
-
-        Rtot_true = lk.integrated_rate(truths['r0'], truths['W'], truths['R'], truths['Q'], omega_true, 0.0, C.z_threshold)
-        sfr   = np.array(sfr)
-        sfr_true = np.array([cs.StarFormationDensity(zi, truths['r0'], truths['W'], truths['R'], truths['Q'])*omega_true.UniformComovingVolumeDensity(zi)/Rtot_true for zi in z])
-        
-        l,m,h = np.percentile(sfr,[5,50,95],axis=0)
-        ax.plot(z,m,color='k', linewidth=.7)
-        ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,sfr_true,linestyle='dashed',color='red')
-        ax.set_xlabel('redshift')
-        ax.set_ylabel('$p(z|\Lambda,\Omega,I)$')
-        fig.savefig(os.path.join(outdir,'Plots','redshift_distribution.pdf'), bbox_inches='tight')
-        
-        tmp = np.cumsum(sfr, axis = 1)*np.diff(z)[0]
-        nevents         = Rtot[:,None]*C.T*tmp
-        nevents_true    = Rtot_true*C.T*np.cumsum(sfr_true)*np.diff(z)[0]
-        l,m,h = np.percentile(nevents,[5,50,95],axis=0)
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.plot(z,m,color='k', linewidth=.7)
-        ax.fill_between(z,l,h,facecolor='lightgray')
-        ax.plot(z,nevents_true, color='r', linestyle='dashed')
-        plt.yscale('log')
-        ax.set_xlabel('redshift z')
-        ax.set_ylabel('$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$')
-        plt.savefig(os.path.join(outdir,'Plots','number_of_events.pdf'), bbox_inches='tight')
-        
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.hist(Rtot, bins = 100, histtype='step')
-        ax.axvline(Rtot_true, linestyle='dashed', color='r')
-        ax.set_xlabel('global rate')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(outdir,'Plots','global_rate.pdf'), bbox_inches='tight')
-        print('merger rate =', np.percentile(Rtot,[5,50,95]),'true = ',Rtot_true)
-        
-        true_selection_prob = lk.gw_selection_probability_sfr(1e-5, C.z_threshold, truths['r0'], truths['W'], truths['R'], truths['Q'], C.snr_threshold, omega_true)/Rtot_true
-        fig = plt.figure()
-        ax  = fig.add_subplot(111)
-        ax.hist(selection_probability, bins = 100, histtype='step')
-        ax.axvline(true_selection_prob, linestyle='dashed', color='r')
-        ax.set_xlabel('selection probability')
-        ax.set_ylabel('number')
-        fig.savefig(os.path.join(outdir,'Plots','selection_probability.pdf'), bbox_inches='tight')
-
-        print('p_det =',np.percentile(selection_probability,[5,50,95]),'true = ',true_selection_prob)
+        plots.rate_plots(x, cosmo_model=C, truths=truths, omega_true=omega_true, outdir=outdir)
 
     if ("Luminosity" in C.model):
 
-        print("Making corner plots...")
         plots.corner_plot(x, model='Luminosity', truths=truths, outdir=outdir)
 
         distributions = []
