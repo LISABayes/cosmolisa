@@ -20,6 +20,7 @@ labels_plot = {'LambdaCDM_h':  ['h'],
                'Luminosity':   [r'$\phi^{*}/Mpc^{3}$', r'$a$', r'$M^{*}$', r'$b$', r'$\alpha$', r'$c$'],
               }
 
+
 def par_hist(model, samples, outdir, name, bins=20, truths=None):
     """
     Histogram for single-parameter inference
@@ -37,6 +38,7 @@ def par_hist(model, samples, outdir, name, bins=20, truths=None):
     plt.xlabel(r'${}$'.format(labels_plot[model][0]), fontsize=16)
     fig.savefig(os.path.join(outdir,'Plots', name+'.pdf'), bbox_inches='tight')
     fig.savefig(os.path.join(outdir,'Plots', name+'.png'), bbox_inches='tight')
+
 
 def histogram(x, **kwargs):
 
@@ -146,6 +148,7 @@ def redshift_ev_plot(x, **kwargs):
         s_m.set_array([])
         for i in range(x.shape[0])[::10]:
             if ("LambdaCDM_h" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],kwargs['truths']['om'],kwargs['truths']['ol'],kwargs['truths']['w0'],kwargs['truths']['w1'])
+            elif ("LambdaCDM_om" in kwargs['model']): O = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][i], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
             elif ("LambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],1.0-x['om'][i],kwargs['truths']['w0'],kwargs['truths']['w1'])
             elif ("CLambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],kwargs['truths']['w0'],kwargs['truths']['w1'])
             elif ("LambdaCDMDE" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i],x['om'][i],x['ol'][i],x['w0'][i],x['w1'][i])
@@ -166,11 +169,12 @@ def redshift_ev_plot(x, **kwargs):
     distance_likelihood = []
     print("Making redshift plot of event", kwargs['event'].ID)
     for i in range(x.shape[0])[::10]:
-        if ("LambdaCDM_h" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("LambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], 1.0-x['om'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("CLambdaCDM" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
-        elif ("LambdaCDMDE" in kwargs['model']): O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
-        elif ("DE" in kwargs['model']): O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+        if   ("LambdaCDM_h" in kwargs['model']):  O = cs.CosmologicalParameters(x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM_om" in kwargs['model']): O = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][i], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['model']):    O = cs.CosmologicalParameters(x['h'][i], x['om'][i], 1.0-x['om'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['model']):   O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['model']):  O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
+        elif ("DE" in kwargs['model']):           O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
         # distance_likelihood.append(np.array([lk.logLikelihood_single_event(C.hosts[kwargs['event'].ID], kwargs['event'].dl, kwargs['event'].sigma, O, zi) for zi in z]))
         distance_likelihood.append(np.array([-0.5*((O.LuminosityDistance(zi) - kwargs['event'].dl)/kwargs['event'].sigma)**2 for zi in z]))
         O.DestroyCosmologicalParameters()
@@ -193,4 +197,46 @@ def redshift_ev_plot(x, **kwargs):
     ax.set_xlabel('$z_{%d}$'%kwargs['event'].ID, fontsize=16)
     ax.set_ylabel('probability density', fontsize=16)
     plt.savefig(os.path.join(kwargs['outdir'], 'Plots', 'redshift_{}'.format(kwargs['event'].ID)+'.png'), bbox_inches='tight')
+    plt.close()
+
+
+def MBHB_regression(x, **kwargs):
+
+    dl = [e.dl/1e3 for e in kwargs['data']]
+    ztrue = [e.potential_galaxy_hosts[0].redshift for e in kwargs['data']]
+    if not len(kwargs['data']) == 1:
+        dztrue = np.squeeze([[ztrue[i]-e.zmin, e.zmax-ztrue[i]] for i,e in enumerate(kwargs['data'])]).T
+    else:
+        dztrue = np.squeeze([[ztrue[i]-e.zmin, e.zmax-ztrue[i]] for i,e in enumerate(kwargs['data'])]).reshape(2,1)
+    deltadl = [np.sqrt((e.sigma/1e3)**2 + (lk.sigma_weak_lensing(e.potential_galaxy_hosts[0].redshift, e.dl)/1e3)**2) for e in kwargs['data']]
+    z = [np.median(x['z{}'.format(e.ID)]) for e in kwargs['data']]
+    deltaz = [2*np.std(x['z{}'.format(e.ID)]) for e in kwargs['data']]
+    redshift = np.logspace(-3, 1.0, 100)
+
+    # loop over the posterior samples to get all models to then average for the plot
+    models = []
+    for k in range(x.shape[0]):
+        if   ("LambdaCDM_h" in kwargs['model']): omega = cs.CosmologicalParameters(x['h'][k], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM_om" in kwargs['data']): omega = cs.CosmologicalParameters(kwargs['truths']['h'], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDM" in kwargs['data']):    omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], 1.0-x['om'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("CLambdaCDM" in kwargs['data']):   omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
+        elif ("LambdaCDMDE" in kwargs['data']):  omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], x['w0'][k], x['w1'][k])
+        elif ("DE" in kwargs['data']):           omega = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][k], x['w1'][k])
+        models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
+        omega.DestroyCosmologicalParameters()
+
+    models = np.array(models)
+    model2p5,model16,model50,model84,model97p5 = np.percentile(models,[2.5,16.0,50.0,84.0,97.5],axis = 0)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.errorbar(z, dl, xerr=deltaz, yerr=deltadl, markersize=1, linewidth=2, color='k', fmt='o')
+    ax.plot(redshift, [kwargs['omega_true'].LuminosityDistance(zi)/1e3 for zi in redshift], linestyle='dashed', color='red', zorder=22)
+    ax.plot(redshift, model50, color='k')
+    ax.errorbar(ztrue, dl, xerr=dztrue, yerr=deltadl, markersize=2, linewidth=1, color='r', fmt='o')
+    ax.fill_between(redshift, model2p5, model97p5, facecolor='turquoise')
+    ax.fill_between(redshift, model16, model84, facecolor='cyan')
+    ax.set_xlabel(r"z", fontsize=16)
+    ax.set_ylabel(r"$D_L$/Gpc", fontsize=16)
+    fig.savefig(os.path.join(kwargs['outdir'], 'Plots', 'MBHB_regression_68_95CI.pdf'), bbox_inches='tight')
     plt.close()
