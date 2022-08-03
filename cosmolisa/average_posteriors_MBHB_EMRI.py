@@ -3,7 +3,6 @@ import os
 import sys
 import matplotlib
 import matplotlib.pyplot as plt
-import corner
 import h5py
 from optparse import OptionParser
 
