@@ -398,34 +398,6 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
 
     return analysis_events
 
-def read_DEBUG_event(datafile, *args, **kwargs):
-    """
-    Parameters:
-    ==============
-    datafile: file containing the data for the hosts
-    The columns must be:
-    1-ID sorgente
-    2-Dl LISA best measurement
-    3-Delta{Dl}
-    4-redshift dell'host
-    5-unused
-    6-weight (set to 1)
-    7-z minimo considerando variazione cosmologia, delta{Dl} e peculiar vel
-    8-z max considerando variazione cosmologia, delta{Dl} e peculiar vel
-    9-z corrispondente al Dl misurato da LISA
-    """
-    event_id, dl, sigma, redshift, _, weights, zmin, zmax, redshift_inv_d   = np.loadtxt(datafile, unpack = True)
-        
-    events = []
-        
-    for i in range(len(event_id)):
-        
-        events.append(Event(event_id[i],dl[i],sigma[i],[redshift[i]],[0.0015], [weights[i]],zmin[i],zmax[i]))
-
-    events = events[:50]
-    sys.stderr.write("Selected %d events\n"%len(events))
-    return events
-
 def read_event(event_class,*args,**kwargs):
     if   (event_class == "MBHB"):   return read_MBHB_event(*args, **kwargs)
     elif (event_class == "EMRI"):  return read_EMRI_event(event_class, *args, **kwargs)
@@ -435,8 +407,3 @@ def read_event(event_class,*args,**kwargs):
         print("I do not know the class %s, exiting\n"%event_class)
         exit(-1)
 
-if __name__=="__main__":
-    input_folder = '/Users/wdp/repositories/LISA/LISA_BHB/errorbox_data/EMRI_data/EMRI_M1_GAUSS'
-    event_number = None
-    e = read_event("EMRI",input_folder, event_number)
-    print(e)
