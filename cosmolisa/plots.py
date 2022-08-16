@@ -227,6 +227,7 @@ def MBHB_regression(x, **kwargs):
         elif ("CLambdaCDM" in kwargs['model']):   omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], kwargs['truths']['w0'], kwargs['truths']['w1'])
         elif ("LambdaCDMDE" in kwargs['model']):  omega = cs.CosmologicalParameters(x['h'][k], x['om'][k], x['ol'][k], x['w0'][k], x['w1'][k])
         elif ("DE" in kwargs['model']):           omega = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][k], x['w1'][k])
+        else:                                     omega = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
         models.append([omega.LuminosityDistance(zi)/1e3 for zi in redshift])
         omega.DestroyCosmologicalParameters()
 
@@ -268,6 +269,8 @@ def rate_plots(x, **kwargs):
         elif ("CLambdaCDM" in kwargs['cosmo_model'].model):   O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
         elif ("LambdaCDMDE" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
         elif ("DE" in kwargs['cosmo_model'].model):           O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+        else:                                                 O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+
         # compute the expected rate parameter integrated to the maximum redshift
         # this will also serve as normalisation constant for the individual dR/dz_i
         Rtot[i] = lk.integrated_rate(r0, W, R, Q, O, 0.0, kwargs['cosmo_model'].z_threshold)
@@ -349,6 +352,8 @@ def luminosity_plots(x, **kwargs):
         elif ("CLambdaCDM" in kwargs['cosmo_model'].model):   O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], kwargs['truths']['w0'], kwargs['truths']['w1'])
         elif ("LambdaCDMDE" in kwargs['cosmo_model'].model):  O = cs.CosmologicalParameters(x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
         elif ("DE" in kwargs['cosmo_model'].model):           O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
+        else:                                                 O = cs.CosmologicalParameters(kwargs['truths']['h'], kwargs['truths']['om'], kwargs['truths']['ol'], kwargs['truths']['w0'], kwargs['truths']['w1'])
+
 
         S = gal.GalaxyDistribution(O,
                                    phistar0,
