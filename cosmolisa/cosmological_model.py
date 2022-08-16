@@ -152,16 +152,16 @@ class CosmologicalModel(cpnest.model.Model):
                
         print("\n====================================================================================================\n")
         print("CosmologicalModel model initialised with:")
-        print("Event class: {0}".format(self.event_class))
-        print("Analysis model: {0}".format(self.model))
-        print("Number of events: {0}".format(len(self.data)))
-        print("EM correction: {0}".format(self.em_correction))
-        print("GW correction: {0}".format(self.gw_correction))
-        print("Free parameters: {0}".format(self.names))
+        print(f"Event class: {self.event_class}")
+        print(f"Analysis model: {self.model}")
+        print(f"Number of events: {len(self.data)}")
+        print(f"EM correction: {self.em_correction}")
+        print(f"GW correction: {self.gw_correction}")
+        print(f"Free parameters: {self.names}")
         print("\n====================================================================================================\n")
         print("Prior bounds:")
         for name,bound in zip(self.names, self.bounds):
-            print("{}: {}".format(str(name).ljust(4), bound))
+            print(f"{str(name).ljust(4)}: {bound}")
         print("\n====================================================================================================\n")
 
     def _initialise_galaxy_hosts(self):
@@ -464,12 +464,13 @@ def main():
             sys.stdout = open(os.path.join(outdir,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(outdir,'stderr.txt'), 'w')
 
-    print("\n"+"cpnest installation version:", cpnest.__version__)
-    print("ray version:", ray.__version__)
-    print("cosmolisa likelihood version:", lk.__file__)
+    print("\n"+"Running cosmoLISA")
+    print(f"cpnest installation version: {cpnest.__version__}")
+    print(f"ray version: {ray.__version__}")
+    print(f"cosmolisa likelihood version: {lk.__file__}")
 
     max_len_keyword = len('periodic_checkpoint_int')
-    print(('\nReading config file: {}\n'.format(config_file)))
+    print((f"\nReading config file: {config_file}\n"))
     for key in config_par:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword), value=config_par[key])))
 
@@ -511,7 +512,7 @@ def main():
         elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
             all_events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             events_selected = []
-            print("\nSelecting events according to dl_cutoff={}:".format(config_par['dl_cutoff']))
+            print(f"\nSelecting events according to dl_cutoff={config_par['dl_cutoff']}:")
             for e in all_events:
                 if (omega_true.LuminosityDistance(e.zmax) < config_par['dl_cutoff']):
                     events_selected.append(e)
@@ -527,7 +528,7 @@ def main():
         elif (config_par['event_ID_list'] != ''):
             events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
-            print("\nSelecting events according to snr_threshold={}:".format(config_par['snr_threshold']))
+            print(f"\nSelecting events according to snr_threshold={config_par['snr_threshold']}:")
             if not config_par['reduced_catalog']:
                 events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
@@ -537,7 +538,7 @@ def main():
                     N = np.int(np.random.poisson(len(events)*4./10.))
                 elif (config_par['event_class'] == "EMRI"):
                     N = np.int(np.random.poisson(len(events)*4./10.))
-                print("\nReduced number of events: {}".format(N))
+                print(f"\nReduced number of events: {N}")
                 selected_events = []
                 k = 0
                 while k < N and not(len(events) == 0):
@@ -568,20 +569,18 @@ def main():
             N = joint
             if (N > len(events)):
                 N = len(events)
-                print("The catalog has a number of selected events smaller than the chosen number ({}). Running on {}".format(N, len(events)))
+                print(f"The catalog has a number of selected events smaller than the chosen number ({N}). Running on {len(events)}")
             events = np.random.choice(events, size = N, replace = False)
             print(formatting_string)
-            print("Selecting a random catalog of {0} events for joint analysis:".format(N))
+            print(f"Selecting a random catalog of {N} events for joint analysis:")
             print(formatting_string)
             if not(len(events) == 0):
                 for e in events:
                     print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,e.zmin,e.zmax,len(e.potential_galaxy_hosts)))
                 print(formatting_string)
             else:
-                print("None of the drawn events has z<{0}. No data to analyse. Exiting.\n".format(config_par['zhorizon']))
+                print(f"None of the drawn events has z<{config_par['zhorizon']}. No data to analyse. Exiting.\n")
                 exit()
-    else:
-        events = readdata.read_event(config_par['event_class'], config_par['data'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
     if (config_par['single_z_from_GW'] != 0) and (config_par['one_host_sel'] == 1):
         print("\nSimulating a single potential host with redshift equal to z_true.") 
@@ -600,14 +599,14 @@ def main():
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
         q, r = divmod(len(events), config_par['split_data_num'])
         split_events = list([events[i*q + min(i, r):(i+1)*q + min(i+1, r)] for i in range(config_par['split_data_num'])])
-        print("\nInitial list of {} events split into {} chunks. \nChunk number {} is chosen.".format(len(events), len(split_events), config_par['split_data_chunk']))
+        print(f"\nInitial list of {len(events)} events split into {len(split_events)} chunks. \nChunk number {config_par['split_data_chunk']} is chosen.")
         events = split_events[config_par['split_data_chunk']-1]
 
     if (len(events) == 0):
         print("The passed catalog is empty. Exiting.\n")
         exit()
 
-    print("\nDetailed list of the %d selected event(s):"%len(events))
+    print(f"\nDetailed list of the {len(events)} selected event(s):")
     print("\n"+formatting_string)
     if config_par['event_class'] == 'MBHB':
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
@@ -625,16 +624,16 @@ def main():
 
     print(formatting_string+"\n")
     print("CPNest will be initialised with:")
-    print("verbose:                 {0}".format(config_par['verbose']))
-    print("nensemble:               {0}".format(config_par['nensemble']))
-    print("nslice:                  {0}".format(config_par['nslice']))
-    print("nhamiltonian:            {0}".format(config_par['nhamiltonian']))
-    print("nnest:                   {0}".format(config_par['nnest']))
-    print("nlive:                   {0}".format(config_par['nlive']))
-    print("maxmcmc:                 {0}".format(config_par['maxmcmc']))
-    print("object_store_memory:     {0}".format(config_par['obj_store_mem']))
-    print("periodic_checkpoint_int: {0}".format(config_par['periodic_checkpoint_int'])) 
-    print("resume:                  {0}".format(config_par['resume'])) 
+    print(f"verbose:                 {config_par['verbose']}")
+    print(f"nensemble:               {config_par['nensemble']}")
+    print(f"nslice:                  {config_par['nslice']}")
+    print(f"nhamiltonian:            {config_par['nhamiltonian']}")
+    print(f"nnest:                   {config_par['nnest']}")
+    print(f"nlive:                   {config_par['nlive']}")
+    print(f"maxmcmc:                 {config_par['maxmcmc']}")
+    print(f"object_store_memory:     {config_par['obj_store_mem']}")
+    print(f"periodic_checkpoint_int: {config_par['periodic_checkpoint_int']}")
+    print(f"resume:                  {config_par['resume']}")
 
     C = CosmologicalModel(model         = config_par['model'],
                           data          = events,
@@ -669,7 +668,7 @@ def main():
                            )
 
         work.run()
-        print('log Evidence {0}'.format(work.logZ))
+        print(f"log Evidence {work.logZ}")
         print("\n"+formatting_string+"\n")
 
         x = work.posterior_samples.ravel()

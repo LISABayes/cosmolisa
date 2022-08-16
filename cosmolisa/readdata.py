@@ -7,7 +7,7 @@ class Galaxy(object):
     Galaxy class:
     initialise a galaxy defined by its redshift, redshift error,
     weight determined by its angular position
-    relative to the LISA posterior and magnitude
+    relative to the LISA posterior, and magnitude
     """
     def __init__(self, redshift, dredshift, weight, dl, magnitude):
         
@@ -20,7 +20,7 @@ class Galaxy(object):
 class Event(object):
     """
     Event class:
-    initialise a GW event based on its distance and potential
+    initialise a GW event based on its properties and potential
     galaxy hosts
     """
     def __init__(self,
@@ -39,7 +39,6 @@ class Event(object):
                  z_true,
                  z_cosmo_true_host,
                  dl_host,
-                 snr_threshold = 8.0,
                  VC = None):
 
         self.potential_galaxy_hosts = [Galaxy(r,dr,w,dl,m) for r,dr,w,dl,m in zip(redshifts,dredshifts,weights,dl_host,magnitudes)]
@@ -62,7 +61,7 @@ class Event(object):
 def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_hosts = None, **kwargs):
     
     all_files   = os.listdir(input_folder)
-    print("Reading {}".format(input_folder))
+    print(f"Reading {input_folder}")
 
     events_list = [f for f in all_files if ('EVENT' in f or 'event' in f)]
     
@@ -72,37 +71,36 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
         
         for ev in events_list:
             
-            event_file          = open(input_folder+"/"+ev+"/ID.dat","r")
-            event_id,dl,sigma   = event_file.readline().split(None)
-            ID                  = np.int(event_id)
-            dl                  = np.float64(dl)
-            sigma               = np.float64(sigma)*dl
+            event_file            = open(input_folder+"/"+ev+"/ID.dat","r")
+            event_id,dl,rel_sigma = event_file.readline().split(None)
+            ID                    = np.int(event_id)
+            dl                    = np.float64(dl)
+            sigma                 = np.float64(rel_sigma)*dl
             event_file.close()
             
             try:
-                redshifts,d_redshifts   = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat",unpack=True)
-                redshifts               = np.atleast_1d(redshifts)
-                d_redshifts             = np.atleast_1d(d_redshifts)
-                weights                 = np.ones(len(redshifts))
-                magnitudes              = np.ones(len(redshifts))
-                zmin                    = np.float64(np.maximum(redshifts - 5.0*d_redshifts, 0.0))
-                zmax                    = np.float64(redshifts + 5.0*d_redshifts)
+                redshift,d_redshift = np.loadtxt(input_folder+"/"+ev+"/ERRORBOX.dat", unpack=True)
+                redshift            = np.atleast_1d(redshift)
+                d_redshift          = np.atleast_1d(d_redshift)
+                weights             = np.ones(len(redshift))
+                magnitudes          = np.ones(len(redshift))
+                zmin                = np.float64(np.maximum(redshift - 5.0*d_redshift, 0.0))
+                zmax                = np.float64(redshift + 5.0*d_redshift)
                 events.append(Event(ID,
                                     dl,
                                     sigma,
-                                    1,
-                                    1,
-                                    redshifts,
-                                    d_redshifts,
+                                    1.0,
+                                    1.0,
+                                    redshift,
+                                    d_redshift,
                                     weights,
                                     magnitudes,
                                     zmin,
                                     zmax,
                                     -1,
                                     -1,
-                                    [0],
+                                    -1,
                                     [0]))
-                sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
             except:
                 if (TypeError, NameError): raise
                 else: sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
@@ -118,41 +116,41 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
             analysis_events = [e for e in distance_limited_events]
 
     else:
-        event_file          = open(input_folder+"/"+events_list[event_number]+"/ID.dat","r")
-        event_id,dl,sigma   = event_file.readline().split(None)
-        ID                  = np.int(event_id)
-        dl                  = np.float64(dl)
-        sigma               = np.float64(sigma)*dl
+        event_file        = open(input_folder+"/"+events_list[event_number]+"/ID.dat","r")
+        event_id,dl,sigma = event_file.readline().split(None)
+        ID                = np.int(event_id)
+        dl                = np.float64(dl)
+        sigma             = np.float64(sigma)*dl
         event_file.close()
         try:
-            redshifts,d_redshifts   = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
-            redshifts               = np.atleast_1d(redshifts)
-            d_redshifts             = np.atleast_1d(d_redshifts)
-            weights                 = np.atleast_1d(len(redshifts))
-            magnitudes              = np.atleast_1d(len(redshifts))
-            zmin                    = np.float64(np.maximum(redshifts - 10.0*d_redshifts, 0.0))
-            zmax                    = np.float64(redshifts + 10.0*d_redshifts)
-            analysis_events         = [Event(ID,
-                                            dl,
-                                            sigma,
-                                            1,
-                                            1,
-                                            redshifts,
-                                            d_redshifts,
-                                            weights,
-                                            magnitudes,
-                                            zmin,
-                                            zmax,
-                                            -1,
-                                            -1,
-                                            [0],
-                                            [0])]
+            redshift,d_redshift = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
+            redshift            = np.atleast_1d(redshift)
+            d_redshift          = np.atleast_1d(d_redshift)
+            weights             = np.atleast_1d(len(redshift))
+            magnitudes          = np.atleast_1d(len(redshift))
+            zmin                = np.float64(np.maximum(redshift - 10.0*d_redshift, 0.0))
+            zmax                = np.float64(redshift + 10.0*d_redshift)
+            analysis_events     = [Event(ID,
+                                         dl,
+                                         sigma,
+                                         1.0,
+                                         1.0,
+                                         redshift,
+                                         d_redshift,
+                                         weights,
+                                         magnitudes,
+                                         zmin,
+                                         zmax,
+                                         -1,
+                                         -1,
+                                         -1,
+                                         [0])]
             sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
         except:
             sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
             exit()
 
-    sys.stderr.write("Read %d events\n"%len(analysis_events))
+    sys.stderr.write("%d MBHB events loaded\n"%len(analysis_events))
     return analysis_events
 
 def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_event_sel=None, snr_selection=None, snr_threshold=0.0, sigma_pv=0.0023, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
@@ -264,9 +262,8 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                                     z_cosmo_true_host,
                                     dl_host,
                                     VC = VC))
-                print("Reading event %s at a distance %s (error %s), hosts %d"%(event_id,dl,sigma,len(redshifts)))
             except:
-                print("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
+                print(f"Event {event_id} at a distance {dl} (error {sigma}) has no hosts, skipping\n")
 
         if (snr_selection is not None):
             new_list = sorted(events, key=lambda x: getattr(x, 'snr'))
@@ -274,33 +271,9 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                 events = new_list[:snr_selection]
             elif (snr_selection < 0):
                 events = new_list[snr_selection:]
-            print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[abs(snr_selection)-1].snr))            
+            print(f"\nSelected {len(events)} events from SNR={events[0].snr} to SNR={events[abs(snr_selection)-1].snr}:")            
             for e in events:
                 print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(9)))
-            # CHECK BLOCK - Split in redshift
-            # events_selected = []
-            # for e in events:
-            #     print(e.ID)
-            #     if (e.z_true > 0.3):
-            #         events_selected.append(e) 
-            #     else:
-            #         print("Event {} removed (z={}).".format(e.ID, e.z_true))
-            # events = events_selected
-            # print("\nAfter z-selection (z>0.3), will run a joint analysis on {} events.\n".format(len(events)))
-            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
-            # CHECK BLOCK - If EMRIs at z>0.3 are selected, remove host galaxies at z<0.3 
-            # for e in events:
-            #     print("\nEvent", e.ID)
-            #     galaxy_selected = []
-            #     print("Original galaxy hosts:",len(e.potential_galaxy_hosts))
-            #     for gal in e.potential_galaxy_hosts: 
-            #         if (gal.redshift > 0.3):
-            #             galaxy_selected.append(gal) 
-            #         else:
-            #             print("Galaxy host {} removed (z={}).".format(gal, gal.redshift))
-            #     e.potential_galaxy_hosts = galaxy_selected
-            #     print("Selected galaxy hosts (z > 0.3):", len(e.potential_galaxy_hosts))
-            # print("Selected {} events from snr={} to snr={}.".format(len(events), events[0].snr, events[len(events)-1].snr))
 
         if (z_event_sel is not None):
             new_list = sorted(events, key=lambda x: getattr(x, 'z_true'))
@@ -308,7 +281,7 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
                 events = new_list[:z_event_sel]
             elif (z_event_sel < 0):
                 events = new_list[z_event_sel:]
-            print("\nSelected {} events from z={} to z={}:".format(len(events), events[0].z_true, events[abs(z_event_sel)-1].z_true))
+            print(f"\nSelected {len(events)} events from z={events[0].z_true} to z={events[abs(z_event_sel)-1].z_true}:")
             for e in events:
                 print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7)))
 
@@ -320,20 +293,19 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
             else:
                 z_hor_min = 0.0
                 z_hor_max = float(zhorizon)
-                print(z_hor_min,z_hor_max)
             events = [e for e in events if (z_hor_min <= e.z_true <= z_hor_max)]
             events = sorted(events, key=lambda x: getattr(x, 'z_true'))
             if len(events) != 0:
-                print("\nSelected {} events from z={} to z={} (z_hor_min, z_hor_max=[{},{}]):".format(len(events), events[0].z_true, events[len(events)-1].z_true, z_hor_min, z_hor_max))
+                print(f"\nSelected {len(events)} events from z={events[0].z_true} to z={events[len(events)-1].z_true} (z_hor_min, z_hor_max=[{z_hor_min},{z_hor_max}]):")
                 for e in events:
                     print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7))) 
             else:
-                print("Zero events found in the redshift window [{},{}].".format(z_hor_min, z_hor_max))
+                print(f"Zero events found in the redshift window [{z_hor_min},{z_hor_max}].")
 
         if (max_hosts is not None):
             events = [e for e in events if e.n_hosts <= max_hosts]
             events = sorted(events, key=lambda x: getattr(x, 'n_hosts'))
-            print("\nSelected {} events having hosts from n={} to n={} (max hosts imposed={}):".format(len(events), events[0].n_hosts, events[len(events)-1].n_hosts, max_hosts))
+            print(f"\nSelected {len(events)} events having hosts from n={events[0].n_hosts} to n={events[len(events)-1].n_hosts} (max hosts imposed={max_hosts}):")
             for e in events:
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
 
@@ -385,16 +357,15 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
         VC              = np.float64(Vc)
         z_true          = np.float64(z_true)
         event_file.close()
-#        try:
-        best_dl,zcosmo,zobs,magnitudes,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
-        redshifts = np.atleast_1d(zobs)
-        d_redshifts     = np.ones(len(redshifts))*pv
-        weights         = np.atleast_1d(weights)
-        magnitudes      = np.atleast_1d(magnitudes)
-        analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,d_redshifts,weights,magnitudes,zmin,zmax,snr,z_true,dl_host,VC = VC))
-        sys.stderr.write("Selecting event %s at a distance %s (error %s), hosts %d\n"%(event_id,dl,sigma,len(redshifts)))
-#        except:
-#            sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
+        try:
+            best_dl,zcosmo,zobs,magnitudes,weights,theta,best_theta,dtheta,phi,best_phi,dphi,dl_host,best_dl_2,deltadl = np.loadtxt(input_folder+"/"+events_list[event_number]+"/ERRORBOX.dat",unpack=True)
+            redshifts = np.atleast_1d(zobs)
+            d_redshifts     = np.ones(len(redshifts))*pv
+            weights         = np.atleast_1d(weights)
+            magnitudes      = np.atleast_1d(magnitudes)
+            analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,d_redshifts,weights,magnitudes,zmin,zmax,snr,z_true,dl_host,VC = VC))
+        except:
+            sys.stderr.write(f"Event {event_id} at a distance {dl} (error {sigma}) has no EM counterpart, skipping\n")
 
     return analysis_events
 
@@ -402,8 +373,7 @@ def read_event(event_class,*args,**kwargs):
     if   (event_class == "MBHB"):   return read_MBHB_event(*args, **kwargs)
     elif (event_class == "EMRI"):  return read_EMRI_event(event_class, *args, **kwargs)
     elif (event_class == "sBH"):   return read_EMRI_event(event_class, *args, **kwargs)
-    elif (event_class == "DEBUG"): return read_DEBUG_event(*args, **kwargs)
     else:
-        print("I do not know the class %s, exiting\n"%event_class)
+        print(f"I do not know the class {event_class}, exiting\n")
         exit(-1)
 
