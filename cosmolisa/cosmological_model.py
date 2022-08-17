@@ -502,15 +502,15 @@ def main():
     if (config_par['event_class'] == "MBHB"):
         # If running on MBHB, override the selection functions
         em_selection = 0
-        events = readdata.read_event(config_par['event_class'], config_par['data'])
+        events = readdata.read_MBHB_event(config_par['data'])
 
     if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
         if (config_par['snr_selection'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['z_event_sel'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
-            all_events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            all_events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             events_selected = []
             print(f"\nSelecting events according to dl_cutoff={config_par['dl_cutoff']}:")
             for e in all_events:
@@ -522,22 +522,19 @@ def main():
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif ((config_par['zhorizon'] != '1000.0') and (config_par['snr_threshold'] == 0.0)):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['max_hosts'] != 0):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['event_ID_list'] != ''):
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
             print(f"\nSelecting events according to snr_threshold={config_par['snr_threshold']}:")
             if not config_par['reduced_catalog']:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
-                events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
                 # Draw a number of events in the 4-year scenario
-                if (config_par['event_class'] == "sBH"):
-                    N = np.int(np.random.poisson(len(events)*4./10.))
-                elif (config_par['event_class'] == "EMRI"):
-                    N = np.int(np.random.poisson(len(events)*4./10.))
+                N = np.int(np.random.poisson(len(events)*4./10.))
                 print(f"\nReduced number of events: {N}")
                 selected_events = []
                 k = 0
@@ -563,7 +560,7 @@ def main():
                 for e in events:
                     print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
-            events = readdata.read_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
         if (config_par['joint'] != 0):
             N = joint

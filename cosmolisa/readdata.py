@@ -58,7 +58,9 @@ class Event(object):
         self.z_cosmo_true_host      = z_cosmo_true_host
         if self.dmin < 0.0: self.dmin = 0.0
 
-def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_hosts = None, **kwargs):
+def read_MBHB_event(input_folder, event_number=None, 
+                    max_distance=None, max_hosts=None, 
+                    **kwargs):
     
     all_files   = os.listdir(input_folder)
     print(f"Reading {input_folder}")
@@ -153,7 +155,12 @@ def read_MBHB_event(input_folder, event_number = None, max_distance = None, max_
     sys.stderr.write("%d MBHB events loaded\n"%len(analysis_events))
     return analysis_events
 
-def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host_selection=0, z_event_sel=None, snr_selection=None, snr_threshold=0.0, sigma_pv=0.0023, event_ID_list=None, zhorizon=None, z_gal_cosmo=0):
+def read_dark_siren_event(source, input_folder, 
+                          event_number, max_hosts=None, 
+                          one_host_selection=0, z_event_sel=None, 
+                          snr_selection=None, snr_threshold=0.0, 
+                          sigma_pv=0.0023, event_ID_list=None, 
+                          zhorizon=None, z_gal_cosmo=0):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -368,12 +375,3 @@ def read_EMRI_event(source, input_folder, event_number, max_hosts=None, one_host
             sys.stderr.write(f"Event {event_id} at a distance {dl} (error {sigma}) has no EM counterpart, skipping\n")
 
     return analysis_events
-
-def read_event(event_class,*args,**kwargs):
-    if   (event_class == "MBHB"):   return read_MBHB_event(*args, **kwargs)
-    elif (event_class == "EMRI"):  return read_EMRI_event(event_class, *args, **kwargs)
-    elif (event_class == "sBH"):   return read_EMRI_event(event_class, *args, **kwargs)
-    else:
-        print(f"I do not know the class {event_class}, exiting\n")
-        exit(-1)
-

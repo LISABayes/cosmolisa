@@ -86,7 +86,10 @@ if __name__=="__main__":
     os.system('mkdir -p {0}'.format(opts.outdir))
 
     # Read in the events
-    events = readdata.read_event(opts.source, opts.data, None, snr_threshold=100.0)
+    if (opts.source == "MBHB"):
+        events = readdata.read_MBHB_event(opts.data)
+    elif (opts.source == "EMRI" or opts.source == "sBH"):
+        events = readdata.read_dark_siren_event(opts.source, opts.data, None, snr_threshold=100.0)
     # Read in the posterior samples
     filename = os.path.join(opts.posteriors, 'CPNest', 'cpnest.h5')
     print("\nReading {} averaged posterior stored in {}".format(opts.source, filename))
