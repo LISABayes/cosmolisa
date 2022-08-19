@@ -352,7 +352,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'event_ID_list'               Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
     'max_hosts'                   Default: 0.                                       Select events according to the allowed maximum number of hosts.
     'z_gal_cosmo'                 Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
-    'snr_selection'               Default: 0.                                       Select N events according to SNR (if N>0 the N loudest, if N<0 the N faintest).
+    'snr_selection'               Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
     'snr_threshold'               Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'sigma_pv'                    Default: 0.0023.                                  Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
     'em_selection'                Default: 0.                                       Use an EM selection function.
@@ -464,10 +464,14 @@ def main():
             sys.stdout = open(os.path.join(outdir,'stdout.txt'), 'w')
             sys.stderr = open(os.path.join(outdir,'stderr.txt'), 'w')
 
+    formatting_string = 5*"===================="
+
+    print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
     print(f"cpnest installation version: {cpnest.__version__}")
     print(f"ray version: {ray.__version__}")
     print(f"cosmolisa likelihood version: {lk.__file__}")
+    print("\n"+formatting_string)
 
     max_len_keyword = len('periodic_checkpoint_int')
     print((f"\nReading config file: {config_file}\n"))
@@ -497,14 +501,7 @@ def main():
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
 
-    formatting_string = 5*"===================="
-
-    if (config_par['event_class'] == "MBHB"):
-        # If running on MBHB, override the selection functions
-        em_selection = 0
-        events = readdata.read_MBHB_event(config_par['data'])
-
-    elif (config_par['event_class'] == "dark_siren"):
+    if (config_par['event_class'] == "dark_siren"):
         if (config_par['snr_selection'] != 0):
             events = readdata.read_dark_siren_event(config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['z_event_sel'] != 0):
@@ -578,6 +575,10 @@ def main():
             else:
                 print(f"None of the drawn events has z<{config_par['zhorizon']}. No data to analyse. Exiting.\n")
                 exit()
+    elif (config_par['event_class'] == "MBHB"):
+        # If running on MBHB, override the selection functions
+        em_selection = 0
+        events = readdata.read_MBHB_event(config_par['data'])
     else:
         print(f"Unknown event_class '{config_par['event_class']}'. Exiting.\n")
         exit()

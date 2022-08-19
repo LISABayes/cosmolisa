@@ -206,24 +206,23 @@ def read_dark_siren_event(input_folder, event_number,
 
         events = []
         for ev in events_list:
-            event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-            # Different catalogs have a different number of columns, so a try/except is used
+            # Different catalogs have different numbers of columns, so a try/except is used
             try:
+                # 19 columns
+                event_file = open(input_folder+"/"+ev+"/ID.dat","r")
                 # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
                 event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
             except(ValueError):
                 try:
+                    # 18 columns
                     event_file = open(input_folder+"/"+ev+"/ID.dat","r")
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
                 except(ValueError):
-                    try:
-                        # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
-                        event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
-                    except(ValueError):
-                        event_file = open(input_folder+"/"+ev+"/ID.dat","r")
-                        # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
-                        event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+                    event_file = open(input_folder+"/"+ev+"/ID.dat","r")
+                    # 21 columns
+                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
+                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
 
             ID              = np.int(event_id)
             dl              = np.float64(dl)
