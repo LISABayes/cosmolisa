@@ -155,12 +155,12 @@ def read_MBHB_event(input_folder, event_number=None,
     sys.stderr.write("%d MBHB events loaded\n"%len(analysis_events))
     return analysis_events
 
-def read_dark_siren_event(source, input_folder, 
-                          event_number, max_hosts=None, 
-                          one_host_selection=0, z_event_sel=None, 
-                          snr_selection=None, snr_threshold=0.0, 
-                          sigma_pv=0.0023, event_ID_list=None, 
-                          zhorizon=None, z_gal_cosmo=0):
+def read_dark_siren_event(input_folder, event_number,
+                          max_hosts=None, one_host_selection=0,
+                          z_event_sel=None, snr_selection=None,
+                          snr_threshold=0.0, sigma_pv=0.0023,
+                          event_ID_list=None, zhorizon=None,
+                          z_gal_cosmo=0):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -207,23 +207,23 @@ def read_dark_siren_event(source, input_folder,
         events = []
         for ev in events_list:
             event_file      = open(input_folder+"/"+ev+"/ID.dat","r")
-            if (source == 'EMRI'):
-                # Some test catalogs have an additional unused column, so a try/except is needed
+            # Different catalogs have a different number of columns, so a try/except is used
+            try:
+                # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
+                event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
+            except(ValueError):
                 try:
-                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18      ,19
-                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true,_ = event_file.readline().split(None)
-                except(ValueError):
                     event_file = open(input_folder+"/"+ev+"/ID.dat","r")
                     # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
                     event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
-            elif (source == 'sBH'):
-                try:
-                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
-                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
                 except(ValueError):
-                    event_file = open(input_folder+"/"+ev+"/ID.dat","r")
-                    # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
-                    event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+                    try:
+                        # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , , , , ,20 ,21
+                        event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
+                    except(ValueError):
+                        event_file = open(input_folder+"/"+ev+"/ID.dat","r")
+                        # 1     ,2 ,3    ,4 ,5              ,6        ,7        ,8     ,9   ,10  , , , , , , ,17 ,18
+                        event_id,dl,sigma,Vc,z_observed_true,zmin_true,zmax_true,z_true,zmin,zmax,_,_,_,_,_,_,snr,snr_true = event_file.readline().split(None)
 
             ID              = np.int(event_id)
             dl              = np.float64(dl)
@@ -248,7 +248,7 @@ def read_dark_siren_event(source, input_folder,
                     redshifts   = np.atleast_1d(zcosmo)
                 d_redshifts     = np.ones(len(redshifts))*pv
                 weights         = np.atleast_1d(weights)
-                magnitudes      = np.atleast_1d(logM) #Fictitious values since current catalogs do not have magnitudes 
+                magnitudes      = np.atleast_1d(logM) # Fictitious values since current catalogs do not have magnitudes 
                 sigma_gw_theta  = np.mean((theta-best_theta)/dtheta)
                 sigma_gw_phi    = np.mean((phi-best_phi)/dphi)
                 if not (isinstance(dl_host, type(redshifts))):

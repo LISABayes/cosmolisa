@@ -99,7 +99,7 @@ class CosmologicalModel(cpnest.model.Model):
             self.gw = 0
         
         if ("Rate" in self.model):
-#           e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
+            # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
             self.rate = 1
             self.gw_correction = 1
             self.names.append('log10r0')
@@ -149,8 +149,8 @@ class CosmologicalModel(cpnest.model.Model):
                 self.em_correction = 1
             else:
                 self.em_correction = 0
-               
-        print("\n====================================================================================================\n")
+
+        print("\n"+5*"===================="+"\n")
         print("CosmologicalModel model initialised with:")
         print(f"Event class: {self.event_class}")
         print(f"Analysis model: {self.model}")
@@ -158,11 +158,11 @@ class CosmologicalModel(cpnest.model.Model):
         print(f"EM correction: {self.em_correction}")
         print(f"GW correction: {self.gw_correction}")
         print(f"Free parameters: {self.names}")
-        print("\n====================================================================================================\n")
+        print("\n"+5*"===================="+"\n")
         print("Prior bounds:")
         for name,bound in zip(self.names, self.bounds):
             print(f"{str(name).ljust(4)}: {bound}")
-        print("\n====================================================================================================\n")
+        print("\n"+5*"===================="+"\n")
 
     def _initialise_galaxy_hosts(self):
         self.hosts             = {e.ID:np.array([(g.redshift,g.dredshift,g.weight,g.magnitude) for g in e.potential_galaxy_hosts]) for e in self.data}
@@ -270,7 +270,7 @@ class CosmologicalModel(cpnest.model.Model):
             # compute the rate for the observed events
             # Rdet      = Rtot*selection_probability
             logL_rate = -Ndet+self.N*np.log(Ntot)
-#            print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
+            # print(selection_probability, Rdet, Rtot, Ndet, Ntot, self.N)
             # if we do not care about GWs, compute the rate density at the known gw redshifts and return
             if self.gw == 0:
                 return logL_rate+np.sum([lk.logLikelihood_single_event_rate_only(self.O, e.z_true, self.r0, self.W, self.R, self.Q, Ntot) for e in self.data])
@@ -338,7 +338,7 @@ usage="""\n\n %prog --config-file config.ini\n
 
     'data'                        Default: ''.                                      Data location.
     'outdir'                      Default: './default_dir'.                         Directory for output.
-    'event_class'                 Default: ''.                                      Class of the event(s) ['MBHB', 'EMRI', 'sBH'].
+    'event_class'                 Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
     'model'                       Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
     'truths'                      Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
     'corrections'                 Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
@@ -497,20 +497,20 @@ def main():
 
     omega_true = cs.CosmologicalParameters(truths['h'],truths['om'],truths['ol'],truths['w0'],truths['w1'])
 
-    formatting_string = "===================================================================================================="
+    formatting_string = 5*"===================="
 
     if (config_par['event_class'] == "MBHB"):
         # If running on MBHB, override the selection functions
         em_selection = 0
         events = readdata.read_MBHB_event(config_par['data'])
 
-    if ((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")):
+    elif (config_par['event_class'] == "dark_siren"):
         if (config_par['snr_selection'] != 0):
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, snr_selection=config_par['snr_selection'], sigma_pv=config_par['sigma_pv'], one_host_selection=config_par['one_host_sel'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['z_event_sel'] != 0):
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, z_event_sel=config_par['z_event_sel'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
-            all_events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            all_events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             events_selected = []
             print(f"\nSelecting events according to dl_cutoff={config_par['dl_cutoff']}:")
             for e in all_events:
@@ -522,17 +522,17 @@ def main():
             for e in events:
                 print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
         elif ((config_par['zhorizon'] != '1000.0') and (config_par['snr_threshold'] == 0.0)):
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, zhorizon=config_par['zhorizon'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['max_hosts'] != 0):
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, max_hosts=config_par['max_hosts'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['event_ID_list'] != ''):
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, event_ID_list=config_par['event_ID_list'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
             print(f"\nSelecting events according to snr_threshold={config_par['snr_threshold']}:")
             if not config_par['reduced_catalog']:
-                events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_dark_siren_event(config_par['data'], None, snr_threshold=config_par['snr_threshold'], one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
-                events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+                events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
                 # Draw a number of events in the 4-year scenario
                 N = np.int(np.random.poisson(len(events)*4./10.))
                 print(f"\nReduced number of events: {N}")
@@ -560,7 +560,7 @@ def main():
                 for e in events:
                     print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
         else:
-            events = readdata.read_dark_siren_event(config_par['event_class'], config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
+            events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
         if (config_par['joint'] != 0):
             N = joint
@@ -578,6 +578,9 @@ def main():
             else:
                 print(f"None of the drawn events has z<{config_par['zhorizon']}. No data to analyse. Exiting.\n")
                 exit()
+    else:
+        print(f"Unknown event_class '{config_par['event_class']}'. Exiting.\n")
+        exit()
 
     if (config_par['single_z_from_GW'] != 0) and (config_par['one_host_sel'] == 1):
         print("\nSimulating a single potential host with redshift equal to z_true.") 
@@ -700,7 +703,7 @@ def main():
         elif ("DE" in C.model):
             plots.corner_plot(x, model='DE', truths=truths, outdir=outdir)
 
-    if (((config_par['event_class'] == "EMRI") or (config_par['event_class'] == "sBH")) and (C.gw == 1)):
+    if ((config_par['event_class'] == "dark_siren") and (C.gw == 1)):
         for e in C.data:
             plots.redshift_ev_plot(x, model=C.model, event=e, em_sel=config_par['em_selection'], truths=truths, omega_true=omega_true, outdir=outdir)    
     elif (config_par['event_class'] == "MBHB"):
