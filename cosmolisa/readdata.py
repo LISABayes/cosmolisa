@@ -160,7 +160,8 @@ def read_dark_siren_event(input_folder, event_number,
                           z_event_sel=None, snr_selection=None,
                           snr_threshold=0.0, sigma_pv=0.0023,
                           event_ID_list=None, zhorizon=None,
-                          z_gal_cosmo=0):
+                          z_gal_cosmo=0, dl_cutoff=None,
+                          **kwargs):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -304,6 +305,11 @@ def read_dark_siren_event(input_folder, event_number,
                     print("ID: {}  |  z_true: {}".format(str(e.ID).ljust(3), str(e.z_true).ljust(7))) 
             else:
                 print(f"Zero events found in the redshift window [{z_hor_min},{z_hor_max}].")
+
+        if (dl_cutoff is not None):
+            print(f"\nSelecting events according to dL(omega_true,e.zmax) < {dl_cutoff} (Mpc):")
+            events = [e for e in events if kwargs['omega_true'].LuminosityDistance(e.zmax) < dl_cutoff]
+            print("\nSelected {} events from dl={} to dl={} (Mpc).".format(len(events), events[0].dl, events[len(events)-1].dl))  
 
         if (max_hosts is not None):
             events = [e for e in events if e.n_hosts <= max_hosts]

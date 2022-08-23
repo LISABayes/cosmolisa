@@ -34,7 +34,6 @@ class CosmologicalModel(cpnest.model.Model):
         self.z_threshold         = kwargs['z_threshold']
         self.snr_threshold       = kwargs['snr_threshold']
         self.event_class         = kwargs['event_class']
-        self.dl_cutoff           = kwargs['dl_cutoff']
         self.sfr                 = kwargs['sfr']
         self.T                   = kwargs['T']
         self.magnitude_threshold = kwargs['m_threshold']
@@ -341,7 +340,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'corrections'                 Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
     'joint'                       Default: 0.                                       Run a joint analysis for N events, randomly selected.
     'zhorizon'                    Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'dl_cutoff'                   Default: -1.0.                                    Max EMRI dL(omega_true,zmax) allowed (in Mpc). This cutoff supersedes the zhorizon one.
+    'dl_cutoff'                   Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
     'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host.
     'single_z_from_GW'            Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
@@ -401,7 +400,7 @@ def main():
                 'corrections'               :  '',
                 'joint'                     :  0,
                 'zhorizon'                  :  '1000.0',
-                'dl_cutoff'                 :  -1.0,
+                'dl_cutoff'                 :  0.0,
                 'z_event_sel'               :  0,
                 'one_host_sel'              :  0,
                 'single_z_from_GW'          :  0,
@@ -508,18 +507,9 @@ def main():
                                                     one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], 
                                                     z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['dl_cutoff'] > 0) and (',' not in config_par['zhorizon']) and (config_par['zhorizon'] == '1000.0'):
-            all_events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'], 
-                                                        sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
-            events_selected = []
-            print(f"\nSelecting events according to dl_cutoff={config_par['dl_cutoff']}:")
-            for e in all_events:
-                if (omega_true.LuminosityDistance(e.zmax) < config_par['dl_cutoff']):
-                    events_selected.append(e)
-                    print("Event {} selected: dl(z_max)={}.".format(str(e.ID).ljust(3), omega_true.LuminosityDistance(e.zmax)))
-            events = sorted(events_selected, key=lambda x: getattr(x, 'dl'))
-            print("\nSelected {} events from dl={} to dl={}:".format(len(events), events[0].dl, events[len(events)-1].dl))            
-            for e in events:
-                print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))     
+            events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'], 
+                                                        sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'],
+                                                        dl_cutoff=config_par['dl_cutoff'], omega_true=omega_true)  
         elif ((config_par['zhorizon'] != '1000.0') and (config_par['snr_threshold'] == 0.0)):
             events = readdata.read_dark_siren_event(config_par['data'], None, zhorizon=config_par['zhorizon'], 
                                                     one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'],
@@ -657,7 +647,6 @@ def main():
                           snr_threshold = config_par['snr_threshold'],
                           z_threshold   = float(config_par['zhorizon']),
                           event_class   = config_par['event_class'],
-                          dl_cutoff     = config_par['dl_cutoff'],
                           sfr           = config_par['sfr'],
                           T             = config_par['T'],
                           m_threshold   = config_par['m_threshold']
