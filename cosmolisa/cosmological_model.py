@@ -338,7 +338,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'model'                       Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
     'truths'                      Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
     'corrections'                 Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
-    'joint'                       Default: 0.                                       Run a joint analysis for N events, randomly selected.
+    'random'                      Default: 0.                                       Run a joint analysis with N events, randomly selected.
     'zhorizon'                    Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
     'dl_cutoff'                   Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
@@ -398,7 +398,7 @@ def main():
                 'model'                     :  '',
                 'truth_par'                 :  {"h": 0.673, "om": 0.315, "ol": 0.685},
                 'corrections'               :  '',
-                'joint'                     :  0,
+                'random'                    :  0,
                 'zhorizon'                  :  '1000.0',
                 'dl_cutoff'                 :  0.0,
                 'z_event_sel'               :  0,
@@ -563,8 +563,8 @@ def main():
             events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'],
                                                     sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
-        if (config_par['joint'] != 0):
-            N = joint
+        if (config_par['random'] != 0):
+            N = config_par['random']
             if (N > len(events)):
                 N = len(events)
                 print(f"The catalog has a number of selected events smaller than the chosen number ({N}). Running on {len(events)}")
