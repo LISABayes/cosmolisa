@@ -34,7 +34,6 @@ class CosmologicalModel(cpnest.model.Model):
         self.model               = model.split('+')
         self.corrections         = corrections.split('+')
         self.truths              = kwargs['truths']
-        self.em_selection        = kwargs['em_selection']
         self.z_threshold         = kwargs['z_threshold']
         self.snr_threshold       = kwargs['snr_threshold']
         self.event_class         = kwargs['event_class']
@@ -330,6 +329,7 @@ class CosmologicalModel(cpnest.model.Model):
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
     IMPORTANT: This code requires the installation of the CPNest branch 'massively_parallel': https://github.com/johnveitch/cpnest/tree/massively_parallel
+               See the instructions in cosmolisa/README.md
     ######################################################################################################################################################
 
     #=======================#
@@ -355,7 +355,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'snr_selection'               Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
     'snr_threshold'               Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'sigma_pv'                    Default: 0.0023.                                  Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
-    'em_selection'                Default: 0.                                       Use an EM selection function.
+    'em_selection'                Default: 0.                                       Use an EM selection function in dark_siren plots.
     'split_data_num'              Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
     'split_data_chunk'            Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
     'T'                           Default: 10.0.                                    Observation time (yr).
@@ -382,7 +382,7 @@ def main():
 
     run_time = time.perf_counter()
     parser = OptionParser(usage)
-    parser.add_option('--config-file', type='string', metavar = 'config_file', default = None)
+    parser.add_option('--config-file', type='string', metavar='config_file', default=None)
 
     (opts,args) = parser.parse_args()
     config_file = opts.config_file
@@ -596,7 +596,6 @@ def main():
                 exit()
     elif (config_par['event_class'] == "MBHB"):
         # If running on MBHB, override the selection functions
-        em_selection = 0
         events = readdata.read_MBHB_event(config_par['data'])
     else:
         print(f"Unknown event_class '{config_par['event_class']}'. Exiting.\n")
@@ -659,7 +658,6 @@ def main():
                           data          = events,
                           corrections   = config_par['corrections'],
                           truths        = truths,
-                          em_selection  = config_par['em_selection'],
                           snr_threshold = config_par['snr_threshold'],
                           z_threshold   = float(config_par['zhorizon']),
                           event_class   = config_par['event_class'],
