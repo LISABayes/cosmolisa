@@ -21,9 +21,6 @@ from cosmolisa import galaxy as gal
 import cpnest.model
 
 class CosmologicalModel(cpnest.model.Model):
-
-    names  = [] #'h','om','ol','w0','w1']
-    bounds = [] #[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
     
     def __init__(self, model, data, corrections, *args, **kwargs):
 
@@ -355,13 +352,13 @@ usage="""\n\n %prog --config-file config.ini\n
     'snr_selection'               Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
     'snr_threshold'               Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'sigma_pv'                    Default: 0.0023.                                  Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
-    'em_selection'                Default: 0.                                       Use an EM selection function in dark_siren plots.
     'split_data_num'              Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
     'split_data_chunk'            Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
     'T'                           Default: 10.0.                                    Observation time (yr).
     'sfr'                         Default: 0.                                       Fit the star formation parameters too.
     'reduced_catalog'             Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
     'm_threshold'                 Default: 20.                                      Apparent magnitude threshold.
+    'em_selection'                Default: 0.                                       Use an EM selection function in dark_siren plots.
     'postprocess'                 Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
     'screen_output'               Default: 0.                                       Print the output on screen or save it into a file.
     'verbose'                     Default: 2.                                       Sampler verbose.
@@ -415,13 +412,13 @@ def main():
                 'snr_selection'             :  0,
                 'snr_threshold'             :  0.0,
                 'sigma_pv'                  :  0.0023,
-                'em_selection'              :  0,
                 'split_data_num'            :  1,
                 'split_data_chunk'          :  0,
                 'T'                         :  10.,
                 'sfr'                       :  0,
                 'reduced_catalog'           :  0,
                 'm_threshold'               :  20,
+                'em_selection'              :  0,
                 'postprocess'               :  0,
                 'screen_output'             :  0,    
                 'verbose'                   :  2,
@@ -595,7 +592,6 @@ def main():
                 print(f"None of the drawn events has z<{config_par['zhorizon']}. No data to analyse. Exiting.\n")
                 exit()
     elif (config_par['event_class'] == "MBHB"):
-        # If running on MBHB, override the selection functions
         events = readdata.read_MBHB_event(config_par['data'])
     else:
         print(f"Unknown event_class '{config_par['event_class']}'. Exiting.\n")
