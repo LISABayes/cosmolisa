@@ -161,7 +161,7 @@ def read_dark_siren_event(input_folder, event_number,
                           snr_threshold=0.0, sigma_pv=0.0023,
                           event_ID_list=None, zhorizon=None,
                           z_gal_cosmo=0, dl_cutoff=None,
-                          **kwargs):
+                          reduced_cat=None, **kwargs):
     """
     The file ID.dat has a single row containing:
     1-event ID
@@ -319,15 +319,44 @@ def read_dark_siren_event(input_folder, event_number,
                 print("ID: {}  |  n_hosts: {}".format(str(e.ID).ljust(3), str(e.n_hosts).ljust(7)))
 
         if not (snr_threshold == 0.0):
-            if snr_threshold > 0:
-                events = [e for e in events if e.snr > snr_threshold]
+            if (reduced_cat is None):
+                if snr_threshold > 0:
+                    events = [e for e in events if e.snr > snr_threshold]
+                else:
+                    events = [e for e in events if e.snr < abs(snr_threshold)]
+                events = sorted(events, key=lambda x: getattr(x, 'snr'))
+                print("\nSelected {} events from SNR={} to SNR={} (SNR_threshold={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
+                for e in events:
+                    print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(7)))
             else:
-                events = [e for e in events if e.snr < abs(snr_threshold)]
-            events = sorted(events, key=lambda x: getattr(x, 'snr'))
-            print("\nSelected {} events from SNR={} to SNR={} (SNR_threshold={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
-            for e in events:
-                print("ID: {}  |  SNR: {}".format(str(e.ID).ljust(3), str(e.snr).ljust(7)))     
-
+                # Draw a number of events in the 4-year scenario
+                N = np.int(np.random.poisson(len(events)*4./10.))
+                print(f"\nReduced number of events: {N}")
+                selected_events = []
+                k = 0
+                while k < N and not(len(events) == 0):
+                    idx = np.random.randint(len(events))
+                    selected_event = events.pop(idx)
+                    print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
+                    if snr_threshold > 0.0:
+                        if selected_event.snr > snr_threshold:
+                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3),
+                                                                                    selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1
+                    else:
+                        if selected_event.snr < abs(snr_threshold):
+                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3),
+                                                                                    selected_event.snr, snr_threshold))
+                            selected_events.append(selected_event)
+                        else: pass
+                        k += 1
+                events = selected_events
+                events = sorted(selected_events, key=lambda x: getattr(x, 'snr'))
+                print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[len(events)-1].snr))
+                for e in events:
+                    print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
 
         if (event_ID_list is not None):
             event_list = []

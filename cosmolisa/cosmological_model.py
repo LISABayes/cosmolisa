@@ -79,7 +79,8 @@ class CosmologicalModel(cpnest.model.Model):
             self.cosmology = 1
             self.npar      = 5
             self.names     = ['h','om','ol','w0','w1']
-            self.bounds    = [[0.6,0.86],[0.04,0.5],[0.0,1.0],[-3.0,-0.3],[-1.0,1.0]]
+            self.bounds    = [[0.6,0.86],[0.04,0.5],[0.0,1.0],
+                              [-3.0,-0.3],[-1.0,1.0]]
 
         if ("DE" in self.model):
             
@@ -529,36 +530,9 @@ def main():
                                                         one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], 
                                                         z_gal_cosmo=config_par['z_gal_cosmo'])
             else:
-                events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'],
-                                                        sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
-                # Draw a number of events in the 4-year scenario
-                N = np.int(np.random.poisson(len(events)*4./10.))
-                print(f"\nReduced number of events: {N}")
-                selected_events = []
-                k = 0
-                while k < N and not(len(events) == 0):
-                    idx = np.random.randint(len(events))
-                    selected_event = events.pop(idx)
-                    print("Drawn event {0}: ID={1} - SNR={2:.2f}".format(k+1, str(selected_event.ID).ljust(3), selected_event.snr))
-                    if config_par['snr_threshold'] > 0.0:
-                        if selected_event.snr > config_par['snr_threshold']:
-                            print("Selected: ID={0} - SNR={1:.2f} > {2:.2f}".format(str(selected_event.ID).ljust(3),
-                                                                                    selected_event.snr, config_par['snr_threshold']))
-                            selected_events.append(selected_event)
-                        else: pass
-                        k += 1
-                    else:
-                        if selected_event.snr < abs(config_par['snr_threshold']):
-                            print("Selected: ID={0} - SNR={1:.2f} < {2:.2f}".format(str(selected_event.ID).ljust(3),
-                                                                                    selected_event.snr, config_par['snr_threshold']))
-                            selected_events.append(selected_event)
-                        else: pass
-                        k += 1                        
-                events = selected_events
-                events = sorted(selected_events, key=lambda x: getattr(x, 'snr'))
-                print("\nSelected {} events from SNR={} to SNR={}:".format(len(events), events[0].snr, events[len(events)-1].snr))
-                for e in events:
-                    print("ID: {}  |  dl: {}".format(str(e.ID).ljust(3), str(e.dl).ljust(9)))
+                events = readdata.read_dark_siren_event(config_par['data'], None, snr_threshold=config_par['snr_threshold'],
+                                                        one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'],
+                                                        z_gal_cosmo=config_par['z_gal_cosmo'], reduced_cat=config_par['reduced_catalog'])
         else:
             events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'],
                                                     sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
