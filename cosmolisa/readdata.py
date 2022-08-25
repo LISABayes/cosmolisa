@@ -63,7 +63,7 @@ def read_MBHB_event(input_folder, event_number=None,
                     **kwargs):
     
     all_files   = os.listdir(input_folder)
-    print(f"Reading {input_folder}")
+    print(f"\nReading {input_folder}")
 
     events_list = [f for f in all_files if ('EVENT' in f or 'event' in f)]
     
@@ -200,6 +200,7 @@ def read_dark_siren_event(input_folder, event_number,
     14-difference between the above two in units of LISA Dl error
     """
     all_files   = os.listdir(input_folder)
+    print(f"\nReading {input_folder}")
     events_list = [f for f in all_files if 'EVENT' in f]
     pv = sigma_pv
 
