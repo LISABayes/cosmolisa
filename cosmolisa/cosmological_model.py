@@ -524,7 +524,6 @@ def main():
                                                     one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'],
                                                     z_gal_cosmo=config_par['z_gal_cosmo'])
         elif (config_par['snr_threshold'] != 0.0):
-            print(f"\nSelecting events according to snr_threshold={config_par['snr_threshold']}:")
             if not config_par['reduced_catalog']:
                 events = readdata.read_dark_siren_event(config_par['data'], None, snr_threshold=config_par['snr_threshold'], 
                                                         one_host_selection=config_par['one_host_sel'], sigma_pv=config_par['sigma_pv'], 
@@ -537,29 +536,19 @@ def main():
             events = readdata.read_dark_siren_event(config_par['data'], None, one_host_selection=config_par['one_host_sel'],
                                                     sigma_pv=config_par['sigma_pv'], z_gal_cosmo=config_par['z_gal_cosmo'])
 
-        if (config_par['random'] != 0):
-            N = config_par['random']
-            if (N > len(events)):
-                N = len(events)
-                print(f"The catalog has a number of selected events smaller than the chosen number ({N}). Running on {len(events)}")
-            events = np.random.choice(events, size = N, replace = False)
-            print(formatting_string)
-            print(f"Selecting a random catalog of {N} events for joint analysis:")
-            print(formatting_string)
-            if not(len(events) == 0):
-                for e in events:
-                    print("event {0}: distance {1} \pm {2} Mpc, z \in [{3},{4}] galaxies {5}".format(e.ID,e.dl,e.sigma,
-                                                                                                     e.zmin,e.zmax,
-                                                                                                     len(e.potential_galaxy_hosts)))
-                print(formatting_string)
-            else:
-                print(f"None of the drawn events has z<{config_par['zhorizon']}. No data to analyse. Exiting.\n")
-                exit()
     elif (config_par['event_class'] == "MBHB"):
         events = readdata.read_MBHB_event(config_par['data'])
     else:
         print(f"Unknown event_class '{config_par['event_class']}'. Exiting.\n")
         exit()
+
+    if (len(events) == 0):
+        print("The passed catalog is empty. Exiting.\n")
+        exit()
+
+    if (config_par['random'] != 0):
+        events = readdata.pick_random_events(events, config_par['random'])
+
 
     if (config_par['single_z_from_GW'] != 0) and (config_par['one_host_sel'] == 1):
         print("\nSimulating a single potential host with redshift equal to z_true.") 
@@ -580,10 +569,6 @@ def main():
         split_events = list([events[i*q + min(i, r):(i+1)*q + min(i+1, r)] for i in range(config_par['split_data_num'])])
         print(f"\nInitial list of {len(events)} events split into {len(split_events)} chunks. \nChunk number {config_par['split_data_chunk']} is chosen.")
         events = split_events[config_par['split_data_chunk']-1]
-
-    if (len(events) == 0):
-        print("The passed catalog is empty. Exiting.\n")
-        exit()
 
     print(f"\nDetailed list of the {len(events)} selected event(s):")
     print("\n"+formatting_string)

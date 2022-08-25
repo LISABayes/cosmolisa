@@ -321,8 +321,10 @@ def read_dark_siren_event(input_folder, event_number,
         if not (snr_threshold == 0.0):
             if (reduced_cat is None):
                 if snr_threshold > 0:
+                    print(f"\nSelecting events according to snr_threshold > {snr_threshold}:")
                     events = [e for e in events if e.snr > snr_threshold]
                 else:
+                    print(f"\nSelecting events up to snr_threshold < {snr_threshold}:")
                     events = [e for e in events if e.snr < abs(snr_threshold)]
                 events = sorted(events, key=lambda x: getattr(x, 'snr'))
                 print("\nSelected {} events from SNR={} to SNR={} (SNR_threshold={}):".format(len(events), events[0].snr, events[len(events)-1].snr, snr_threshold))
@@ -406,3 +408,11 @@ def read_dark_siren_event(input_folder, event_number,
             sys.stderr.write(f"Event {event_id} at a distance {dl} (error {sigma}) has no EM counterpart, skipping\n")
 
     return analysis_events
+
+def pick_random_events(events, number):
+    print(f"\nSelecting {number} random events for joint analysis.")
+    if (number >= len(events)):
+        print(f"Required {number} random events, but the catalog has only {len(events)}. Running on {len(events)} events.")
+        number = len(events)
+    events = np.random.choice(events, size=number, replace=False)
+    return events
