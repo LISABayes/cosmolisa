@@ -21,11 +21,11 @@ from cosmolisa import galaxy as gal
 import cpnest.model
 
 class CosmologicalModel(cpnest.model.Model):
-    """Main class to be passed to the sampler.
+    """CosmologicalModel class:
     Data, likelihood, prior, and settings of the analysis
     are specified here. The abstract modules 'log_prior' and 
-    'log_likelihood' as well as the attributes 'names' and 'bounds'
-    are inherited from cpnest.cpnest.Model, but they have to be
+    'log_likelihood', as well as the attributes 'names' and 'bounds',
+    are inherited from cpnest.cpnest.Model and have to be
     explicitly defined inside this class.
     """
     def __init__(self, model, data, corrections, *args, **kwargs):
@@ -155,7 +155,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("\n"+5*"===================="+"\n")
         print("Prior bounds:")
         for name, bound in zip(self.names, self.bounds):
-            print(f"{str(name).ljust(4)}: {bound}")
+            print(f"{str(name).ljust(5)}: {bound}")
         print("\n"+5*"===================="+"\n")
 
     def _initialise_galaxy_hosts(self):
@@ -178,7 +178,6 @@ class CosmologicalModel(cpnest.model.Model):
         'names' with ranges specified in 'bounds').
         It also defines objects used in other class modules.
         """
-
         logP = super(CosmologicalModel, self).log_prior(x)
         
         if np.isfinite(logP):    
@@ -380,7 +379,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'zhorizon'                    Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
     'dl_cutoff'                   Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'                 Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
-    'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host.
+    'one_host_sel'                Default: 0.                                       For each event, associate only the nearest-in-redshift host (between z_gal and event z_true).
     'single_z_from_GW'            Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
     'equal_wj'                    Default: 0.                                       Impose all galaxy angular weights equal to 1.
     'event_ID_list'               Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
@@ -413,7 +412,7 @@ usage="""\n\n %prog --config-file config.ini\n
 """
 
 def main():
-    """Main function to be called when executing cosmoLISA."""
+    """Main function to be called when cosmoLISA is executed."""
     run_time = time.perf_counter()
     parser = OptionParser(usage)
     parser.add_option('--config-file', type='string', metavar='config_file',
@@ -500,7 +499,7 @@ def main():
             sys.stdout = open(os.path.join(outdir, "stdout.txt"), 'w')
             sys.stderr = open(os.path.join(outdir, "stderr.txt"), 'w')
 
-    formatting_string = 5*"===================="
+    formatting_string = 6*"===================="
     max_len_keyword = len('split_data_chunk')
 
     print("\n"+formatting_string)
@@ -533,7 +532,7 @@ def main():
         'alpha_exponent': 0.0
         }
 
-    print("\nTruths:")
+    print(formatting_string+"\nTruths:")
     for key in truths:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword),
                                          value=truths[key])))
@@ -649,16 +648,16 @@ def main():
                 g.weight = 1.0
 
     if not (config_par['split_data_num'] <= 1):
-        assert (
-            config_par['split_data_chunk'] <= config_par['split_data_num'],
+        assert \
+            config_par['split_data_chunk'] <= config_par['split_data_num'],\
             "Data split in {} chunks; chunk number {} has been chosen".format(
-                config_par['split_data_num'], config_par['split_data_chunk']))
+                config_par['split_data_num'], config_par['split_data_chunk'])
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
         q, r = divmod(len(events), config_par['split_data_num'])
         split_events = list([events[i*q + min(i, r):(i+1)*q + min(i+1, r)] 
                              for i in range(config_par['split_data_num'])])
         print(f"\nInitial list of {len(events)} events split into"
-              f"{len(split_events)} chunks." 
+              f" {len(split_events)} chunks." 
               f"\nChunk number {config_par['split_data_chunk']} is chosen.")
         events = split_events[config_par['split_data_chunk']-1]
 
