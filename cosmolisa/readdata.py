@@ -95,27 +95,26 @@ def read_MBHB_event(input_folder, event_number=None):
                 zmin = np.float64(np.maximum(redshift - 5.0*d_redshift, 0.0))
                 zmax = np.float64(redshift + 5.0*d_redshift)
                 analysis_events.append(Event(ID,
-                                    dl,
-                                    sigma,
-                                    1.0,
-                                    1.0,
-                                    redshift,
-                                    d_redshift,
-                                    weights,
-                                    magnitudes,
-                                    zmin,
-                                    zmax,
-                                    -1,
-                                    -1,
-                                    -1,
-                                    [0]))
+                                             dl,
+                                             sigma,
+                                             1.0,
+                                             1.0,
+                                             redshift,
+                                             d_redshift,
+                                             weights,
+                                             magnitudes,
+                                             zmin,
+                                             zmax,
+                                             -1,
+                                             -1,
+                                             -1,
+                                             [0]))
             except:
                 if (TypeError, NameError): 
                     raise
                 else: 
                     sys.stderr.write("Event %s at a distance"%(event_id) 
                         +"%s (error %s) has no hosts, skipping\n"%(dl, sigma))
-                # else: sys.stderr.write("Event %s at a distance %s (error %s) has no hosts, skipping\n"%(event_id,dl,sigma))
     else:
         event_file = open(input_folder+"/"+events_list[event_number] 
                           +"/ID.dat", 'r')
