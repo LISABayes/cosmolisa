@@ -155,11 +155,11 @@ class CosmologicalModel(cpnest.model.Model):
         print("\n"+5*"===================="+"\n")
         print("Prior bounds:")
         for name, bound in zip(self.names, self.bounds):
-            print(f"{str(name).ljust(5)}: {bound}")
+            print(f"{str(name).ljust(17)}: {bound}")
         print("\n"+5*"===================="+"\n")
 
     def _initialise_galaxy_hosts(self):
-        self.hosts = {e.ID: np.array([(g.redshift,g.dredshift,g.weight,
+        self.hosts = {e.ID: np.array([(g.redshift, g.dredshift, g.weight,
             g.magnitude) for g in e.potential_galaxy_hosts])
             for e in self.data
             }

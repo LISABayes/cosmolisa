@@ -76,8 +76,9 @@ def read_MBHB_event(input_folder, event_number=None):
     
     if (event_number is None):
         analysis_events = []
-        for ev in events_list:
-            print(ev)
+        for k, ev in enumerate(events_list):
+            sys.stderr.write("Reading {0} out of {1} events\r".format(
+                k+1, len(events_list)))
             event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
             event_id, dl, rel_sigma = event_file.readline().split(None)
             ID = np.int(event_id)
@@ -153,8 +154,7 @@ def read_MBHB_event(input_folder, event_number=None):
             sys.stderr.write("Event %s at a distance"%(event_id)
                 +"%s (error %s) has no hosts, skipping\n"%(dl, sigma))
             exit()
-
-    sys.stderr.write("%d MBHB events loaded\n"%len(analysis_events))
+    sys.stderr.write("\n%d MBHB events loaded\n"%len(analysis_events))
 
     return analysis_events
 
@@ -217,9 +217,11 @@ def read_dark_siren_event(input_folder, event_number,
 
     if (event_number is None):
         events = []
-        for ev in events_list:
+        for k, ev in enumerate(events_list):
             # Different catalogs have different numbers of columns,
             # so a try/except is used.
+            sys.stderr.write("Reading {0} out of {1} events\r".format(
+                k+1, len(events_list)))
             try:
                 event_file = open(input_folder + "/" + ev + "/ID.dat", 'r')
                 # 1      , 2 , 3        , 4 , 5              ,
