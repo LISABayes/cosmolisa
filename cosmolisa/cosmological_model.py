@@ -28,6 +28,7 @@ class CosmologicalModel(cpnest.model.Model):
     are inherited from cpnest.cpnest.Model and have to be
     explicitly defined inside this class.
     """
+
     def __init__(self, model, data, corrections, *args, **kwargs):
 
         super(CosmologicalModel, self).__init__()

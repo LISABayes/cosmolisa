@@ -24,9 +24,9 @@ def logLikelihood_single_event(const double[:,::1] hosts,
                                const double event_redshift,
                                const double zmin=0.0,
                                const double zmax=1.0):
-    """Likelihood function for a single GW event of data Di
-    assuming cosmological model M and parameters O: 
-    p( Di | O, M, I).
+    """Likelihood function p( Di | O, M, I) for a single GW event
+    of data Di assuming cosmological model M and parameters O.
+    Following the formalism of <arXiv:2102.01708>.
     Loops over all possible hosts to accumulate the likelihood.
     Parameters:
     ===============
@@ -52,43 +52,46 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
                                         const double sigmadl,
                                         CosmologicalParameters omega,
                                         const double event_redshift,
-                                        double zmin = 0.0,
-                                        double zmax = 1.0) nogil:
+                                        double zmin=0.0,
+                                        double zmax=1.0) nogil:
 
-    cdef unsigned int i
+    cdef unsigned int j
     cdef double dl
     cdef double logL_galaxy
+    cdef double logL_detector
     cdef double sigma_z, score_z
     cdef double weak_lensing_error
     cdef unsigned int N = hosts.shape[0]
     cdef double logTwoPiByTwo = 0.5*log(2.0*M_PI)
     cdef double logL = -HUGE_VAL
-    cdef double logLn = -HUGE_VAL
-    cdef double logp_detection = 0.0
-    cdef double logp_nondetection = 0.0
 
     # Predict dL from the cosmology O and the redshift z_gw:
     # d(O, z_GW).
     dl = omega._LuminosityDistance(event_redshift)
 
-    # Factors multiplying the detector likelihood in
-    # p(Di | dL, z_gw, M, I): sigma_WL and combined sigma
+    # sigma_WL and combined sigma entering the detector likelihood:
+    # p(Di | dL, z_gw, M, I).
     weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
-    cdef double SigmaSquared = sigmadl**2+weak_lensing_error**2
+    cdef double SigmaSquared = sigmadl**2 + weak_lensing_error**2
     cdef double logSigmaByTwo = 0.5*log(SigmaSquared)
 
+    # 1/sqrt{SigmaSquared}*exp(-0.5*(dL-d(O, z_GW))^2/SigmaSquared)
+    logL_detector = (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared
+                     - logSigmaByTwo - logTwoPiByTwo)
+
     # p(z_GW | dL, O, M, I): sum over the observed-galaxy redshifts:
-    # sum_i^Ng w_i*exp(-0.5*(z_i-z_GW)^2/sig_z_i^2)
-    for i in range(N):
-        sigma_z = hosts[i,1]*(1+hosts[i,0])
-        score_z = (event_redshift-hosts[i,0])/sigma_z
-        logL_galaxy = (-0.5*score_z*score_z + log(hosts[i,2])
-                       - log(sigma_z) - logTwoPiByTwo)
-        logL = log_add(logL,logL_galaxy)
+    # sum_j^Ng (w_j/sig_z_j^2)*exp(-0.5*(z_j-z_GW)^2/sig_z_j^2)
+    for j in range(N):
+        # Estimate sig_z_j ~= (z_jobs-z_jcos) = (v_pec/c)*(1+z_j).
+        sigma_z = hosts[j,1] * (1+hosts[j,0])
+        # Compute the full single-galaxy term to be summed over Ng.
+        score_z = (event_redshift - hosts[j,0])/sigma_z
+        logL_galaxy = (log(hosts[j,2]) - log(sigma_z)
+                       - 0.5*score_z*score_z - logTwoPiByTwo)
+        logL = log_add(logL, logL_galaxy)
         
     # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
-    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared - logSigmaByTwo
-            - logTwoPiByTwo + logL)
+    return logL_detector + logL
 
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
