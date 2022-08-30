@@ -54,38 +54,32 @@ class CosmologicalModel(cpnest.model.Model):
         
         if ('LambdaCDM_h' in self.model):
             self.cosmology = 1
-            self.npar = 1
             self.names = ['h']
             self.bounds = [[0.6,0.86]]            
 
         if ('LambdaCDM_om' in self.model):
             self.cosmology = 1
-            self.npar = 1
             self.names = ['om']
             self.bounds = [[0.04,0.5]]
 
         if ('LambdaCDM' in self.model):
             self.cosmology = 1
-            self.npar = 2
             self.names = ['h', 'om']
             self.bounds = [[0.6,0.86],[0.04,0.5]]
 
         if ('CLambdaCDM' in self.model):
             self.cosmology = 1
-            self.npar = 3
             self.names = ['h', 'om', 'ol']
             self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
 
         if ('LambdaCDMDE' in self.model):
             self.cosmology = 1
-            self.npar = 5
             self.names = ['h', 'om', 'ol', 'w0', 'w1']
             self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],
                 [-3.0,-0.3],[-1.0,1.0]]
 
         if ('DE' in self.model):
             self.cosmology = 1
-            self.npar = 2
             self.names = ['w0', 'w1']
             self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
 
@@ -185,34 +179,32 @@ class CosmologicalModel(cpnest.model.Model):
             # Check for the cosmological model and
             # define the CosmologicalParameter object.
             if ('LambdaCDM_h' in self.model):
-                self.O = cs.CosmologicalParameters(x['h'], self.truths['om'],
-                    self.truths['ol'], self.truths['w0'], self.truths['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    x['h'], self.truths['om'], self.truths['ol'],
+                    self.truths['w0'], self.truths['w1'])
             elif ('LambdaCDM_om' in self.model):
-                self.O = cs.CosmologicalParameters(self.truths['h'], x['om'],
-                    1.0-x['om'], self.truths['w0'], self.truths['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    self.truths['h'], x['om'], 1.0-x['om'],
+                    self.truths['w0'], self.truths['w1'])
             elif ('LambdaCDM' in self.model):
-                self.O = cs.CosmologicalParameters(x['h'], x['om'],
-                    1.0-x['om'], self.truths['w0'], self.truths['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    x['h'], x['om'], 1.0-x['om'], self.truths['w0'],
+                    self.truths['w1'])
             elif ('CLambdaCDM' in self.model):
-                self.O = cs.CosmologicalParameters(x['h'], x['om'], x['ol'],
-                    self.truths['w0'], self.truths['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    x['h'], x['om'], x['ol'], self.truths['w0'],
+                    self.truths['w1'])
             elif ('LambdaCDMDE' in self.model):
-                self.O = cs.CosmologicalParameters(x['h'], x['om'], x['ol'],
-                    x['w0'], x['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    x['h'], x['om'], x['ol'], x['w0'], x['w1'])
             elif ('DE' in self.model):
-                self.O = cs.CosmologicalParameters(self.truths['h'], 
-                    self.truths['om'], self.truths['ol'], x['w0'],x['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    self.truths['h'], self.truths['om'], self.truths['ol'],
+                    x['w0'], x['w1'])
             else:
-                self.O = cs.CosmologicalParameters(self.truths['h'], 
-                    self.truths['om'], self.truths['ol'], self.truths['w0'],
-                    self.truths['w1']
-                    )
+                self.O = cs.CosmologicalParameters(
+                    self.truths['h'], self.truths['om'], self.truths['ol'],
+                    self.truths['w0'],self.truths['w1'])
             # Check for the rate model or GW corrections.
             if ('Rate' in self.model):
                 self.r0 = 10**x['log10r0']
@@ -350,10 +342,9 @@ class CosmologicalModel(cpnest.model.Model):
         # We assume the catalog is complete and no correction is necessary.
         else:
             logL_GW += np.sum([lk.logLikelihood_single_event(
-                           self.hosts[e.ID], e.dl, e.sigma, self.O,
-                           x['z%d'%e.ID], zmin=self.bounds[self.npar+j][0],
-                           zmax=self.bounds[self.npar+j][1]) 
-                           for j,e in enumerate(self.data)])
+                            self.hosts[e.ID], e.dl, e.sigma, self.O,
+                            x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                                for j, e in enumerate(self.data)])
 
         self.O.DestroyCosmologicalParameters()
 
