@@ -6,35 +6,42 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 cimport cython
-from libc.math cimport log,exp,sqrt,cos,fabs,sin,sinh,M_PI,erf,erfc,HUGE_VAL,log1p
+from libc.math cimport log, exp, sqrt, cos, fabs, sin, sinh, M_PI, \
+    erf, erfc, HUGE_VAL, log1p
 from scipy.optimize import newton
 
-from cosmolisa.cosmology cimport CosmologicalParameters, _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
+from cosmolisa.cosmology cimport CosmologicalParameters, \
+    _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
 from cosmolisa.galaxy cimport GalaxyDistribution
 
-cdef inline double log_add(double x, double y) nogil: return x+log(1.0+exp(y-x)) if x >= y else y+log(1.0+exp(x-y))
+cdef inline double log_add(double x, double y) nogil: 
+    return x + log(1.0+exp(y-x)) if x >= y else y + log(1.0+exp(x-y))
 
 def logLikelihood_single_event(const double[:,::1] hosts,
                                const double meandl,
-                               const double sigma,
+                               const double sigmadl,
                                CosmologicalParameters omega,
                                const double event_redshift,
-                               const double zmin = 0.0,
-                               const double zmax = 1.0):
-    """
-    Likelihood function for a single GW event.
-    Loops over all possible hosts to accumulate the likelihood
+                               const double zmin=0.0,
+                               const double zmax=1.0):
+    """Likelihood function for a single GW event of data Di
+    assuming cosmological model M and parameters O: 
+    p( Di | O, M, I).
+    Loops over all possible hosts to accumulate the likelihood.
     Parameters:
     ===============
-    hosts: :obj:'numpy.array' with shape Nx3. The columns are redshift, redshift_error, angular_weight
-    meandl: :obj: 'numpy.double': mean of the DL marginal likelihood
-    sigma: :obj:'numpy.double': standard deviation of the DL marginal likelihood
-    omega: :obj:'lal.CosmologicalParameter': cosmological parameter structure
-    event_redshift: :obj:'numpy.double': redshift for the GW event
-    zmin: :obj:'numpy.double': minimum redshift
-    zmax: :obj:'numpy.double': maximum redshift
+    hosts: :obj: 'numpy.array' with shape Nx4. The columns are
+        redshift, redshift_error, angular_weight, magnitude
+    meandl: :obj: 'numpy.double': mean of the luminosity distance dL
+    sigmadl: :obj: 'numpy.double': standard deviation of dL
+    omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
+        structure O
+    event_redshift: :obj: 'numpy.double': redshift for the GW event
+    zmin: :obj: 'numpy.double': minimum GW redshift
+    zmax: :obj: 'numpy.double': maximum GW redshift
     """
-    return _logLikelihood_single_event(hosts, meandl, sigma, omega, event_redshift, zmin = zmin, zmax = zmax)
+    return _logLikelihood_single_event(hosts, meandl, sigmadl, omega,
+                                       event_redshift, zmin=zmin, zmax=zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -42,7 +49,7 @@ def logLikelihood_single_event(const double[:,::1] hosts,
 @cython.cdivision(True)
 cdef double _logLikelihood_single_event(const double[:,::1] hosts,
                                         const double meandl,
-                                        const double sigma,
+                                        const double sigmadl,
                                         CosmologicalParameters omega,
                                         const double event_redshift,
                                         double zmin = 0.0,
@@ -53,44 +60,43 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
     cdef double logL_galaxy
     cdef double sigma_z, score_z
     cdef double weak_lensing_error
-    cdef unsigned int N           = hosts.shape[0]
-    cdef double logTwoPiByTwo     = 0.5*log(2.0*M_PI)
-    cdef double logL              = -HUGE_VAL
-    cdef double logLn             = -HUGE_VAL
-    cdef double logp_detection    = 0.0
+    cdef unsigned int N = hosts.shape[0]
+    cdef double logTwoPiByTwo = 0.5*log(2.0*M_PI)
+    cdef double logL = -HUGE_VAL
+    cdef double logLn = -HUGE_VAL
+    cdef double logp_detection = 0.0
     cdef double logp_nondetection = 0.0
 
-#    # p(z_gw|O H I) #currently implemented in prior.pyx
-#    cdef double log_norm = log(omega.IntegrateComovingVolumeDensity(zmax))
-#    cdef double logP     = log(omega.UniformComovingVolumeDensity(event_redshift))-log_norm
-
-    # Predict dl from the cosmology O and the redshift z_gw
+    # Predict dL from the cosmology O and the redshift z_gw:
+    # d(O, z_GW).
     dl = omega._LuminosityDistance(event_redshift)
 
-    # Factors multiplying exp(-0.5*((dL-d(zgw,O))/sig_dL)^2) in p(Di | dL z_gw H I)
-    weak_lensing_error            = _sigma_weak_lensing(event_redshift, dl)
-    cdef double SigmaSquared      = sigma**2+weak_lensing_error**2
-    cdef double logSigmaByTwo     = 0.5*log(SigmaSquared)
-#    cdef double[:,::1] hosts_view = hosts #this is a pointer to the data of the array hosts to remove the numpy overhead
+    # Factors multiplying the detector likelihood in
+    # p(Di | dL, z_gw, M, I): sigma_WL and combined sigma
+    weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
+    cdef double SigmaSquared = sigmadl**2+weak_lensing_error**2
+    cdef double logSigmaByTwo = 0.5*log(SigmaSquared)
 
-    # p(G| dL z_gw O H I): sum over the observed-galaxy redshifts:
-    # sum_i^Ng w_i*exp(-0.5*(z_i-zgw)^2/sig_z_i^2)
+    # p(z_GW | dL, O, M, I): sum over the observed-galaxy redshifts:
+    # sum_i^Ng w_i*exp(-0.5*(z_i-z_GW)^2/sig_z_i^2)
     for i in range(N):
-        sigma_z     = hosts[i,1]*(1+hosts[i,0])
-        score_z     = (event_redshift-hosts[i,0])/sigma_z
-        logL_galaxy = -0.5*score_z*score_z+log(hosts[i,2])-log(sigma_z)-logTwoPiByTwo
-        logL        = log_add(logL,logL_galaxy)
+        sigma_z = hosts[i,1]*(1+hosts[i,0])
+        score_z = (event_redshift-hosts[i,0])/sigma_z
+        logL_galaxy = (-0.5*score_z*score_z + log(hosts[i,2])
+                       - log(sigma_z) - logTwoPiByTwo)
+        logL = log_add(logL,logL_galaxy)
         
-    # p(Di |...)*(p(G|...)+p(barG|...))*p(z_gw |...)
-    return -0.5*(dl-meandl)*(dl-meandl)/SigmaSquared-logTwoPiByTwo-logSigmaByTwo+logL
+    # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
+    return (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared - logSigmaByTwo
+            - logTwoPiByTwo + logL)
 
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
 
 cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
-    """
-    Weak lensing error. From <arXiv:1601.07112v3>, Eq. (7.3) corrected
-    by a factor 0.5 to match <arXiv:1004.3988v2>
+    """Weak lensing error. From <arXiv:1601.07112v3>,
+    Eq. (7.3) corrected by a factor 0.5 
+    to match <arXiv:1004.3988v2>.
     Parameters:
     ===============
     z: :obj:'numpy.double': redshift
@@ -101,15 +107,24 @@ cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
 def em_selection_function(double dl):
     return _em_selection_function(dl)
 
-# Completeness function f(dL) currently available in the code
 @cython.cdivision(True)
 @cython.boundscheck(False)
 cdef double _em_selection_function(double dl) nogil:
+    """Completeness function f(dL) currently used for plotting."""
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
+def logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
+                                       double meandl,
+                                       double sigmadl,
+                                       CosmologicalParameters omega,
+                                       GalaxyDistribution gal, 
+                                       double event_redshift,
+                                       double zmin=0.0,
+                                       double zmax=1.0):
 
-def logLikelihood_single_event_sel_fun(const double[:,::1] hosts, double meandl, double sigmadl, CosmologicalParameters omega, GalaxyDistribution gal, double event_redshift, double zmin = 0.0, double zmax = 1.0):
-    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl, omega, gal, event_redshift, zmin = zmin, zmax = zmax)
+    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl,
+                                               omega, gal, event_redshift,
+                                               zmin=zmin, zmax=zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -121,55 +136,86 @@ cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
                                                 CosmologicalParameters omega,
                                                 GalaxyDistribution gal,
                                                 double event_redshift,
-                                                double zmin = 0.0,
-                                                double zmax = 1.0) nogil:
-    """
-    Single-event likelihood function enforcing the selection function.
-
+                                                double zmin=0.0,
+                                                double zmax=1.0) nogil:
+    """Single-event likelihood function enforcing the 
+    selection function.
     Parameters:
     ===============
-    hosts:            :obj: 'numpy.array'.               Shape Nx3. The columns are redshift, redshift_error, angular_weight
-    meandl:           :obj: 'numpy.double'.              Mean of the DL marginal likelihood
-    sigmadl:          :obj: 'numpy.double'.              Standard deviation of the DL marginal likelihood
-    omega:            :obj: 'lal.CosmologicalParameter'. Cosmological parameter structure
-    gal:              :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution function 
-    event_redshift:   :obj: 'numpy.double'.              Redshift of the GW event
-    zmin, zmax        :obj: 'numpy.double'.              GW event min,max redshift
+    hosts: :obj: 'numpy.array' with shape Nx4. The columns are
+        redshift, redshift_error, angular_weight, magnitude
+    meandl: :obj: 'numpy.double': mean of the luminosity distance dL
+    sigmadl: :obj: 'numpy.double': standard deviation of dL
+    omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
+        structure O
+    gal: :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution 
+        function 
+    event_redshift: :obj: 'numpy.double': redshift for the GW event
+    zmin: :obj: 'numpy.double': minimum GW redshift
+    zmax: :obj: 'numpy.double': maximum GW redshift
     """
-    cdef double logL      = -HUGE_VAL
+    cdef double logL = -HUGE_VAL
     cdef double p_out_cat = -HUGE_VAL
-    logL                  = _logLikelihood_single_event(hosts, meandl, sigmadl, omega, event_redshift, zmin, zmax)
-    p_out_cat             = gal._get_non_detected_normalisation(zmin, zmax)/gal._get_normalisation(zmin, zmax)
+    logL = _logLikelihood_single_event(hosts, meandl, sigmadl, omega, 
+                                       event_redshift, zmin, zmax)
+    p_out_cat = (gal._get_non_detected_normalisation(zmin, zmax)
+                 /gal._get_normalisation(zmin, zmax))
 
-    return logL+log1p(-p_out_cat)
+    return logL + log1p(-p_out_cat)
 
 
 cpdef double find_redshift(CosmologicalParameters omega, double dl):
-    return newton(objective,1.0,args=(omega,dl))
+    return newton(objective, 1.0, args=(omega,dl))
 
 cdef double objective(double z, CosmologicalParameters omega, double dl):
     return dl - omega._LuminosityDistance(z)
 
-def integrated_rate(double r0, double W, double R, double Q, CosmologicalParameters omega, double zmin = 0.0, double zmax = 1.0):
+def integrated_rate(double r0,
+                    double W,
+                    double R,
+                    double Q,
+                    CosmologicalParameters omega,
+                    double zmin=0.0,
+                    double zmax=1.0):
     return _integrated_rate(r0, W, R, Q, omega, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _integrated_rate(const double r0, const double W, const double R, const double Q, CosmologicalParameters omega, double zmin, double zmax) nogil:
-    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q, omega, zmin, zmax)
+cdef double _integrated_rate(const double r0,
+                             const double W,
+                             const double R,
+                             const double Q,
+                             CosmologicalParameters omega,
+                             double zmin,
+                             double zmax) nogil:
+    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q,
+                                                       omega, zmin, zmax)
 
 
-def logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double R, double Q, double N):
+def logLikelihood_single_event_rate_only(CosmologicalParameters O,
+                                         double z,
+                                         double r0,
+                                         double W,
+                                         double R,
+                                         double Q,
+                                         double N):
     return _logLikelihood_single_event_rate_only(O, z, r0, W, Q, R, N)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event_rate_only(CosmologicalParameters O, double z, double r0, double W, double R, double Q, double N) nogil:
-    return log(_StarFormationDensity(z, r0, W, R, Q))+log(O._UniformComovingVolumeDensity(z))-log(N)
+cdef double _logLikelihood_single_event_rate_only(CosmologicalParameters O,
+                                                  double z,
+                                                  double r0,
+                                                  double W,
+                                                  double R,
+                                                  double Q,
+                                                  double N) nogil:
+    return (log(_StarFormationDensity(z, r0, W, R, Q))
+            + log(O._UniformComovingVolumeDensity(z)) - log(N))
 
 
 ##########################################################
@@ -186,7 +232,8 @@ def gw_selection_probability_sfr(const double zmin,
                                  const double Q,
                                  const double SNR_threshold,
                                  CosmologicalParameters omega):
-    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q, SNR_threshold, omega)
+    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q,
+                                         SNR_threshold, omega)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -207,7 +254,8 @@ cdef double _gw_selection_probability_sfr(const double zmin,
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin
     for i in range(N):
-        I += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, SNR_threshold, omega)
+        I += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, 
+                                                     SNR_threshold, omega)
         z += dz
     return I*dz
 
@@ -215,37 +263,41 @@ cdef double _gw_selection_probability_sfr(const double zmin,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_integrand_sfr(const double z,
-                                                    const double r0,
-                                                    const double W,
-                                                    const double R,
-                                                    const double Q,
-                                                    const double SNR_threshold,
-                                                    CosmologicalParameters omega) nogil:
+cdef double _gw_selection_probability_integrand_sfr(
+        const double z,
+        const double r0,
+        const double W,
+        const double R,
+        const double Q,
+        const double SNR_threshold,
+        CosmologicalParameters omega) nogil:
 
-    cdef double dl                = omega._LuminosityDistance(z)
-    cdef double sigma             = _distance_error_vs_snr(SNR_threshold)
-    cdef double sigma_total       = sqrt(_sigma_weak_lensing(z, dl)**2+sigma**2)
-    # this is the distance threshold assuming a simple scaling law for the SNR
-    cdef double Dthreshold        = _threshold_distance(SNR_threshold)
-    cdef double A                 = _StarFormationDensity(z, r0, W, R, Q)*omega._UniformComovingVolumeDensity(z)
-    cdef double denominator       = sqrt(2.0)*sigma_total
-    cdef double integrand         = 0.5*A*(erf(dl/denominator)-erf((dl-Dthreshold)/denominator))
+    cdef double dl = omega._LuminosityDistance(z)
+    cdef double sigma = _distance_error_vs_snr(SNR_threshold)
+    cdef double sigma_total = sqrt(_sigma_weak_lensing(z, dl)**2 + sigma**2)
+    # the following is the distance threshold assuming 
+    # a simple scaling law for the SNR
+    cdef double Dthreshold = _threshold_distance(SNR_threshold)
+    cdef double A = (_StarFormationDensity(z, r0, W, R, Q)
+                     * omega._UniformComovingVolumeDensity(z))
+    cdef double denominator = sqrt(2.0)*sigma_total
+    cdef double integrand = 0.5*A*(erf(dl/denominator)
+                                   - erf((dl-Dthreshold)/denominator))
     return integrand
     
 def snr_vs_distance(double d):
     return _snr_vs_distance(d)
 
 cdef inline double _snr_vs_distance(double d) nogil:
-    """ from a log-linear regression on M106 """
+    """From a log-linear regression on M106."""
     return 23299.606754*d**(-0.741036)
 
 def distance_error_vs_snr(double snr):
     return _distance_error_vs_snr(snr)
     
 cdef inline double _distance_error_vs_snr(double snr) nogil:
-    """ from a log-linear regression on M106 """
-    return 23912.196795*snr**(-1.424880 )
+    """From a log-linear regression on M106."""
+    return 23912.196795*snr**(-1.424880)
 
 def threshold_distance(double SNR_threshold):
     return _threshold_distance(SNR_threshold)
