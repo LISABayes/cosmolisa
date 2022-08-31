@@ -23,10 +23,10 @@ import cpnest.model
 class CosmologicalModel(cpnest.model.Model):
     """CosmologicalModel class:
     Data, likelihood, prior, and settings of the analysis
-    are specified here. The abstract modules 'log_prior' and 
-    'log_likelihood', as well as the attributes 'names' and 'bounds',
-    are inherited from cpnest.cpnest.Model and have to be
-    explicitly defined inside this class.
+    are specified here. The abstract modules 'log_prior' and
+    'log_likelihood', as well as the attributes 'names' and
+    'bounds', are inherited from cpnest.cpnest.Model and
+    have to be explicitly defined inside this class.
     """
 
     def __init__(self, model, data, corrections, *args, **kwargs):
@@ -55,33 +55,33 @@ class CosmologicalModel(cpnest.model.Model):
         if ('LambdaCDM_h' in self.model):
             self.cosmology = 1
             self.names = ['h']
-            self.bounds = [[0.6,0.86]]            
+            self.bounds = [[0.6, 0.86]]
 
         if ('LambdaCDM_om' in self.model):
             self.cosmology = 1
             self.names = ['om']
-            self.bounds = [[0.04,0.5]]
+            self.bounds = [[0.04, 0.5]]
 
         if ('LambdaCDM' in self.model):
             self.cosmology = 1
             self.names = ['h', 'om']
-            self.bounds = [[0.6,0.86],[0.04,0.5]]
+            self.bounds = [[0.6, 0.86], [0.04, 0.5]]
 
         if ('CLambdaCDM' in self.model):
             self.cosmology = 1
             self.names = ['h', 'om', 'ol']
-            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0]]
+            self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0]]
 
         if ('LambdaCDMDE' in self.model):
             self.cosmology = 1
             self.names = ['h', 'om', 'ol', 'w0', 'w1']
-            self.bounds = [[0.6,0.86],[0.04,0.5],[0.0,1.0],
-                [-3.0,-0.3],[-1.0,1.0]]
+            self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0],
+                [-3.0, -0.3], [-1.0, 1.0]]
 
         if ('DE' in self.model):
             self.cosmology = 1
             self.names = ['w0', 'w1']
-            self.bounds = [[-3.0,-0.3],[-1.0,1.0]]
+            self.bounds = [[-3.0, -0.3], [-1.0, 1.0]]
 
         if ('GW' in self.model):
             self.gw = 1
@@ -93,29 +93,29 @@ class CosmologicalModel(cpnest.model.Model):
             self.rate = 1
             self.gw_correction = 1
             self.names.append('log10r0')
-            self.bounds.append([-15,-8])
+            self.bounds.append([-15, -8])
             self.names.append('W')
-            self.bounds.append([0.0,300.0])
+            self.bounds.append([0.0, 300.0])
             self.names.append('Q')
-            self.bounds.append([0.0,15.0])
+            self.bounds.append([0.0, 15.0])
             self.names.append('R')
-            self.bounds.append([0.0,15.0])
+            self.bounds.append([0.0, 15.0])
             
         if ('Luminosity' in self.model):
             self.luminosity = 1
             self.em_correction = 1
             self.names.append('phistar0')
-            self.bounds.append([1e-5,1e-1])
+            self.bounds.append([1e-5, 1e-1])
             self.names.append('phistar_exponent')
-            self.bounds.append([-0.1,0.1])
+            self.bounds.append([-0.1, 0.1])
             self.names.append('Mstar0')
-            self.bounds.append([-22,-18])
+            self.bounds.append([-22, -18])
             self.names.append('Mstar_exponent')
-            self.bounds.append([-0.1,0.1])
+            self.bounds.append([-0.1, 0.1])
             self.names.append('alpha0')
-            self.bounds.append([-2.0,-1.0])
+            self.bounds.append([-2.0, -1.0])
             self.names.append('alpha_exponent')
-            self.bounds.append([-0.1,0.1])
+            self.bounds.append([-0.1, 0.1])
 
         # If we are using GWs, add the relevant redshift parameters.
         if (self.gw == 1):
@@ -162,15 +162,15 @@ class CosmologicalModel(cpnest.model.Model):
             for e in self.data]).copy(order='C')
         self.galaxy_magnitudes = np.hstack([self.hosts[e.ID][:,3] 
             for e in self.data]).copy(order='C')
-        self.areas = {e.ID:0.000405736691211125 * (87./e.snr)**2 
+        self.areas = {e.ID: 0.000405736691211125 * (87./e.snr)**2
             for e in self.data
             }
         
     def log_prior(self, x):
         """Natural-log-prior assumed in the inference. 
         It is currently inherited from the sampler class
-        (uniform priors for all parameters are defined in the list
-        'names' with ranges specified in 'bounds').
+        (uniform priors for all parameters are defined in
+        the list 'names' with ranges specified in 'bounds').
         It also defines objects used in other class modules.
         """
         logP = super(CosmologicalModel, self).log_prior(x)
@@ -275,8 +275,7 @@ class CosmologicalModel(cpnest.model.Model):
 
                 logL_luminosity += (Schecter.loglikelihood(
                                     self.hosts[e.ID][:,3].copy(order='C'),
-                                    self.hosts[e.ID][:,0].copy(order='C'))
-                                   )
+                                    self.hosts[e.ID][:,0].copy(order='C')))
 
             return logL_luminosity
         
@@ -300,7 +299,7 @@ class CosmologicalModel(cpnest.model.Model):
             if (self.gw == 0):
                 return (logL_rate 
                         + np.sum([lk.logLikelihood_single_event_rate_only(
-                              self.O, e.z_true, self.r0, self.W, self.R, 
+                              self.O, e.z_true, self.r0, self.W, self.R,
                               self.Q, Ntot) for e in self.data]))
             
         # If we are correcting for EM selection effects, 
@@ -329,17 +328,16 @@ class CosmologicalModel(cpnest.model.Model):
                                                  0)
                     
                     logL_GW += lk.logLikelihood_single_event_sel_fun(
-                                   self.hosts[e.ID], e.dl, e.sigma,
-                                   self.O, Sch, x['z%d'%e.ID], 
-                                   zmin=e.zmin, zmax=e.zmax)
+                                    self.hosts[e.ID], e.dl, e.sigma,
+                                    self.O, Sch, x['z%d'%e.ID],
+                                    zmin=e.zmin, zmax=e.zmax)
                     if (self.luminosity == 1):
                         logL_luminosity += Sch.loglikelihood(
-                                               self.hosts[e.ID][:,3]
-                                               .copy(order='C'), 
-                                               self.hosts[e.ID][:,0]
-                                               .copy(order='C'))
+                                    self.hosts[e.ID][:,3].copy(order='C'),
+                                    self.hosts[e.ID][:,0].copy(order='C'))
 
-        # We assume the catalog is complete and no correction is necessary.
+        # We assume the catalog is complete and no correction
+        # is necessary.
         else:
             logL_GW += np.sum([lk.logLikelihood_single_event(
                             self.hosts[e.ID], e.dl, e.sigma, self.O,
@@ -630,7 +628,7 @@ def main():
     if ((config_par['single_z_from_GW'] != 0) 
             and (config_par['one_host_sel'] == 1)):
         print("\nSimulating a single potential host with redshift"
-              "equal to z_true.") 
+              " equal to z_true.")
         for e in events:
             e.potential_galaxy_hosts[0].redshift = e.z_true
             e.potential_galaxy_hosts[0].weight = 1.0
@@ -643,7 +641,7 @@ def main():
 
     if not (config_par['split_data_num'] <= 1):
         assert \
-            config_par['split_data_chunk'] <= config_par['split_data_num'],\
+            config_par['split_data_chunk'] <= config_par['split_data_num'], \
             "Data split in {} chunks; chunk number {} has been chosen".format(
                 config_par['split_data_num'], config_par['split_data_chunk'])
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
