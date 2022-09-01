@@ -68,19 +68,17 @@ cdef double _logLikelihood_single_event(const double[:,::1] hosts,
     # Predict dL from the cosmology O and the redshift z_gw:
     # d(O, z_GW).
     dl = omega._LuminosityDistance(event_redshift)
-
     # sigma_WL and combined sigma entering the detector likelihood:
     # p(Di | dL, z_gw, M, I).
     weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared = sigmadl**2 + weak_lensing_error**2
     cdef double logSigmaByTwo = 0.5*log(SigmaSquared)
-
-    # 1/sqrt{SigmaSquared}*exp(-0.5*(dL-d(O, z_GW))^2/SigmaSquared)
+    # 1/sqrt{2pi*SigmaSquared}*exp(-0.5*(dL-d(O, z_GW))^2/SigmaSquared)
     logL_detector = (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared
                      - logSigmaByTwo - logTwoPiByTwo)
 
-    # p(z_GW | dL, O, M, I): sum over the observed-galaxy redshifts:
-    # sum_j^Ng (w_j/sig_z_j^2)*exp(-0.5*(z_j-z_GW)^2/sig_z_j^2)
+    # Sum over the observed-galaxy redshifts: p(z_GW | dL, O, M, I) =
+    # sum_j^Ng (w_j/sqrt{2pi}*sig_z_j)*exp(-0.5*(z_j-z_GW)^2/sig_z_j^2)
     for j in range(N):
         # Estimate sig_z_j ~= (z_jobs-z_jcos) = (v_pec/c)*(1+z_j).
         sigma_z = hosts[j,1] * (1+hosts[j,0])

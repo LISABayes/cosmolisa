@@ -24,7 +24,7 @@ class Event:
     def __init__(self,
                  ID,
                  dl,
-                 sigma,
+                 sigmadl,
                  sigma_gw_theta,
                  sigma_gw_phi,
                  redshifts,
@@ -45,11 +45,11 @@ class Event:
         self.n_hosts = len(self.potential_galaxy_hosts)
         self.ID = ID
         self.dl = dl
-        self.sigma = sigma
+        self.sigmadl = sigmadl
         self.sigma_gw_theta = sigma_gw_theta
         self.sigma_gw_phi = sigma_gw_phi
-        self.dmax = (self.dl+3.0*self.sigma)
-        self.dmin = (self.dl-3.0*self.sigma)
+        self.dmax = (self.dl + 3.0*self.sigmadl)
+        self.dmin = (self.dl - 3.0*self.sigmadl)
         self.zmin = zmin
         self.zmax = zmax
         self.snr = snr
@@ -80,10 +80,10 @@ def read_MBHB_event(input_folder, event_number=None):
             sys.stderr.write("Reading {0} out of {1} events\r".format(
                 k+1, len(events_list)))
             event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
-            event_id, dl, rel_sigma = event_file.readline().split(None)
+            event_id, dl, rel_sigmadl = event_file.readline().split(None)
             ID = np.int(event_id)
             dl = np.float64(dl)
-            sigma = np.float64(rel_sigma)*dl
+            sigmadl = np.float64(rel_sigmadl)*dl
             event_file.close()
             
             try:
@@ -97,7 +97,7 @@ def read_MBHB_event(input_folder, event_number=None):
                 zmax = np.float64(redshift + 5.0*d_redshift)
                 analysis_events.append(Event(ID,
                                              dl,
-                                             sigma,
+                                             sigmadl,
                                              1.0,
                                              1.0,
                                              redshift,
@@ -115,14 +115,14 @@ def read_MBHB_event(input_folder, event_number=None):
                     raise
                 else: 
                     sys.stderr.write("Event %s at a distance"%(event_id) 
-                        +"%s (error %s) has no hosts, skipping\n"%(dl, sigma))
+                        +"%s (error %s) has no hosts, skipping\n"%(dl, sigmadl))
     else:
         event_file = open(input_folder+"/"+events_list[event_number] 
                           +"/ID.dat", 'r')
-        event_id, dl, sigma = event_file.readline().split(None)
+        event_id, dl, sigmadl = event_file.readline().split(None)
         ID = np.int(event_id)
         dl = np.float64(dl)
-        sigma = np.float64(sigma)*dl
+        sigmadl = np.float64(sigmadl)*dl
         event_file.close()
         try:
             redshift, d_redshift = np.loadtxt(input_folder+"/" 
@@ -135,7 +135,7 @@ def read_MBHB_event(input_folder, event_number=None):
             zmax = np.float64(redshift + 10.0*d_redshift)
             analysis_events = [Event(ID,
                                      dl,
-                                     sigma,
+                                     sigmadl,
                                      1.0,
                                      1.0,
                                      redshift,
@@ -149,10 +149,10 @@ def read_MBHB_event(input_folder, event_number=None):
                                      -1,
                                      [0])]
             sys.stderr.write("Selecting event %s at a distance"%(event_id)
-                +"%s (error %s), hosts %d\n"%(dl, sigma, len(redshifts)))
+                +"%s (error %s), hosts %d\n"%(dl, sigmadl, len(redshifts)))
         except:
             sys.stderr.write("Event %s at a distance"%(event_id)
-                +"%s (error %s) has no hosts, skipping\n"%(dl, sigma))
+                +"%s (error %s) has no hosts, skipping\n"%(dl, sigmadl))
             exit()
     sys.stderr.write("\n%d MBHB events loaded\n"%len(analysis_events))
 
@@ -225,7 +225,7 @@ def read_dark_siren_event(input_folder, event_number,
             try:
                 event_file = open(input_folder + "/" + ev + "/ID.dat", 'r')
                 # 1      , 2 , 3        , 4 , 5              ,
-                (event_id, dl, rel_sigma, Vc, z_observed_true, 
+                (event_id, dl, rel_sigmadl, Vc, z_observed_true,
                     # 6      , 7        , 8     ,
                     zmin_true, zmax_true, z_true,
                     # 9 , 10  ,  , , , , , , 17 , 18      , 19
@@ -235,7 +235,7 @@ def read_dark_siren_event(input_folder, event_number,
                 try:
                     event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
                     # 1      , 2 , 3        , 4 , 5              ,
-                    (event_id, dl, rel_sigma, Vc, z_observed_true,
+                    (event_id, dl, rel_sigmadl, Vc, z_observed_true,
                         # 6      , 7        , 8     ,
                         zmin_true, zmax_true, z_true,
                         # 9 , 10  ,  , , , , , ,
@@ -245,7 +245,7 @@ def read_dark_siren_event(input_folder, event_number,
                 except(ValueError):
                     event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
                     # 1      , 2 , 3        , 4 , 5              ,
-                    (event_id, dl, rel_sigma, Vc, z_observed_true, 
+                    (event_id, dl, rel_sigmadl, Vc, z_observed_true,
                     # 6      , 7        , 8     ,                 
                     zmin_true, zmax_true, z_true,
                     # 9 , 10  ,  , , , , , , , , ,
@@ -255,7 +255,7 @@ def read_dark_siren_event(input_folder, event_number,
 
             ID = np.int(event_id)
             dl = np.float64(dl)
-            sigma = np.float64(rel_sigma)*dl
+            sigmadl = np.float64(rel_sigmadl)*dl
             zmin = np.float64(zmin)
             zmax = np.float64(zmax)
             snr = np.float64(snr)
@@ -293,7 +293,7 @@ def read_dark_siren_event(input_folder, event_number,
                     dl_host = np.atleast_1d(dl_host)
                 events.append(Event(ID,
                                     dl,
-                                    sigma,
+                                    sigmadl,
                                     sigma_gw_theta,
                                     sigma_gw_phi,
                                     redshifts,
@@ -308,7 +308,7 @@ def read_dark_siren_event(input_folder, event_number,
                                     dl_host,
                                     VC = VC))
             except:
-                print(f"Event {event_id} at a distance {dl} (error {sigma})"
+                print(f"Event {event_id} at a distance {dl} (error {sigmadl})"
                       " has no hosts, skipping\n")
 
         if (snr_selection is not None):
@@ -468,12 +468,12 @@ def read_dark_siren_event(input_folder, event_number,
         analysis_events = []
         event_file = open(input_folder+"/"+events_list[event_number]
                           +"/ID.dat","r")
-        (event_id, dl, rel_sigma, Vc, z_observed_true, zmin_true, zmax_true,
+        (event_id, dl, rel_sigmadl, Vc, z_observed_true, zmin_true, zmax_true,
             z_true, zmin, zmax, _,_,_,_,_,_,
             snr, snr_true) = event_file.readline().split(None)
         ID = np.int(event_id)
         dl = np.float64(dl)
-        sigma = np.float64(rel_sigma)*dl
+        sigmadl = np.float64(rel_sigmadl)*dl
         zmin = np.float64(zmin)
         zmax = np.float64(zmax)
         snr = np.float64(snr)
@@ -489,12 +489,13 @@ def read_dark_siren_event(input_folder, event_number,
             d_redshifts = np.ones(len(redshifts))*pv
             weights = np.atleast_1d(weights)
             magnitudes = np.atleast_1d(magnitudes)
-            analysis_events.append(Event(ID,dl,sigma,0.0,0.0,redshifts,
-                                         d_redshifts,weights,magnitudes,
-                                         zmin,zmax,snr,z_true,dl_host,VC=VC))
+            analysis_events.append(Event(ID, dl, sigmadl, 0.0, 0.0, redshifts,
+                                         d_redshifts, weights, magnitudes,
+                                         zmin, zmax, snr, z_true, dl_host,
+                                         VC=VC))
         except:
             sys.stderr.write(f"Event {event_id} at a distance {dl} (error"
-                             f"{sigma}) has no EM counterpart, skipping\n")
+                             f"{sigmadl}) has no EM counterpart, skipping\n")
 
     return analysis_events
 

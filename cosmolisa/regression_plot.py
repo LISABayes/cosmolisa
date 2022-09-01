@@ -112,12 +112,12 @@ if __name__=="__main__":
     for e in events:
         try:
             redshift_posteriors.append(posteriors['z%d'%e.ID])
-            distance_posteriors.append(np.random.normal(e.dl/1e3,e.sigma/1e3, size=len(posteriors['z%d'%e.ID])))
+            distance_posteriors.append(np.random.normal(e.dl/1e3,e.sigmadl/1e3, size=len(posteriors['z%d'%e.ID])))
             redshift_galaxies.append([g.redshift for g in e.potential_galaxy_hosts])
             weight_galaxies.append([g.weight for g in e.potential_galaxy_hosts])
             distance_galaxies.append([e.dl/1e3 for g in e.potential_galaxy_hosts])
             dlmeasured.append(e.dl/1e3)
-            ddlmeasured.append(2*e.sigma/1e3)
+            ddlmeasured.append(2*e.dl/1e3)
             zmeasured.append(np.mean([g.redshift for g in e.potential_galaxy_hosts]))
             dzmeasured.append(2*np.std([g.redshift for g in e.potential_galaxy_hosts]))
         except:

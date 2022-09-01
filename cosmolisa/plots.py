@@ -243,10 +243,10 @@ def redshift_ev_plot(x, **kwargs):
                 kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
         # distance_likelihood.append(np.array([lk.logLikelihood_single_event(
         #    C.hosts[kwargs['event'].ID], kwargs['event'].dl, 
-        #    kwargs['event'].sigma, O, zi) for zi in z]))
+        #    kwargs['event'].sigmadl, O, zi) for zi in z]))
         distance_likelihood.append(
             np.array([-0.5*((O.LuminosityDistance(zi) - kwargs['event'].dl)
-            / kwargs['event'].sigma)**2 for zi in z]))
+            / kwargs['event'].sigmadl)**2 for zi in z]))
         O.DestroyCosmologicalParameters()
     distance_likelihood = np.exp(np.array(distance_likelihood))
     l, m, h = np.percentile(distance_likelihood,[5, 50, 95], axis=0)
@@ -256,7 +256,7 @@ def redshift_ev_plot(x, **kwargs):
     ax2.fill_between(z, l, h,facecolor='magenta', alpha=0.5)
     ax2.plot(z, np.exp(np.array([-0.5*(
         (kwargs['omega_true'].LuminosityDistance(zi)-kwargs['event'].dl)
-        /kwargs['event'].sigma)**2 for zi in z])),
+        /kwargs['event'].sigmadl)**2 for zi in z])),
         linestyle = 'dashed', color='gold', lw=1.5)
     ax.axvline(lk.find_redshift(kwargs['omega_true'], kwargs['event'].dl),
         linestyle='dotted', lw=0.8, color='red')
@@ -289,7 +289,7 @@ def MBHB_regression(x, **kwargs):
     else:
         dztrue = np.squeeze([[ztrue[i]-e.zmin, e.zmax-ztrue[i]] for i, e 
                             in enumerate(kwargs['data'])]).reshape(2, 1)
-    deltadl = [np.sqrt((e.sigma/1e3)**2
+    deltadl = [np.sqrt((e.sigmadl/1e3)**2
         + (lk.sigma_weak_lensing(e.potential_galaxy_hosts[0].redshift,
                                  e.dl)/1e3)**2)
         for e in kwargs['data']]

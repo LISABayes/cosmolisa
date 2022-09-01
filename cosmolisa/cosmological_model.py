@@ -328,7 +328,7 @@ class CosmologicalModel(cpnest.model.Model):
                                                  0)
                     
                     logL_GW += lk.logLikelihood_single_event_sel_fun(
-                                    self.hosts[e.ID], e.dl, e.sigma,
+                                    self.hosts[e.ID], e.dl, e.sigmadl,
                                     self.O, Sch, x['z%d'%e.ID],
                                     zmin=e.zmin, zmax=e.zmax)
                     if (self.luminosity == 1):
@@ -340,7 +340,7 @@ class CosmologicalModel(cpnest.model.Model):
         # is necessary.
         else:
             logL_GW += np.sum([lk.logLikelihood_single_event(
-                            self.hosts[e.ID], e.dl, e.sigma, self.O,
+                            self.hosts[e.ID], e.dl, e.sigmadl, self.O,
                             x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
                                 for j, e in enumerate(self.data)])
 
@@ -377,7 +377,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'z_gal_cosmo'       Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
     'snr_selection'     Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
     'snr_threshold'     Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
-    'sigma_pv'          Default: 0.0023.                                  Redshift error associated to peculiar velocity value (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
+    'sigma_pv'          Default: 0.0023.                                  Uncertainty associated to peculiar velocity value, equal to (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
     'split_data_num'    Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
     'split_data_chunk'  Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
     'T'                 Default: 10.0.                                    Observation time (yr).
@@ -662,7 +662,7 @@ def main():
                   +"z_host: {} |  ".format(
                     str(e.potential_galaxy_hosts[0].redshift).ljust(8))
                   +"dl: {} Mpc  |  ".format(str(e.dl).ljust(9))
-                  +"sigmadl: {} Mpc  | ".format(str(e.sigma)[:6].ljust(7))
+                  +"sigmadl: {} Mpc  | ".format(str(e.sigmadl)[:6].ljust(7))
                   +"hosts: {}".format(str(len(e.potential_galaxy_hosts))
                                          .ljust(4)))
     else:
@@ -672,7 +672,7 @@ def main():
                   +"SNR: {}  |  ".format(str(e.snr).ljust(9))
                   +"z_true: {} |  ".format(str(e.z_true).ljust(7))
                   +"dl: {} Mpc  |  ".format(str(e.dl).ljust(7))
-                  +"sigmadl: {} Mpc  |  ".format(str(e.sigma)[:6].ljust(7))
+                  +"sigmadl: {} Mpc  |  ".format(str(e.sigmadl)[:6].ljust(7))
                   +"hosts: {}".format(str(len(e.potential_galaxy_hosts))
                                          .ljust(4)))
 
