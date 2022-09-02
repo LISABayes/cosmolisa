@@ -146,23 +146,23 @@ class CosmologicalModel(cpnest.model.Model):
         print("\n"+5*"===================="+"\n")
 
     def _initialise_galaxy_hosts(self):
-        self.hosts = {e.ID: np.array([(g.redshift, g.dredshift, g.weight,
-            g.magnitude) for g in e.potential_galaxy_hosts])
-            for e in self.data
+        self.hosts = {
+            e.ID: np.array([(g.redshift, g.dredshift, g.weight, g.magnitude)
+            for g in e.potential_galaxy_hosts]) for e in self.data
             }
         self.galaxy_redshifts = np.hstack([self.hosts[e.ID][:,0] 
             for e in self.data]).copy(order='C')
         self.galaxy_magnitudes = np.hstack([self.hosts[e.ID][:,3] 
             for e in self.data]).copy(order='C')
-        self.areas = {e.ID: 0.000405736691211125 * (87./e.snr)**2
-            for e in self.data
+        self.areas = {
+            e.ID: 0.000405736691211125 * (87./e.snr)**2 for e in self.data
             }
         
     def log_prior(self, x):
         """Natural-log-prior assumed in the inference. 
         It is currently inherited from the sampler class
-        (uniform priors for all parameters are defined in
-        the list 'names' with ranges specified in 'bounds').
+        (uniform priors for all the parameters thst are defined
+        in the list 'names' with ranges specified in 'bounds').
         It also defines objects used in other class modules.
         """
         logP = super(CosmologicalModel, self).log_prior(x)
@@ -274,26 +274,28 @@ class CosmologicalModel(cpnest.model.Model):
         # If we are estimating the rate or we are correcting for 
         # GW selection effects, we need this part.
         if (self.rate == 1) or (self.gw_correction == 1):
-            Rtot = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O,
-                                      1e-5, self.z_threshold)
-            Ntot = Rtot*self.T
-            
-            # Compute the probability of observing the events we observed.
-            Ndet = lk.gw_selection_probability_sfr(1e-5, self.z_threshold,
-                                                   self.r0, self.W, self.R, 
-                                                   self.Q, self.snr_threshold,
-                                                   self.O)
-            # Compute the rate for the observed events.
-            # Rdet = Rtot*selection_probability
-            logL_rate = -Ndet + self.N*np.log(Ntot)
-            # If we do not care about GWs, compute the rate density 
+            # Compute the number of sources happening in the universe.
+            Ns = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O,
+                                    1e-5, self.z_threshold)
+            Ns_tot = Ns * self.T
+            # Compute the number of events above detection threshold.
+            # Selection effects only enter through this term.
+            Ns_up = lk.gw_selection_probability_sfr(
+                                                1e-5, self.z_threshold,
+                                                self.r0, self.W, self.R,
+                                                self.Q, self.snr_threshold,
+                                                self.O)
+            Ns_up_tot = Ns_up * self.T
+            # Compute the contribution to the likelihood.
+            logL_rate = -Ns_up_tot + self.N * np.log(Ns_tot)
+            # If we do not care about GWs, compute the rate density
             # at the known gw redshifts and return.
             if (self.gw == 0):
-                return (logL_rate 
+                return (logL_rate
                         + np.sum([lk.logLikelihood_single_event_rate_only(
                               self.O, e.z_true, self.r0, self.W, self.R,
-                              self.Q, Ntot) for e in self.data]))
-            
+                              self.Q, Ns_tot) for e in self.data]))
+
         # If we are correcting for EM selection effects, 
         # we need this part.
         if (self.em_correction == 1):
