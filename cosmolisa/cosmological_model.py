@@ -34,52 +34,44 @@ class CosmologicalModel(cpnest.model.Model):
         super(CosmologicalModel, self).__init__()
         self.data = data
         self.N = len(self.data)
+        self.event_class = kwargs['event_class']
         self.model = model.split("+")
         self.corrections = corrections.split("+")
         self.truths = kwargs['truths']
         self.z_threshold = kwargs['z_threshold']
         self.snr_threshold = kwargs['snr_threshold']
-        self.event_class = kwargs['event_class']
-        self.sfr = kwargs['sfr']
         self.T = kwargs['T']
         self.magnitude_threshold = kwargs['m_threshold']
-        self.O = None
-        
         self.Mmin = -25.0
         self.Mmax = -15.0
+        self.O = None
+
+        self.gw = 0
         self.rate = 0
         self.luminosity = 0
-        self.gw = 0
-        self.cosmology = 0
         
         if ('LambdaCDM_h' in self.model):
-            self.cosmology = 1
             self.names = ['h']
             self.bounds = [[0.6, 0.86]]
 
         if ('LambdaCDM_om' in self.model):
-            self.cosmology = 1
             self.names = ['om']
             self.bounds = [[0.04, 0.5]]
 
         if ('LambdaCDM' in self.model):
-            self.cosmology = 1
             self.names = ['h', 'om']
             self.bounds = [[0.6, 0.86], [0.04, 0.5]]
 
         if ('CLambdaCDM' in self.model):
-            self.cosmology = 1
             self.names = ['h', 'om', 'ol']
             self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0]]
 
         if ('LambdaCDMDE' in self.model):
-            self.cosmology = 1
             self.names = ['h', 'om', 'ol', 'w0', 'w1']
             self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0],
                 [-3.0, -0.3], [-1.0, 1.0]]
 
         if ('DE' in self.model):
-            self.cosmology = 1
             self.names = ['w0', 'w1']
             self.bounds = [[-3.0, -0.3], [-1.0, 1.0]]
 
@@ -381,7 +373,6 @@ usage="""\n\n %prog --config-file config.ini\n
     'split_data_num'    Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
     'split_data_chunk'  Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
     'T'                 Default: 10.0.                                    Observation time (yr).
-    'sfr'               Default: 0.                                       Fit the star formation parameters too.
     'reduced_catalog'   Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
     'm_threshold'       Default: 20.                                      Apparent magnitude threshold.
     'em_selection'      Default: 0.                                       Use an EM selection function in dark_siren plots.
@@ -442,7 +433,6 @@ def main():
         'split_data_num': 1,
         'split_data_chunk': 0,
         'T': 10.,
-        'sfr': 0,
         'reduced_catalog': 0,
         'm_threshold': 20,
         'em_selection': 0,
@@ -697,7 +687,6 @@ def main():
         snr_threshold=config_par['snr_threshold'],
         z_threshold=float(config_par['zhorizon']),
         event_class=config_par['event_class'],
-        sfr=config_par['sfr'],
         T=config_par['T'],
         m_threshold=config_par['m_threshold'])
 
@@ -742,25 +731,24 @@ def main():
     ###################          MAKE PLOTS         ####################
     ####################################################################
 
-    if (C.cosmology == 1):
-        if ('LambdaCDM_h' in C.model):
-            plots.histogram(x, model='LambdaCDM_h',
+    if ('LambdaCDM_h' in C.model):
+        plots.histogram(x, model='LambdaCDM_h',
+                        truths=truths, outdir=outdir)
+    elif ('LambdaCDM_om' in C.model):
+        plots.histogram(x, model='LambdaCDM_om',
+                        truths=truths, outdir=outdir)
+    elif ('LambdaCDM' in C.model):
+        plots.corner_plot(x, model='LambdaCDM',
                             truths=truths, outdir=outdir)
-        elif ('LambdaCDM_om' in C.model):
-            plots.histogram(x, model='LambdaCDM_om',
+    elif ('CLambdaCDM' in C.model):
+        plots.corner_plot(x, model='CLambdaCDM',
                             truths=truths, outdir=outdir)
-        elif ('LambdaCDM' in C.model):
-            plots.corner_plot(x, model='LambdaCDM',
-                              truths=truths, outdir=outdir)
-        elif ('CLambdaCDM' in C.model):
-            plots.corner_plot(x, model='CLambdaCDM',
-                              truths=truths, outdir=outdir)
-        elif ('LambdaCDMDE' in C.model):
-            plots.corner_plot(x, model='LambdaCDMDE',
-                              truths=truths, outdir=outdir)
-        elif ('DE' in C.model):
-            plots.corner_plot(x, model='DE', 
-                              truths=truths, outdir=outdir)
+    elif ('LambdaCDMDE' in C.model):
+        plots.corner_plot(x, model='LambdaCDMDE',
+                            truths=truths, outdir=outdir)
+    elif ('DE' in C.model):
+        plots.corner_plot(x, model='DE', 
+                            truths=truths, outdir=outdir)
 
     if ((config_par['event_class'] == "dark_siren") and (C.gw == 1)):
         for e in C.data:
