@@ -356,14 +356,14 @@ def MBHB_regression(x, **kwargs):
 
 def rate_plots(x, **kwargs):
     """Plots when the rate is also estimated."""
-    print("Making rate plots...")
-    sfr = []
-    z = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 100)
+    print("\nMaking rate plots...")
+    dRdz_norm = []
+    z = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 5000)
 
     fig = plt.figure()
-    ax  = fig.add_subplot(111)
-    Rtot = np.zeros(x.shape[0], dtype=np.float64)
-    selection_probability = np.zeros(x.shape[0], dtype=np.float64)
+    ax = fig.add_subplot(111)
+    Ns = np.zeros(x.shape[0], dtype=np.float64)
+    alpha = np.zeros(x.shape[0], dtype=np.float64)
     for i in range(x.shape[0]):
         r0 = 10**x['log10r0'][i]
         W = x['W'][i]
@@ -398,82 +398,101 @@ def rate_plots(x, **kwargs):
                 kwargs['truths']['ol'], kwargs['truths']['w0'],
                 kwargs['truths']['w1'])
 
-        # Compute the expected rate parameter integrated to
-        # the maximum redshift. This will also serve as
-        # normalisation constant for the individual dR/dz_i.
-        Rtot[i] = lk.integrated_rate(
-            r0, W, R, Q, O, 0.0, kwargs['cosmo_model'].z_threshold)
-        selection_probability[i] = lk.gw_selection_probability_sfr(
+        # Compute the expected rate of sources Ns (per year)
+        # = R(zmax, lambda, O) integrated to the maximum redshift. 
+        # This will also serve as normalisation constant for the 
+        # individual dR/dz_i to obtain p(z)_i.
+        Ns[i] = lk.integrated_rate(
+            r0, W, R, Q, O, 1e-5, kwargs['cosmo_model'].z_threshold)
+        # Compute the fraction of detectable events: 
+        # alpha = Ns_up / Ns (= Ns_up_tot / Ns_tot). 
+        alpha[i] = lk.gw_selection_probability_sfr(
             1e-5, kwargs['cosmo_model'].z_threshold, r0, W, R, Q, 
-            kwargs['cosmo_model'].snr_threshold, O)/Rtot[i]
+            kwargs['cosmo_model'].snr_threshold, O) / Ns[i]
+        # Compute events redshift PDF, p(z)_i = (dR/dz)_i / Ns.
         v = np.array(
             [cs.StarFormationDensity(zi, r0, W, R, Q)
-            *O.UniformComovingVolumeDensity(zi)/Rtot[i] for zi in z])
+             * O.UniformComovingVolumeDensity(zi) / Ns[i] for zi in z])
 #            ax.plot(z,v,color='k', linewidth=.3)
-        sfr.append(v)
+        # Append to an array of [p(z)_i].
+        dRdz_norm.append(v)
 
-    Rtot_true = lk.integrated_rate(
+    Ns_true = lk.integrated_rate(
         kwargs['truths']['r0'], kwargs['truths']['W'], kwargs['truths']['R'],
-        kwargs['truths']['Q'], kwargs['omega_true'], 0.0,
+        kwargs['truths']['Q'], kwargs['omega_true'], 1e-5,
         kwargs['cosmo_model'].z_threshold)
-    true_selection_prob = lk.gw_selection_probability_sfr(
+    alpha_true = lk.gw_selection_probability_sfr(
         1e-5, kwargs['cosmo_model'].z_threshold, kwargs['truths']['r0'],
         kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'],
-        kwargs['cosmo_model'].snr_threshold, kwargs['omega_true'])/Rtot_true
-    sfr_true = np.array(
+        kwargs['cosmo_model'].snr_threshold, kwargs['omega_true']) / Ns_true
+    dRdz_norm_true = np.array(
         [cs.StarFormationDensity(zi, kwargs['truths']['r0'],
         kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'])
-        * kwargs['omega_true'].UniformComovingVolumeDensity(zi)/Rtot_true
+        * kwargs['omega_true'].UniformComovingVolumeDensity(zi) / Ns_true
         for zi in z])
-    nevents_true = (Rtot_true * kwargs['cosmo_model'].T * np.cumsum(sfr_true)
-                    * np.diff(z)[0])
-    sfr = np.array(sfr)
-    tmp = np.cumsum(sfr, axis=1) * np.diff(z)[0]
-    nevents = Rtot[:,None] * kwargs['cosmo_model'].T * tmp
-    l_sfr, m_sfr, h_sfr = np.percentile(sfr, [5,50,95], axis=0)
-    l_nev, m_nev, h_nev = np.percentile(nevents, [5,50,95], axis=0)
-    print("Merger rate =", np.percentile(Rtot, [5,50,95]), "true = ",
-          Rtot_true)
-    print("p_det =", np.percentile(selection_probability, 
-          [5,50,95]), "true = ", true_selection_prob)    
+    # Compute the true numbers of total sources happening in T
+    # as a function of zmax, Ns_tot_true(z), by multiplying
+    # Ns_true_tot by the CDF of p(z).
+    Ns_tot_true_of_z = (Ns_true * kwargs['cosmo_model'].T
+                    * np.cumsum(dRdz_norm_true) * np.diff(z)[0])
+    dRdz_norm = np.array(dRdz_norm)  # dRdz_norm.shape = (Nsamples, len(z)).
+    # CDFs of p(z)_i for each pop sample.
+    tmp = np.cumsum(dRdz_norm, axis=1) * np.diff(z)[0]
+    # Ns[:,None].shape = (Nsamples, 1).
+    Ns_tot_of_z = Ns[:,None] * kwargs['cosmo_model'].T * tmp
+    # Compute quantiles over different pop samples.
+    l_dRdz_norm, m_dRdz_norm, h_dRdz_norm = np.percentile(dRdz_norm,
+                                                          [5, 50, 95], axis=0)
+    l_Ns_tot_of_z, m_Ns_tot_of_z, h_Ns_tot_of_z = np.percentile(
+        Ns_tot_of_z, [5, 50, 95], axis=0)
+    print("Ns (per year) [.5, .50, .95] =", np.percentile(Ns, [5, 50, 95]))
+    print("Ns_true (per year) = ", Ns_true)
+    print("Observation time T (years) = ", kwargs['cosmo_model'].T,
+          "\nNs (during T) [.5, .50, .95] =", np.percentile(Ns, [5, 50, 95])
+                                              *  kwargs['cosmo_model'].T)          
+    print("alpha = (Ns_up/Ns) [.5, .50, .95] =",
+          np.percentile(alpha, [5, 50, 95]))
+    print("\nalpha true = (Ns_up_true/Ns_true) = ", alpha_true)    
 
-    ax.plot(z, m_sfr, color='k', linewidth=.7)
-    ax.fill_between(z, l_sfr, h_sfr, facecolor='lightgray')
-    ax.plot(z, sfr_true, linestyle='dashed', color=truth_color)
-    ax.set_xlabel("redshift", fontsize=16)
-    ax.set_ylabel("$p(z|\Lambda,\Omega,I)$", fontsize=16)
+    # Plot event redshift distribution p(z).
+    ax.plot(z, m_dRdz_norm, color='k', linewidth=.7)
+    ax.fill_between(z, l_dRdz_norm, h_dRdz_norm, facecolor='lightgray')
+    ax.plot(z, dRdz_norm_true, linestyle='dashed', color=truth_color)
+    ax.set_xlabel(r"$z$", fontsize=16)
+    ax.set_ylabel(r"$p(z|\lambda\,\Omega\,I)$", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
                 "redshift_distribution.pdf"), bbox_inches='tight')
-    
-    fig = plt.figure()
-    ax  = fig.add_subplot(111)
-    ax.plot(z, m_nev, color='k', linewidth=.7)
-    ax.fill_between(z, l_nev, h_nev, facecolor='lightgray')
-    ax.plot(z, nevents_true, color=truth_color, linestyle='dashed')
-    plt.yscale('log')
-    ax.set_xlabel("redshift z", fontsize=16)
-    ax.set_ylabel("$R(z_{max})\cdot T\cdot p(z|\Lambda,\Omega,I)$",
-                  fontsize=16)
-    plt.savefig(os.path.join(kwargs['outdir'], "Plots",
-                "number_of_events.pdf"), bbox_inches='tight')
-    
+    # Plot Ns_tot_of_z.
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.hist(Rtot, bins=100, histtype='step')
-    ax.axvline(Rtot_true, linestyle='dashed', color=truth_color)
-    ax.set_xlabel("global rate", fontsize=16)
-    ax.set_ylabel("number", fontsize=16)
+    ax.plot(z, m_Ns_tot_of_z, color='k', linewidth=.7)
+    ax.fill_between(z, l_Ns_tot_of_z, h_Ns_tot_of_z, facecolor='lightgray')
+    ax.plot(z, Ns_tot_true_of_z, color=truth_color, linestyle='dashed')
+    plt.yscale('log')
+    ax.set_xlabel(r"$z$", fontsize=16)
+    ax.set_ylabel(
+        r"$R(z_{max},\lambda,\Omega)\cdot T\cdot CDF(z|\lambda\,\Omega\,I)$",
+        fontsize=16)
+    plt.savefig(os.path.join(kwargs['outdir'], "Plots",
+                "total_number_of_events.pdf"), bbox_inches='tight')
+    # Plot histogram of Ns for different hyperparams samples.
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.hist(Ns, bins=100, histtype='step')
+    ax.axvline(Ns_true, linestyle='dashed', color=truth_color)
+    ax.set_xlabel(r"$R(z_{max},\lambda\,\Omega) \quad (yr^{-1})$", fontsize=16)
+    ax.set_ylabel("Number of samples", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
                 "global_rate.pdf"), bbox_inches='tight')
-    
+    # Plot alpha.
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.hist(selection_probability, bins=100, histtype='step')
-    ax.axvline(true_selection_prob, linestyle='dashed', color=truth_color)
-    ax.set_xlabel("selection probability", fontsize=16)
-    ax.set_ylabel("number", fontsize=16)
+    ax.hist(alpha, bins=100, histtype='step')
+    ax.axvline(alpha_true, linestyle='dashed', color=truth_color)
+    ax.set_xlabel(r"$\alpha$", fontsize=16)
+    ax.set_ylabel("Number of samples", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
-                "selection_probability.pdf"), bbox_inches='tight')
+                "alpha.pdf"), bbox_inches='tight')
 
 
 def luminosity_plots(x, **kwargs):

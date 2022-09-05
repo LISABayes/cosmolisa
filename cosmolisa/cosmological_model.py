@@ -274,12 +274,13 @@ class CosmologicalModel(cpnest.model.Model):
         # If we are estimating the rate or we are correcting for 
         # GW selection effects, we need this part.
         if (self.rate == 1) or (self.gw_correction == 1):
-            # Compute the number of sources happening in the universe.
+            # Compute the number of sources happening per year 
+            # up to z_threshold.
             Ns = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O,
                                     1e-5, self.z_threshold)
             Ns_tot = Ns * self.T
             # Compute the number of events above detection threshold.
-            # Selection effects only enter through this term.
+            # GW selection effects only enter through this term.
             Ns_up = lk.gw_selection_probability_sfr(
                                                 1e-5, self.z_threshold,
                                                 self.r0, self.W, self.R,
@@ -289,7 +290,7 @@ class CosmologicalModel(cpnest.model.Model):
             # Compute the contribution to the likelihood.
             logL_rate = -Ns_up_tot + self.N * np.log(Ns_tot)
             # If we do not care about GWs, compute the rate density
-            # at the known gw redshifts and return.
+            # at the known GW redshifts and return.
             if (self.gw == 0):
                 return (logL_rate
                         + np.sum([lk.logLikelihood_single_event_rate_only(
@@ -729,9 +730,9 @@ def main():
         h5_file = h5py.File(filename,'r')
         x = h5_file['combined'].get('posterior_samples')
 
-    ####################################################################
-    ###################          MAKE PLOTS         ####################
-    ####################################################################
+    ###################################################################
+    ###################          MAKE PLOTS         ###################
+    ###################################################################
 
     if ('LambdaCDM_h' in C.model):
         plots.histogram(x, model='LambdaCDM_h',
@@ -771,7 +772,7 @@ def main():
         plots.corner_plot(x, model='Luminosity', truths=truths, outdir=outdir)
         plots.luminosity_plots(x, cosmo_model=C, truths=truths, outdir=outdir)
 
-    # Compute the run-time 
+    # Compute the run-time.
     if (config_par['postprocess'] == 0):
         run_time = (time.perf_counter() - run_time)/60.0
         print("\nRun-time (min): {:.2f}\n".format(run_time))

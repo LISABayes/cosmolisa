@@ -39,6 +39,7 @@ cdef class CosmologicalParameters:
         return XLALIntegrateComovingVolume(self._LALCosmologicalParameters,
                                            zmax)
 
+    # Returns (1/(1+z)) * dV/dz.
     cdef double _UniformComovingVolumeDensity(self, double z) nogil:
         return XLALUniformComovingVolumeDensity(
                 z, self._LALCosmologicalParameters)
@@ -103,6 +104,8 @@ cdef double _StarFormationDensity(const double z,
                                   const double Q) nogil:
     return r0 * (1.0+W) * exp(Q*z)/(exp(R*z)+W)
 
+# Number of sources happening in the universe up to redshift zmax
+# per year: int_zmin^zmax (dR/dz)*dz
 def IntegrateRateWeightedComovingVolumeDensity(const double r0,
                                                const double W,
                                                const double R,
@@ -113,6 +116,8 @@ def IntegrateRateWeightedComovingVolumeDensity(const double r0,
     return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q, omega,
                                                        zmin, zmax)
 
+# The integrand I is
+# dR/dz(zmax, lambda, omega) = SFRD * (1/(1+z)) * dV/dz.
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)

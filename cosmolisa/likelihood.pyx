@@ -260,6 +260,8 @@ cdef double _gw_selection_probability_sfr(const double zmin,
         z += dz
     return I*dz
 
+# The integrand is (dR/dz) * p(rho_up | z), where the second factor is
+# the probability that a GW with redshift z is detectable. 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -274,16 +276,16 @@ cdef double _gw_selection_probability_integrand_sfr(
         CosmologicalParameters omega) nogil:
 
     cdef double dl = omega._LuminosityDistance(z)
-    cdef double sigma = _distance_error_vs_snr(SNR_threshold)
-    cdef double sigma_total = sqrt(_sigma_weak_lensing(z, dl)**2 + sigma**2)
-    # the following is the distance threshold assuming 
-    # a simple scaling law for the SNR
-    cdef double Dthreshold = _threshold_distance(SNR_threshold)
-    cdef double A = (_StarFormationDensity(z, r0, W, R, Q)
-                     * omega._UniformComovingVolumeDensity(z))
-    cdef double denominator = sqrt(2.0)*sigma_total
-    cdef double integrand = 0.5*A*(erf(dl/denominator)
-                                   - erf((dl-Dthreshold)/denominator))
+    cdef double sigmadl = _distance_error_vs_snr(SNR_threshold)
+    cdef double sigma_total = sqrt(_sigma_weak_lensing(z, dl)**2 + sigmadl**2)
+    # The following is the distance threshold
+    # assuming a simple scaling law for the SNR.
+    cdef double D_threshold = _threshold_distance(SNR_threshold)
+    cdef double dRdz = (_StarFormationDensity(z, r0, W, R, Q)
+                        * omega._UniformComovingVolumeDensity(z))
+    cdef double denominator = sqrt(2.0) * sigma_total
+    cdef double integrand = 0.5 * dRdz * (erf(dl/denominator)
+                                   - erf((dl-D_threshold)/denominator))
     return integrand
     
 def snr_vs_distance(double d):
@@ -291,14 +293,14 @@ def snr_vs_distance(double d):
 
 cdef inline double _snr_vs_distance(double d) nogil:
     """From a log-linear regression on M106."""
-    return 23299.606754*d**(-0.741036)
+    return 23299.606754 * d**(-0.741036)
 
 def distance_error_vs_snr(double snr):
     return _distance_error_vs_snr(snr)
     
 cdef inline double _distance_error_vs_snr(double snr) nogil:
     """From a log-linear regression on M106."""
-    return 23912.196795*snr**(-1.424880)
+    return 23912.196795 * snr**(-1.424880)
 
 def threshold_distance(double SNR_threshold):
     return _threshold_distance(SNR_threshold)
