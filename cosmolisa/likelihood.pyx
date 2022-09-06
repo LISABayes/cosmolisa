@@ -10,8 +10,8 @@ from libc.math cimport log, exp, sqrt, cos, fabs, sin, sinh, M_PI, \
     erf, erfc, HUGE_VAL, log1p
 from scipy.optimize import newton
 
-from cosmolisa.cosmology cimport CosmologicalParameters, \
-    _StarFormationDensity, _IntegrateRateWeightedComovingVolumeDensity
+from cosmolisa.cosmology cimport CosmologicalParameters
+from cosmolisa.astrophysics cimport PopulationModel
 from cosmolisa.galaxy cimport GalaxyDistribution
 
 cdef inline double log_add(double x, double y) nogil: 
@@ -105,6 +105,14 @@ cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
     """
     return 0.5*0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
 
+
+##########################################################
+#                                                        #
+#                       Corrections                      #
+#                                                        #
+##########################################################
+
+
 def em_selection_function(double dl):
     return _em_selection_function(dl)
 
@@ -171,92 +179,43 @@ cpdef double find_redshift(CosmologicalParameters omega, double dl):
 cdef double objective(double z, CosmologicalParameters omega, double dl):
     return dl - omega._LuminosityDistance(z)
 
-def integrated_rate(double r0,
-                    double W,
-                    double R,
-                    double Q,
-                    CosmologicalParameters omega,
-                    double zmin=0.0,
-                    double zmax=1.0):
-    return _integrated_rate(r0, W, R, Q, omega, zmin, zmax)
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-@cython.cdivision(True)
-cdef double _integrated_rate(const double r0,
-                             const double W,
-                             const double R,
-                             const double Q,
-                             CosmologicalParameters omega,
-                             double zmin,
-                             double zmax) nogil:
-    return _IntegrateRateWeightedComovingVolumeDensity(r0, W, R, Q,
-                                                       omega, zmin, zmax)
-
-
-def logLikelihood_single_event_rate_only(CosmologicalParameters O,
-                                         double z,
-                                         double r0,
-                                         double W,
-                                         double R,
-                                         double Q,
+def logLikelihood_single_event_rate_only(double z,
+                                         PopulationModel PopMod,
                                          double N):
-    return _logLikelihood_single_event_rate_only(O, z, r0, W, Q, R, N)
+    return _logLikelihood_single_event_rate_only(z, PopMod, N)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _logLikelihood_single_event_rate_only(CosmologicalParameters O,
-                                                  double z,
-                                                  double r0,
-                                                  double W,
-                                                  double R,
-                                                  double Q,
-                                                  double N) nogil:
-    return (log(_StarFormationDensity(z, r0, W, R, Q))
-            + log(O._UniformComovingVolumeDensity(z)) - log(N))
+cdef double _logLikelihood_single_event_rate_only(double z,
+                                                  PopulationModel PopMod,
+                                                  double N):
+    return (log(PopMod._pdf(z)) - log(N))
 
 
-##########################################################
-#
-#               Selection probability functions
-#
-##########################################################
-
-def gw_selection_probability_sfr(const double zmin,
-                                 const double zmax,
-                                 const double r0,
-                                 const double W,
-                                 const double R,
-                                 const double Q,
-                                 const double SNR_threshold,
-                                 CosmologicalParameters omega):
-    return _gw_selection_probability_sfr(zmin, zmax, r0, W, R, Q,
-                                         SNR_threshold, omega)
+def number_of_detectable_gw(PopulationModel PopMod,
+                            const double SNR_threshold):
+    return _number_of_detectable_gw(PopMod, SNR_threshold)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_sfr(const double zmin,
-                                          const double zmax,
-                                          const double r0,
-                                          const double W,
-                                          const double R,
-                                          const double Q,
-                                          const double SNR_threshold,
-                                          CosmologicalParameters omega) nogil:
+cdef double _number_of_detectable_gw(PopulationModel PopMod,
+                                     const double SNR_threshold):
 
     cdef int i
     cdef int N = 64
-    cdef double I = 0.0
+    cdef double zmin = PopMod.zmin
+    cdef double zmax = PopMod.zmax
     cdef double dz = (zmax-zmin)/N
-    cdef double z  = zmin
-    for i in range(N):
-        I += _gw_selection_probability_integrand_sfr(z, r0, W, R, Q, 
-                                                     SNR_threshold, omega)
+    cdef double z  = zmin + dz
+    cdef double I = (0.5
+        * (_number_of_detectable_gw_integrand(zmin, PopMod, SNR_threshold)
+        + _number_of_detectable_gw_integrand(zmax, PopMod, SNR_threshold)))
+    for i in range(1, N-1):
+        I += _number_of_detectable_gw_integrand(z, PopMod, SNR_threshold)
         z += dz
     return I*dz
 
@@ -266,23 +225,18 @@ cdef double _gw_selection_probability_sfr(const double zmin,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _gw_selection_probability_integrand_sfr(
+cdef double _number_of_detectable_gw_integrand(
         const double z,
-        const double r0,
-        const double W,
-        const double R,
-        const double Q,
-        const double SNR_threshold,
-        CosmologicalParameters omega) nogil:
+        PopulationModel PopMod,
+        const double SNR_threshold):
 
-    cdef double dl = omega._LuminosityDistance(z)
+    cdef double dl = PopMod.omega._LuminosityDistance(z)
     cdef double sigmadl = _distance_error_vs_snr(SNR_threshold)
     cdef double sigma_total = sqrt(_sigma_weak_lensing(z, dl)**2 + sigmadl**2)
     # The following is the distance threshold
     # assuming a simple scaling law for the SNR.
     cdef double D_threshold = _threshold_distance(SNR_threshold)
-    cdef double dRdz = (_StarFormationDensity(z, r0, W, R, Q)
-                        * omega._UniformComovingVolumeDensity(z))
+    cdef double dRdz = (PopMod._number_density(z))
     cdef double denominator = sqrt(2.0) * sigma_total
     cdef double integrand = 0.5 * dRdz * (erf(dl/denominator)
                                    - erf((dl-D_threshold)/denominator))

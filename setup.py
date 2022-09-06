@@ -26,26 +26,29 @@ lal_libs = lal_prefix+"/lib"
 
 ext_modules=[
     Extension(name="cosmolisa.cosmology",
-            sources=["cosmolisa/cosmology.pyx"],
-            libraries=['m', "lal"],  # Unix-like specific
-            library_dirs=[lal_libs],
-            extra_compile_args=['-O3', '-ffast-math'],
-            include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]
-            ),
+              sources=["cosmolisa/cosmology.pyx"],
+              libraries=['m', "lal"],  # Unix-like specific
+              library_dirs=[lal_libs],
+              extra_compile_args=['-O3', '-ffast-math'],
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]),
     Extension(name="cosmolisa.likelihood",
-            sources=["cosmolisa/likelihood.pyx"],
-            libraries=['m', "lal"],  # Unix-like specific
-            library_dirs=[lal_libs],
-            extra_compile_args=['-O3', '-ffast-math'],
-            include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]
-            ),
+              sources=["cosmolisa/likelihood.pyx"],
+              libraries=['m', "lal"],  # Unix-like specific
+              library_dirs=[lal_libs],
+              extra_compile_args=['-O3', '-ffast-math'],
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]),
     Extension("cosmolisa.galaxy",
-            sources=["cosmolisa/galaxy.pyx"],
-            libraries=['m', "lal"],  # Unix-like specific
-            library_dirs=[lal_libs],
-            extra_compile_args=['-O3', '-ffast-math'],
-            include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]
-            )
+              sources=["cosmolisa/galaxy.pyx"],
+              libraries=['m', "lal"],  # Unix-like specific
+              library_dirs=[lal_libs],
+              extra_compile_args=['-O3', '-ffast-math'],
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]),
+    Extension("cosmolisa.astrophysics",
+              sources=["cosmolisa/astrophysics.pyx"],
+              libraries=['m', "lal"],  # Unix-like specific
+              library_dirs=[lal_libs],
+              extra_compile_args=['-O3', '-ffast-math'],
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"])
     ]
 
 setup(name="cosmolisa",

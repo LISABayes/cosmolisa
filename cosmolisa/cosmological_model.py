@@ -18,6 +18,7 @@ from cosmolisa import plots
 from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
+from cosmolisa import astrophysics as astro
 import cpnest.model
 
 class CosmologicalModel(cpnest.model.Model):
@@ -49,6 +50,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.gw = 0
         self.rate = 0
         self.luminosity = 0
+        self.astrophysical_model = None
         
         if ('LambdaCDM_h' in self.model):
             self.names = ['h']
@@ -81,18 +83,34 @@ class CosmologicalModel(cpnest.model.Model):
             self.gw = 0
         
         if ('Rate' in self.model):
-            # e(z) = r0*(1.0+W)*exp(Q*z)/(exp(R*z)+W)
+            self.astrophysical_model = kwargs['astrophysical_model']
             self.rate = 1
             self.gw_correction = 1
+
             self.names.append('log10r0')
             self.bounds.append([-15, -8])
-            self.names.append('W')
-            self.bounds.append([0.0, 300.0])
-            self.names.append('Q')
-            self.bounds.append([0.0, 15.0])
-            self.names.append('R')
-            self.bounds.append([0.0, 15.0])
-            
+            if (self.astrophysical_model == 'madau-porciani'):
+                # e(z) = r0*(1+W) *exp(Q*z) /(exp(R*z) +W)
+                # e(z) = r0*(1+p1)*exp(p2*z)/(exp(p3*z)+p1).
+                self.names.append('p1')
+                self.bounds.append([0.0, 300.0])
+                self.names.append('p2')
+                self.bounds.append([0.0, 15.0])
+                self.names.append('p3')
+                self.bounds.append([0.0, 15.0])
+            elif (self.astrophysical_model == 'madau-fragos'):
+                # psi(z) = r0*(1+z)**p1/(1+((1+z)/p2)**p3).
+                self.names.append('p1')
+                self.bounds.append([0.0, 3.0])
+                self.names.append('p2')
+                self.bounds.append([0.0, 3.0])
+                self.names.append('p3')
+                self.bounds.append([0.0, 3.0])
+            elif (self.astrophysical_model == 'powerlaw'):
+                # psi(z) = r0*(1+z)**p1.
+                self.names.append('p1')
+                self.bounds.append([-3.0, 3.0])
+
         if ('Luminosity' in self.model):
             self.luminosity = 1
             self.em_correction = 1
@@ -121,8 +139,10 @@ class CosmologicalModel(cpnest.model.Model):
         
         if not('Rate' in self.model):
             if ('GW' in corrections):
+                self.astrophysical_model = kwargs['astrophysical_model']
                 self.gw_correction = 1
             else:
+                self.astrophysical_model = None
                 self.gw_correction = 0
         
         if not('Luminosity' in self.model):
@@ -135,6 +155,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("CosmologicalModel model initialised with:")
         print(f"Event class: {self.event_class}")
         print(f"Analysis model: {self.model}")
+        print(f"Astrophysical model: {self.astrophysical_model}")
         print(f"Number of events: {len(self.data)}")
         print(f"EM correction: {self.em_correction}")
         print(f"GW correction: {self.gw_correction}")
@@ -197,22 +218,23 @@ class CosmologicalModel(cpnest.model.Model):
                 self.O = cs.CosmologicalParameters(
                     self.truths['h'], self.truths['om'], self.truths['ol'],
                     self.truths['w0'],self.truths['w1'])
+
             # Check for the rate model or GW corrections.
             if ('Rate' in self.model):
-                self.r0 = 10**x['log10r0']
-                self.W = x['W']
-                self.Q = x['Q']
-                self.R = x['R']
-                if (self.R <= self.Q):
-                    # We want the merger rate to asymptotically 
-                    # either go to zero or to a finite number.
-                    self.O.DestroyCosmologicalParameters()
-                    return -np.inf            
+                self.population_model = astro.PopulationModel(
+                    10**x['log10r0'], x['p1'], x['p2'], x['p3'], 0.0,
+                    self.O, 1e-5, self.z_threshold,
+                    density_model=self.astrophysical_model)
+                if (self.astrophysical_model == 'madau-porciani'):
+                    if (x['p3'] < x['p2']):
+                        # We want the merger rate to asymptotically
+                        # either go to zero or to a finite number.
+                        return -np.inf
             elif (self.gw_correction == 1):
-                self.r0 = self.truths['r0']
-                self.W = self.truths['W']
-                self.Q = self.truths['Q']
-                self.R = self.truths['R']
+                self.population_model = astro.PopulationModel(
+                    self.truths['r0'], self.truths['p1'], self.truths['p2'],
+                    self.truths['p3'], 0.0, self.O, 1e-5, self.z_threshold,
+                    density_model=self.astrophysical_model)
 
             # Check for the luminosity model or EM corrections.
             if ('Luminosity' in self.model):
@@ -275,18 +297,18 @@ class CosmologicalModel(cpnest.model.Model):
         # GW selection effects, we need this part.
         if (self.rate == 1) or (self.gw_correction == 1):
             # Compute the number of sources happening per year 
-            # up to z_threshold.
-            Ns = lk.integrated_rate(self.r0, self.W, self.R, self.Q, self.O,
-                                    1e-5, self.z_threshold)
-            Ns_tot = Ns * self.T
+            # up to z_threshold times observation time: 
+            # T * int_zmin^zmax (dR/dz)*dz
+            Ns_tot = self.population_model.integrated_rate() * self.T
+
+            #NB: this was not present before!
+            if (Ns_tot < self.N):
+                return -np.inf 
+
             # Compute the number of events above detection threshold.
             # GW selection effects only enter through this term.
-            Ns_up = lk.gw_selection_probability_sfr(
-                                                1e-5, self.z_threshold,
-                                                self.r0, self.W, self.R,
-                                                self.Q, self.snr_threshold,
-                                                self.O)
-            Ns_up_tot = Ns_up * self.T
+            Ns_up_tot = lk.number_of_detectable_gw(self.population_model,
+                self.snr_threshold) * self.T
             # Compute the contribution to the likelihood.
             logL_rate = -Ns_up_tot + self.N * np.log(Ns_tot)
             # If we do not care about GWs, compute the rate density
@@ -294,8 +316,8 @@ class CosmologicalModel(cpnest.model.Model):
             if (self.gw == 0):
                 return (logL_rate
                         + np.sum([lk.logLikelihood_single_event_rate_only(
-                              self.O, e.z_true, self.r0, self.W, self.R,
-                              self.Q, Ns_tot) for e in self.data]))
+                                 e.z_true, self.population_model, Ns_tot) 
+                                 for e in self.data]))
 
         # If we are correcting for EM selection effects, 
         # we need this part.
@@ -354,44 +376,46 @@ usage="""\n\n %prog --config-file config.ini\n
     # Input parameters      #
     #=======================#
 
-    'data'              Default: ''.                                      Data location.
-    'outdir'            Default: './default_dir'.                         Directory for output.
-    'event_class'       Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
-    'model'             Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
-    'truths'            Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
-    'corrections'       Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
-    'random'            Default: 0.                                       Run a joint analysis with N events, randomly selected.
-    'zhorizon'          Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'dl_cutoff'         Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
-    'z_event_sel'       Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
-    'one_host_sel'      Default: 0.                                       For each event, associate only the nearest-in-redshift host (between z_gal and event z_true).
-    'single_z_from_GW'  Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
-    'equal_wj'          Default: 0.                                       Impose all galaxy angular weights equal to 1.
-    'event_ID_list'     Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
-    'max_hosts'         Default: 0.                                       Select events according to the allowed maximum number of hosts.
-    'z_gal_cosmo'       Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
-    'snr_selection'     Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
-    'snr_threshold'     Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
-    'sigma_pv'          Default: 0.0023.                                  Uncertainty associated to peculiar velocity value, equal to (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
-    'split_data_num'    Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
-    'split_data_chunk'  Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
-    'T'                 Default: 10.0.                                    Observation time (yr).
-    'reduced_catalog'   Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
-    'm_threshold'       Default: 20.                                      Apparent magnitude threshold.
-    'em_selection'      Default: 0.                                       Use an EM selection function in dark_siren plots.
-    'postprocess'       Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
-    'screen_output'     Default: 0.                                       Print the output on screen or save it into a file.
-    'verbose'           Default: 2.                                       Sampler verbose.
-    'maxmcmc'           Default: 5000.                                    Maximum MCMC steps for MHS sampling chains.
-    'nensemble'         Default: 1.                                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
-    'nslice'            Default: 0.                                       Number of sampler threads using a slice sampler.
-    'nhamiltonian'      Default: 0.                                       Number of sampler threads using a hamiltonian sampler.
-    'nnest'             Default: 1.                                       Number of parallel independent nested samplers.
-    'nlive'             Default: 1000.                                    Number of live points.
-    'seed'              Default: 0.                                       Random seed initialisation.
-    'obj_store_mem'     Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
-    'checkpoint_int'    Default: 21600.                                   Time interval between sampler periodic checkpoint in seconds. Defaut: 21600 (6h).
-    'resume'            Default: 0.                                       If set to 1, resume a run reading the checkpoint files, otherwise run from scratch. Default: 0.
+    'data'                 Default: ''.                                      Data location.
+    'outdir'               Default: './default_dir'.                         Directory for output.
+    'event_class'          Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
+    'model'                Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
+    'truths'               Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
+    'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
+    'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
+    'zhorizon'             Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
+    'astrophysical_model'  Default: ''.                                      Star Formation Rate Density model assumed for the event rate.
+    'dl_cutoff'            Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
+    'z_event_sel'          Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
+    'one_host_sel'         Default: 0.                                       For each event, associate only the nearest-in-redshift host (between z_gal and event z_true).
+    'single_z_from_GW'     Default: 0.                                       Impose a single host for each GW having redshift equal to z_true. It works only if one_host_sel = 1.
+    'equal_wj'             Default: 0.                                       Impose all galaxy angular weights equal to 1.
+    'event_ID_list'        Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
+    'max_hosts'            Default: 0.                                       Select events according to the allowed maximum number of hosts.
+    'z_gal_cosmo'          Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
+    'snr_selection'        Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
+    'snr_threshold'        Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
+    'sigma_pv'             Default: 0.0023.                                  Uncertainty associated to peculiar velocity value, equal to (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
+    'split_data_num'       Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
+    'split_data_chunk'     Default: 0.                                       Choose which chunk of events to analyse. Only works if split_data_num > 1. Values: 1 up to split_data_num.
+    'T'                    Default: 10.0.                                    Observation time (yr).
+    'reduced_catalog'      Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
+    'm_threshold'          Default: 20.                                      Apparent magnitude threshold.
+    'em_selection'         Default: 0.                                       Use an EM selection function in dark_siren plots.
+    'postprocess'          Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
+    'screen_output'        Default: 0.                                       Print the output on screen or save it into a file.
+
+    'verbose'              Default: 2.                                       Sampler verbose.
+    'maxmcmc'              Default: 5000.                                    Maximum MCMC steps for MHS sampling chains.
+    'nensemble'            Default: 1.                                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
+    'nslice'               Default: 0.                                       Number of sampler threads using a slice sampler.
+    'nhamiltonian'         Default: 0.                                       Number of sampler threads using a hamiltonian sampler.
+    'nnest'                Default: 1.                                       Number of parallel independent nested samplers.
+    'nlive'                Default: 1000.                                    Number of live points.
+    'seed'                 Default: 0.                                       Random seed initialisation.
+    'obj_store_mem'        Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
+    'checkpoint_int'       Default: 21600.                                   Time interval between sampler periodic checkpoint in seconds. Defaut: 21600 (6h).
+    'resume'               Default: 0.                                       If set to 1, resume a run reading the checkpoint files, otherwise run from scratch. Default: 0.
 
 """
 
@@ -422,6 +446,7 @@ def main():
         'corrections': '',
         'random': 0,
         'zhorizon': "1000.0",
+        'astrophysical_model': '',
         'dl_cutoff': 0.0,
         'z_event_sel': 0,
         'one_host_sel': 0,
@@ -484,7 +509,7 @@ def main():
             sys.stderr = open(os.path.join(outdir, "stderr.txt"), 'w')
 
     formatting_string = 6*"===================="
-    max_len_keyword = len('split_data_chunk')
+    max_len_keyword = len('astrophysical_model')
 
     print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
@@ -505,9 +530,10 @@ def main():
         'w0': -1.0,
         'w1': 0.0,
         'r0': 5e-10,
-        'Q': 2.4,
-        'W': 41.,
-        'R': 5.2,
+        'p1': 41.0,
+        'p2': 2.4,
+        'p3': 5.2,
+        'p4': 0.0,
         'phistar0': 1e-2,
         'Mstar0': -20.7,
         'alpha0': -1.23,
@@ -691,7 +717,8 @@ def main():
         z_threshold=float(config_par['zhorizon']),
         event_class=config_par['event_class'],
         T=config_par['T'],
-        m_threshold=config_par['m_threshold'])
+        m_threshold=config_par['m_threshold'],
+        astrophysical_model=config_par['astrophysical_model'])
 
     # IMPROVEME: postprocess doesn't work when events are 
     # randomly selected, since 'events' in C are different 
@@ -699,7 +726,7 @@ def main():
     if (config_par['postprocess'] == 0):
         # Each NS can be located in different processors, but all 
         # the subprocesses of each NS live on the same processor.
-        work=cpnest.CPNest(
+        work = cpnest.CPNest(
             C,
             verbose=config_par['verbose'],
             maxmcmc=config_par['maxmcmc'],
@@ -724,7 +751,7 @@ def main():
         with open("{}/git_info.txt".format(outdir), 'w+') as fileout:
             subprocess.call(['git', 'diff'], stdout=fileout)
     else:
-        print("Reading the .h5 file...")
+        print(f"Reading the .h5 file... from {outdir}")
         import h5py
         filename = os.path.join(outdir,"CPNest","cpnest.h5")
         h5_file = h5py.File(filename,'r')

@@ -9,6 +9,7 @@ from scipy.stats import norm
 from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
+from cosmolisa import astrophysics as astro
 
 truth_color = "#4682b4"
 
@@ -21,8 +22,8 @@ labels_plot = {
     'LambdaCDMDE': [r'$h$', r'$\Omega_m$', r'$\Omega_\Lambda$', 
                     r'$w_0$', r'$w_a$'],
     'DE': [r'$w_0$', r'$w_a$'],
-    'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$W$',
-             r'$R$', r'$Q$'],
+    'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$',
+             r'$p_2$', r'$p_3$'],
     'Luminosity': [r'$\phi^{*}/Mpc^{3}$', r'$a$', r'$M^{*}$', r'$b$',
                    r'$\alpha$', r'$c$'],
     }
@@ -136,8 +137,8 @@ def corner_plot(x, **kwargs):
 
     elif (kwargs['model'] == 'Rate'):
         corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'], x['log10r0'], x['W'],
-                                   x['R'], x['Q']),
+                      samps_tuple=(x['h'], x['om'], x['log10r0'], x['p1'],
+                                   x['p2'], x['p3']),
                       quantiles_plot=[0.05, 0.5, 0.95], 
                       outdir=kwargs['outdir'],
                       name="corner_plot_rate_90CI")       
@@ -357,18 +358,15 @@ def MBHB_regression(x, **kwargs):
 def rate_plots(x, **kwargs):
     """Plots when the rate is also estimated."""
     print("\nMaking rate plots...")
-    dRdz_norm = []
-    z = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 5000)
+    pdf_z = []
+    cdf_z = []
+    z = np.linspace(0.0, kwargs['cosmo_model'].z_threshold, 500)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
     Ns = np.zeros(x.shape[0], dtype=np.float64)
     alpha = np.zeros(x.shape[0], dtype=np.float64)
     for i in range(x.shape[0]):
-        r0 = 10**x['log10r0'][i]
-        W = x['W'][i]
-        Q = x['Q'][i]
-        R = x['R'][i]
         if ('LambdaCDM_h' in kwargs['cosmo_model'].model):
             O = cs.CosmologicalParameters(
                 x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'],
@@ -402,62 +400,56 @@ def rate_plots(x, **kwargs):
         # = R(zmax, lambda, O) integrated to the maximum redshift. 
         # This will also serve as normalisation constant for the 
         # individual dR/dz_i to obtain p(z)_i.
-        Ns[i] = lk.integrated_rate(
-            r0, W, R, Q, O, 1e-5, kwargs['cosmo_model'].z_threshold)
+        pop_model = astro.PopulationModel(
+            10**x['log10r0'][i], x['p1'][i], x['p2'][i], x['p3'][i], 0.0,
+            O, 1e-5, kwargs['cosmo_model'].z_threshold,
+            density_model=kwargs['cosmo_model'].astrophysical_model)
+        Ns[i] = pop_model.integrated_rate()
         # Compute the fraction of detectable events: 
-        # alpha = Ns_up / Ns (= Ns_up_tot / Ns_tot). 
-        alpha[i] = lk.gw_selection_probability_sfr(
-            1e-5, kwargs['cosmo_model'].z_threshold, r0, W, R, Q, 
-            kwargs['cosmo_model'].snr_threshold, O) / Ns[i]
+        # alpha = = Ns_up_tot / Ns_tot. 
+        alpha[i] = lk.number_of_detectable_gw(
+            pop_model, kwargs['cosmo_model'].snr_threshold) / Ns[i]
         # Compute events redshift PDF, p(z)_i = (dR/dz)_i / Ns.
-        v = np.array(
-            [cs.StarFormationDensity(zi, r0, W, R, Q)
-             * O.UniformComovingVolumeDensity(zi) / Ns[i] for zi in z])
-#            ax.plot(z,v,color='k', linewidth=.3)
-        # Append to an array of [p(z)_i].
-        dRdz_norm.append(v)
+        u = np.array([pop_model.pdf(zi) for zi in z])
+        # Compute CDF of p(z)_i.
+        v = np.array([pop_model.cdf(zi) for zi in z])
+        pdf_z.append(u)
+        cdf_z.append(v)
 
-    Ns_true = lk.integrated_rate(
-        kwargs['truths']['r0'], kwargs['truths']['W'], kwargs['truths']['R'],
-        kwargs['truths']['Q'], kwargs['omega_true'], 1e-5,
-        kwargs['cosmo_model'].z_threshold)
-    alpha_true = lk.gw_selection_probability_sfr(
-        1e-5, kwargs['cosmo_model'].z_threshold, kwargs['truths']['r0'],
-        kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'],
-        kwargs['cosmo_model'].snr_threshold, kwargs['omega_true']) / Ns_true
-    dRdz_norm_true = np.array(
-        [cs.StarFormationDensity(zi, kwargs['truths']['r0'],
-        kwargs['truths']['W'], kwargs['truths']['R'], kwargs['truths']['Q'])
-        * kwargs['omega_true'].UniformComovingVolumeDensity(zi) / Ns_true
-        for zi in z])
+    pop_model_true = astro.PopulationModel(
+        kwargs['truths']['r0'], kwargs['truths']['p1'],
+        kwargs['truths']['p2'], kwargs['truths']['p3'], 0.0,
+        kwargs['omega_true'], 1e-5, kwargs['cosmo_model'].z_threshold,
+        density_model=kwargs['cosmo_model'].astrophysical_model)
+    Ns_true = pop_model_true.integrated_rate() 
+    alpha_true = lk.number_of_detectable_gw(
+        pop_model_true, kwargs['cosmo_model'].snr_threshold)/ Ns_true
+    pdf_z_true = np.array([pop_model_true.pdf(zi) for zi in z])
+    cdf_z_true = np.array([pop_model_true.cdf(zi) for zi in z])
+    pdf_z = np.array(pdf_z) 
+    cdf_z = np.array(cdf_z)
     # Compute the true numbers of total sources happening in T
-    # as a function of zmax, Ns_tot_true(z), by multiplying
+    # as a function of z, Ns_tot_true(z), by multiplying
     # Ns_true_tot by the CDF of p(z).
-    Ns_tot_true_of_z = (Ns_true * kwargs['cosmo_model'].T
-                    * np.cumsum(dRdz_norm_true) * np.diff(z)[0])
-    dRdz_norm = np.array(dRdz_norm)  # dRdz_norm.shape = (Nsamples, len(z)).
-    # CDFs of p(z)_i for each pop sample.
-    tmp = np.cumsum(dRdz_norm, axis=1) * np.diff(z)[0]
-    # Ns[:,None].shape = (Nsamples, 1).
-    Ns_tot_of_z = Ns[:,None] * kwargs['cosmo_model'].T * tmp
+    Ns_tot_true_of_z = (kwargs['cosmo_model'].T * cdf_z_true)
+    Ns_tot_of_z = kwargs['cosmo_model'].T * cdf_z
     # Compute quantiles over different pop samples.
-    l_dRdz_norm, m_dRdz_norm, h_dRdz_norm = np.percentile(dRdz_norm,
-                                                          [5, 50, 95], axis=0)
+    l_pdf_z, m_pdf_z, h_pdf_z = np.percentile(pdf_z, [5, 50, 95], axis=0)
     l_Ns_tot_of_z, m_Ns_tot_of_z, h_Ns_tot_of_z = np.percentile(
         Ns_tot_of_z, [5, 50, 95], axis=0)
-    print("Ns (per year) [.5, .50, .95] =", np.percentile(Ns, [5, 50, 95]))
+    print("\nNs (per year) [.5, .50, .95] =", np.percentile(Ns, [5, 50, 95]))
     print("Ns_true (per year) = ", Ns_true)
     print("Observation time T (years) = ", kwargs['cosmo_model'].T,
           "\nNs (during T) [.5, .50, .95] =", np.percentile(Ns, [5, 50, 95])
                                               *  kwargs['cosmo_model'].T)          
     print("alpha = (Ns_up/Ns) [.5, .50, .95] =",
           np.percentile(alpha, [5, 50, 95]))
-    print("\nalpha true = (Ns_up_true/Ns_true) = ", alpha_true)    
+    print("alpha true = (Ns_up_true/Ns_true) = ", alpha_true)    
 
     # Plot event redshift distribution p(z).
-    ax.plot(z, m_dRdz_norm, color='k', linewidth=.7)
-    ax.fill_between(z, l_dRdz_norm, h_dRdz_norm, facecolor='lightgray')
-    ax.plot(z, dRdz_norm_true, linestyle='dashed', color=truth_color)
+    ax.plot(z, m_pdf_z, color='k', linewidth=.7)
+    ax.fill_between(z, l_pdf_z, h_pdf_z, facecolor='lightgray')
+    ax.plot(z, pdf_z_true, linestyle='dashed', color=truth_color)
     ax.set_xlabel(r"$z$", fontsize=16)
     ax.set_ylabel(r"$p(z|\lambda\,\Omega\,I)$", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",

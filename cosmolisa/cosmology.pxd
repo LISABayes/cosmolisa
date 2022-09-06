@@ -89,7 +89,3 @@ cdef class CosmologicalParameters:
     cdef public double _ComovingVolumeElement(self,double z) nogil
     cdef public double _ComovingVolume(self,double z) nogil
     cdef void _DestroyCosmologicalParameters(self) nogil
-
-cdef double _StarFormationDensity(const double z, const double r0, const double W, const double R, const double Q) nogil
-
-cdef double _IntegrateRateWeightedComovingVolumeDensity(const double r0, const double W, const double Q, const double R, CosmologicalParameters omega, const double zmin, const double zmax) nogil
