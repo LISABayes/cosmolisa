@@ -221,10 +221,16 @@ class CosmologicalModel(cpnest.model.Model):
 
             # Check for the rate model or GW corrections.
             if ('Rate' in self.model):
-                self.population_model = astro.PopulationModel(
-                    10**x['log10r0'], x['p1'], x['p2'], x['p3'], 0.0,
-                    self.O, 1e-5, self.z_threshold,
-                    density_model=self.SFRD)
+                if (self.SFRD == 'powerlaw'):
+                    self.population_model = astro.PopulationModel(
+                        10**x['log10r0'], x['p1'], 0.0, 0.0, 0.0,
+                        self.O, 1e-5, self.z_threshold,
+                        density_model=self.SFRD)
+                else:
+                    self.population_model = astro.PopulationModel(
+                        10**x['log10r0'], x['p1'], x['p2'], x['p3'], 0.0,
+                        self.O, 1e-5, self.z_threshold,
+                        density_model=self.SFRD)
                 if (self.SFRD == 'madau-porciani'):
                     if (x['p3'] < x['p2']):
                         # We want the merger rate to asymptotically
@@ -791,7 +797,12 @@ def main():
                               omega_true=omega_true, outdir=outdir)
     
     if ('Rate' in C.model):
-        plots.corner_plot(x, model='Rate', truths=truths, outdir=outdir)
+        if (C.SFRD == 'powerlaw'):
+            plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths, 
+                            outdir=outdir)
+        else:
+            plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
+                            outdir=outdir)
         plots.rate_plots(x, cosmo_model=C, truths=truths,
                          omega_true=omega_true, outdir=outdir)
 

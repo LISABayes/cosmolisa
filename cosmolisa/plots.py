@@ -22,6 +22,7 @@ labels_plot = {
     'LambdaCDMDE': [r'$h$', r'$\Omega_m$', r'$\Omega_\Lambda$', 
                     r'$w_0$', r'$w_a$'],
     'DE': [r'$w_0$', r'$w_a$'],
+    'RatePW': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$'],
     'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$',
              r'$p_2$', r'$p_3$'],
     'Luminosity': [r'$\phi^{*}/Mpc^{3}$', r'$a$', r'$M^{*}$', r'$b$',
@@ -70,7 +71,7 @@ def histogram(x, **kwargs):
 
 
 def corner_config(model, samps_tuple, quantiles_plot, 
-                  outdir, name, truths=None):
+                  outdir, name, truths=None, **kwargs):
     """Instructions used to make corner plots.
     'title_quantiles' is not specified, hence plotted quantiles
     coincide with 'quantiles'. This holds for the version of corner.py
@@ -135,13 +136,21 @@ def corner_plot(x, **kwargs):
                       outdir=kwargs['outdir'],
                       name="corner_plot_90CI")
 
+    elif (kwargs['model'] == 'RatePW'):
+        corner_config(model=kwargs['model'], 
+                        samps_tuple=(x['h'], x['om'],
+                                    x['log10r0'], x['p1']),
+                        quantiles_plot=[0.05, 0.5, 0.95],
+                        SFRD='powerlaw',
+                        outdir=kwargs['outdir'],
+                        name="corner_plot_rate_90CI")
     elif (kwargs['model'] == 'Rate'):
         corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'], x['log10r0'], x['p1'],
-                                   x['p2'], x['p3']),
-                      quantiles_plot=[0.05, 0.5, 0.95], 
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_rate_90CI")       
+                        samps_tuple=(x['h'], x['om'], x['log10r0'], x['p1'],
+                                    x['p2'], x['p3']),
+                        quantiles_plot=[0.05, 0.5, 0.95], 
+                        outdir=kwargs['outdir'],
+                        name="corner_plot_rate_90CI")
 
     elif (kwargs['model'] == 'Luminosity'):
         corner_config(model=kwargs['model'], 
@@ -400,10 +409,16 @@ def rate_plots(x, **kwargs):
         # = R(zmax, lambda, O) integrated to the maximum redshift. 
         # This will also serve as normalisation constant for the 
         # individual dR/dz_i to obtain p(z)_i.
-        pop_model = astro.PopulationModel(
-            10**x['log10r0'][i], x['p1'][i], x['p2'][i], x['p3'][i], 0.0,
-            O, 1e-5, kwargs['cosmo_model'].z_threshold,
-            density_model=kwargs['cosmo_model'].SFRD)
+        if (kwargs['cosmo_model'].SFRD == 'powerlaw'):
+            pop_model = astro.PopulationModel(
+                10**x['log10r0'][i], x['p1'][i], 0.0, 0.0, 0.0,
+                O, 1e-5, kwargs['cosmo_model'].z_threshold,
+                density_model=kwargs['cosmo_model'].SFRD)
+        else:    
+            pop_model = astro.PopulationModel(
+                10**x['log10r0'][i], x['p1'][i], x['p2'][i], x['p3'][i], 0.0,
+                O, 1e-5, kwargs['cosmo_model'].z_threshold,
+                density_model=kwargs['cosmo_model'].SFRD)
         Ns[i] = pop_model.integrated_rate()
         # Compute the fraction of detectable events: 
         # alpha = = Ns_up_tot / Ns_tot. 
@@ -416,11 +431,18 @@ def rate_plots(x, **kwargs):
         pdf_z.append(u)
         cdf_z.append(v)
 
-    pop_model_true = astro.PopulationModel(
-        kwargs['truths']['r0'], kwargs['truths']['p1'],
-        kwargs['truths']['p2'], kwargs['truths']['p3'], 0.0,
-        kwargs['omega_true'], 1e-5, kwargs['cosmo_model'].z_threshold,
-        density_model=kwargs['cosmo_model'].SFRD)
+    if (kwargs['cosmo_model'].SFRD == 'powerlaw'):
+        pop_model_true = astro.PopulationModel(
+            kwargs['truths']['r0'], kwargs['truths']['p1'],
+            0.0, 0.0, 0.0, kwargs['omega_true'], 1e-5,
+            kwargs['cosmo_model'].z_threshold,
+            density_model=kwargs['cosmo_model'].SFRD)
+    else:    
+        pop_model_true = astro.PopulationModel(
+            kwargs['truths']['r0'], kwargs['truths']['p1'],
+            kwargs['truths']['p2'], kwargs['truths']['p3'], 0.0,
+            kwargs['omega_true'], 1e-5, kwargs['cosmo_model'].z_threshold,
+            density_model=kwargs['cosmo_model'].SFRD)
     Ns_true = pop_model_true.integrated_rate() 
     alpha_true = lk.number_of_detectable_gw(
         pop_model_true, kwargs['cosmo_model'].snr_threshold)/ Ns_true
