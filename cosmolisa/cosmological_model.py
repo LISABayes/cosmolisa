@@ -50,7 +50,7 @@ class CosmologicalModel(cpnest.model.Model):
         self.gw = 0
         self.rate = 0
         self.luminosity = 0
-        self.astrophysical_model = None
+        self.SFRD = None
         
         if ('LambdaCDM_h' in self.model):
             self.names = ['h']
@@ -83,13 +83,13 @@ class CosmologicalModel(cpnest.model.Model):
             self.gw = 0
         
         if ('Rate' in self.model):
-            self.astrophysical_model = kwargs['astrophysical_model']
+            self.SFRD = kwargs['SFRD']
             self.rate = 1
             self.gw_correction = 1
 
             self.names.append('log10r0')
             self.bounds.append([-15, -8])
-            if (self.astrophysical_model == 'madau-porciani'):
+            if (self.SFRD == 'madau-porciani'):
                 # e(z) = r0*(1+W) *exp(Q*z) /(exp(R*z) +W)
                 # e(z) = r0*(1+p1)*exp(p2*z)/(exp(p3*z)+p1).
                 self.names.append('p1')
@@ -98,7 +98,7 @@ class CosmologicalModel(cpnest.model.Model):
                 self.bounds.append([0.0, 15.0])
                 self.names.append('p3')
                 self.bounds.append([0.0, 15.0])
-            elif (self.astrophysical_model == 'madau-fragos'):
+            elif (self.SFRD == 'madau-fragos'):
                 # psi(z) = r0*(1+z)**p1/(1+((1+z)/p2)**p3).
                 self.names.append('p1')
                 self.bounds.append([0.0, 3.0])
@@ -106,7 +106,7 @@ class CosmologicalModel(cpnest.model.Model):
                 self.bounds.append([0.0, 3.0])
                 self.names.append('p3')
                 self.bounds.append([0.0, 3.0])
-            elif (self.astrophysical_model == 'powerlaw'):
+            elif (self.SFRD == 'powerlaw'):
                 # psi(z) = r0*(1+z)**p1.
                 self.names.append('p1')
                 self.bounds.append([-3.0, 3.0])
@@ -139,10 +139,10 @@ class CosmologicalModel(cpnest.model.Model):
         
         if not('Rate' in self.model):
             if ('GW' in corrections):
-                self.astrophysical_model = kwargs['astrophysical_model']
+                self.SFRD = kwargs['SFRD']
                 self.gw_correction = 1
             else:
-                self.astrophysical_model = None
+                self.SFRD = None
                 self.gw_correction = 0
         
         if not('Luminosity' in self.model):
@@ -155,7 +155,7 @@ class CosmologicalModel(cpnest.model.Model):
         print("CosmologicalModel model initialised with:")
         print(f"Event class: {self.event_class}")
         print(f"Analysis model: {self.model}")
-        print(f"Astrophysical model: {self.astrophysical_model}")
+        print(f"Star Formation Rate Density model: {self.SFRD}")
         print(f"Number of events: {len(self.data)}")
         print(f"EM correction: {self.em_correction}")
         print(f"GW correction: {self.gw_correction}")
@@ -224,8 +224,8 @@ class CosmologicalModel(cpnest.model.Model):
                 self.population_model = astro.PopulationModel(
                     10**x['log10r0'], x['p1'], x['p2'], x['p3'], 0.0,
                     self.O, 1e-5, self.z_threshold,
-                    density_model=self.astrophysical_model)
-                if (self.astrophysical_model == 'madau-porciani'):
+                    density_model=self.SFRD)
+                if (self.SFRD == 'madau-porciani'):
                     if (x['p3'] < x['p2']):
                         # We want the merger rate to asymptotically
                         # either go to zero or to a finite number.
@@ -234,7 +234,7 @@ class CosmologicalModel(cpnest.model.Model):
                 self.population_model = astro.PopulationModel(
                     self.truths['r0'], self.truths['p1'], self.truths['p2'],
                     self.truths['p3'], 0.0, self.O, 1e-5, self.z_threshold,
-                    density_model=self.astrophysical_model)
+                    density_model=self.SFRD)
 
             # Check for the luminosity model or EM corrections.
             if ('Luminosity' in self.model):
@@ -384,7 +384,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
     'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
     'zhorizon'             Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'astrophysical_model'  Default: ''.                                      Star Formation Rate Density model assumed for the event rate.
+    'SFRD'                 Default: ''.                                      Star Formation Rate Density model assumed for the event rate.
     'dl_cutoff'            Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'          Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
     'one_host_sel'         Default: 0.                                       For each event, associate only the nearest-in-redshift host (between z_gal and event z_true).
@@ -446,7 +446,7 @@ def main():
         'corrections': '',
         'random': 0,
         'zhorizon': "1000.0",
-        'astrophysical_model': '',
+        'SFRD': '',
         'dl_cutoff': 0.0,
         'z_event_sel': 0,
         'one_host_sel': 0,
@@ -475,7 +475,7 @@ def main():
         'nlive': 1000,
         'seed': 0,
         'obj_store_mem': 2e9,
-        'checkpoint_int': 21600,
+        'checkpoint_int': 10800,
         'resume': 0
         }
 
@@ -509,7 +509,7 @@ def main():
             sys.stderr = open(os.path.join(outdir, "stderr.txt"), 'w')
 
     formatting_string = 6*"===================="
-    max_len_keyword = len('astrophysical_model')
+    max_len_keyword = len('split_data_chunk')
 
     print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
@@ -718,7 +718,7 @@ def main():
         event_class=config_par['event_class'],
         T=config_par['T'],
         m_threshold=config_par['m_threshold'],
-        astrophysical_model=config_par['astrophysical_model'])
+        SFRD=config_par['SFRD'])
 
     # IMPROVEME: postprocess doesn't work when events are 
     # randomly selected, since 'events' in C are different 

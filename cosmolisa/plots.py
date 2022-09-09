@@ -403,7 +403,7 @@ def rate_plots(x, **kwargs):
         pop_model = astro.PopulationModel(
             10**x['log10r0'][i], x['p1'][i], x['p2'][i], x['p3'][i], 0.0,
             O, 1e-5, kwargs['cosmo_model'].z_threshold,
-            density_model=kwargs['cosmo_model'].astrophysical_model)
+            density_model=kwargs['cosmo_model'].SFRD)
         Ns[i] = pop_model.integrated_rate()
         # Compute the fraction of detectable events: 
         # alpha = = Ns_up_tot / Ns_tot. 
@@ -420,7 +420,7 @@ def rate_plots(x, **kwargs):
         kwargs['truths']['r0'], kwargs['truths']['p1'],
         kwargs['truths']['p2'], kwargs['truths']['p3'], 0.0,
         kwargs['omega_true'], 1e-5, kwargs['cosmo_model'].z_threshold,
-        density_model=kwargs['cosmo_model'].astrophysical_model)
+        density_model=kwargs['cosmo_model'].SFRD)
     Ns_true = pop_model_true.integrated_rate() 
     alpha_true = lk.number_of_detectable_gw(
         pop_model_true, kwargs['cosmo_model'].snr_threshold)/ Ns_true
@@ -449,7 +449,7 @@ def rate_plots(x, **kwargs):
     # Plot event redshift distribution p(z).
     ax.plot(z, m_pdf_z, color='k', linewidth=.7)
     ax.fill_between(z, l_pdf_z, h_pdf_z, facecolor='lightgray')
-    ax.plot(z, pdf_z_true, linestyle='dashed', color=truth_color)
+    # ax.plot(z, pdf_z_true, linestyle='dashed', color=truth_color)
     ax.set_xlabel(r"$z$", fontsize=16)
     ax.set_ylabel(r"$p(z|\lambda\,\Omega\,I)$", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
@@ -459,7 +459,7 @@ def rate_plots(x, **kwargs):
     ax = fig.add_subplot(111)
     ax.plot(z, m_Ns_tot_of_z, color='k', linewidth=.7)
     ax.fill_between(z, l_Ns_tot_of_z, h_Ns_tot_of_z, facecolor='lightgray')
-    ax.plot(z, Ns_tot_true_of_z, color=truth_color, linestyle='dashed')
+    # ax.plot(z, Ns_tot_true_of_z, color=truth_color, linestyle='dashed')
     plt.yscale('log')
     ax.set_xlabel(r"$z$", fontsize=16)
     ax.set_ylabel(
@@ -471,7 +471,7 @@ def rate_plots(x, **kwargs):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.hist(Ns, bins=100, histtype='step')
-    ax.axvline(Ns_true, linestyle='dashed', color=truth_color)
+    # ax.axvline(Ns_true, linestyle='dashed', color=truth_color)
     ax.set_xlabel(r"$R(z_{max},\lambda\,\Omega) \quad (yr^{-1})$", fontsize=16)
     ax.set_ylabel("Number of samples", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
@@ -480,7 +480,7 @@ def rate_plots(x, **kwargs):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.hist(alpha, bins=100, histtype='step')
-    ax.axvline(alpha_true, linestyle='dashed', color=truth_color)
+    # ax.axvline(alpha_true, linestyle='dashed', color=truth_color)
     ax.set_xlabel(r"$\alpha$", fontsize=16)
     ax.set_ylabel("Number of samples", fontsize=16)
     fig.savefig(os.path.join(kwargs['outdir'], "Plots",
