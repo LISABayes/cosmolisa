@@ -93,7 +93,7 @@ class CosmologicalModel(cpnest.model.Model):
                 # e(z) = r0*(1+W) *exp(Q*z) /(exp(R*z) +W)
                 # e(z) = r0*(1+p1)*exp(p2*z)/(exp(p3*z)+p1).
                 self.names.append('p1')
-                self.bounds.append([0.0, 300.0])
+                self.bounds.append([0.0, 2000.0])
                 self.names.append('p2')
                 self.bounds.append([0.0, 15.0])
                 self.names.append('p3')
@@ -101,15 +101,15 @@ class CosmologicalModel(cpnest.model.Model):
             elif (self.SFRD == 'madau-fragos'):
                 # psi(z) = r0*(1+z)**p1/(1+((1+z)/p2)**p3).
                 self.names.append('p1')
-                self.bounds.append([0.0, 3.0])
+                self.bounds.append([0.0, 12.0])
                 self.names.append('p2')
-                self.bounds.append([0.0, 3.0])
+                self.bounds.append([0.0, 12.0])
                 self.names.append('p3')
                 self.bounds.append([0.0, 3.0])
             elif (self.SFRD == 'powerlaw'):
                 # psi(z) = r0*(1+z)**p1.
                 self.names.append('p1')
-                self.bounds.append([-3.0, 3.0])
+                self.bounds.append([-3.0, 15.0])
 
         if ('Luminosity' in self.model):
             self.luminosity = 1
@@ -756,6 +756,20 @@ def main():
         # Save git info
         with open("{}/git_info.txt".format(outdir), 'w+') as fileout:
             subprocess.call(['git', 'diff'], stdout=fileout)
+        # Save content of installed files.
+        files_to_save = []
+        files_path = lk.__file__.replace(lk.__file__.split("/")[-1], "")
+        for te in os.listdir(files_path):
+            if not ".so" in te and not "__" in te:
+                files_to_save.append(te)
+        files_to_save.sort()
+        output_file = open(os.path.join(outdir, "installed_files.txt"), 'w')
+        for fi in files_to_save:
+            f = open(f"{files_path}/{fi}", 'r')
+            output_file.write("____________________\n")
+            output_file.write(f"{fi}\n____________________\n")
+            output_file.write(f.read())
+            output_file.write("\n\n\n\n\n\n\n\n\n\n")
     else:
         print(f"Reading the .h5 file... from {outdir}")
         import h5py
