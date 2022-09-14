@@ -44,7 +44,7 @@ cdef class PopulationModel:
         else:
             self.density = NULL
             print("model {} unknown!".format(self.density_model))
-            exit(-1)
+            exit()
         
     def integrated_rate(self):
         return self._integrated_rate_()
@@ -111,7 +111,7 @@ cdef double _madau_fragos_sfrd(const double z,
                                 const double[5] P) nogil:
     """From <arXiv:1606.07887>.
     """
-    return P[0] * (1.0 + z)**P[1]/(1.0 + ((1.0+z)/P[2])**P[3])
+    return P[0] * ((1.0 + z)**P[1])/(1.0 + ((1.0 + z)/P[2])**P[3])
 
 cdef double _powerlaw(const double z,
                         const double[5] P) nogil:
