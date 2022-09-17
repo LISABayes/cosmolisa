@@ -7,6 +7,8 @@ from libc.math cimport log, exp, sqrt, cos, fabs, sin, sinh, M_PI, \
     erf, erfc, HUGE_VAL, log1p
 from scipy.optimize import newton
 from cosmolisa.cosmology cimport CosmologicalParameters
+from sys import exit
+
 
 cdef class PopulationModel:
     """Class holding the population model. This is modelling

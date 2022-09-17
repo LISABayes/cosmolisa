@@ -1,6 +1,6 @@
-from __future__ import division  # It can be removed
-import numpy as np  # It can be removed
-cimport numpy as np  # It can be removed
+from __future__ import division
+# import numpy as np  # It can be removed
+# cimport numpy as np  # It can be removed
 cimport cython
 
 cdef class CosmologicalParameters:
