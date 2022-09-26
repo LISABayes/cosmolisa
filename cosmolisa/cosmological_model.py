@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 import sys
 import os
-import ray
 import time
 import configparser
 import subprocess
@@ -520,7 +519,6 @@ def main():
     print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
     print(f"cpnest installation version: {cpnest.__version__}")
-    print(f"ray version: {ray.__version__}")
     print(f"cosmolisa likelihood version: {lk.__file__}")
     print("\n"+formatting_string)
 
@@ -740,7 +738,8 @@ def main():
             nslice=config_par['nslice'],
             nhamiltonian=config_par['nhamiltonian'],
             nnest=config_par['nnest'],   
-            nlive=config_par['nlive'],  
+            nlive=config_par['nlive'],
+            seed=config_par['seed'],
             object_store_memory=config_par['obj_store_mem'],
             output=output_sampler,
             periodic_checkpoint_interval=config_par['checkpoint_int'],
@@ -752,7 +751,6 @@ def main():
 
         x = work.posterior_samples.ravel()
 
-        ray.shutdown()
         # Save git info
         with open("{}/git_info.txt".format(outdir), 'w+') as fileout:
             subprocess.call(['git', 'diff'], stdout=fileout)
