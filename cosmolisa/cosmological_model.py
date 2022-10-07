@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import sys
 import os
 import time
@@ -19,6 +18,29 @@ from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
 from cosmolisa import astrophysics as astro
 import cpnest.model
+
+# Parameters used to compute GW corrections.
+# From log-linear regressions on the full catalogs.
+correction_constants = {
+    "M1": {
+        "rho_dl_const": 5924.963574709556,
+        "rho_dl_exp": -0.5888459332377088,
+        "sigma_rho_const": 26872.018051453044,
+        "sigma_rho_exp": -1.488320189867221,
+        },
+    "M5": {
+        "rho_dl_const": 84473.82928926783,
+        "rho_dl_exp": -0.8762418490187381,
+        "sigma_rho_const": 21491.17808251121,
+        "sigma_rho_exp": -1.3778409540277086,
+        },
+    "M6": {
+        "rho_dl_const": 23299.6073092681,
+        "rho_dl_exp": -0.7410364171468602,
+        "sigma_rho_const": 23912.19661928212,
+        "sigma_rho_exp": -1.4248802911482044,
+        },
+    }
 
 class CosmologicalModel(cpnest.model.Model):
     """CosmologicalModel class:
@@ -50,7 +72,8 @@ class CosmologicalModel(cpnest.model.Model):
         self.rate = 0
         self.luminosity = 0
         self.SFRD = None
-        
+        self.corr_const = kwargs['corr_const']
+
         if ('LambdaCDM_h' in self.model):
             self.names = ['h']
             self.bounds = [[0.6, 0.86]]
@@ -87,28 +110,28 @@ class CosmologicalModel(cpnest.model.Model):
             self.gw_correction = 1
 
             self.names.append('log10r0')
-            self.bounds.append([-15, -8])
+            self.bounds.append([-15., -5.])
             if (self.SFRD == 'madau-porciani'):
                 # e(z) = r0*(1+W) *exp(Q*z) /(exp(R*z) +W)
                 # e(z) = r0*(1+p1)*exp(p2*z)/(exp(p3*z)+p1).
-                self.names.append('p1')
-                self.bounds.append([0.0, 2000.0])
+                self.names.append('log10p1')
+                self.bounds.append([-1., 4.])
                 self.names.append('p2')
-                self.bounds.append([0.0, 15.0])
+                self.bounds.append([0.0, 150.0])
                 self.names.append('p3')
-                self.bounds.append([0.0, 15.0])
+                self.bounds.append([0.0, 150.0])
             elif (self.SFRD == 'madau-fragos'):
                 # psi(z) = r0*(1+z)**p1/(1+((1+z)/p2)**p3).
-                self.names.append('p1')
-                self.bounds.append([0.0, 12.0])
+                self.names.append('log10p1')
+                self.bounds.append([-1., 1.5])
                 self.names.append('p2')
-                self.bounds.append([0.0, 12.0])
+                self.bounds.append([0.0, 50.0])
                 self.names.append('p3')
-                self.bounds.append([0.0, 3.0])
+                self.bounds.append([0.0, 12.0])
             elif (self.SFRD == 'powerlaw'):
                 # psi(z) = r0*(1+z)**p1.
                 self.names.append('p1')
-                self.bounds.append([-3.0, 15.0])
+                self.bounds.append([-15.0, 15.0])
 
         if ('Luminosity' in self.model):
             self.luminosity = 1
@@ -227,8 +250,8 @@ class CosmologicalModel(cpnest.model.Model):
                         density_model=self.SFRD)
                 else:
                     self.population_model = astro.PopulationModel(
-                        10**x['log10r0'], x['p1'], x['p2'], x['p3'], 0.0,
-                        self.O, 1e-5, self.z_threshold,
+                        10**x['log10r0'], 10**x['log10p1'], x['p2'], x['p3'],
+                        0.0, self.O, 1e-5, self.z_threshold,
                         density_model=self.SFRD)
                 if (self.SFRD == 'madau-porciani'):
                     if (x['p3'] < x['p2']):
@@ -313,7 +336,7 @@ class CosmologicalModel(cpnest.model.Model):
             # Compute the number of events above detection threshold.
             # GW selection effects only enter through this term.
             Ns_up_tot = lk.number_of_detectable_gw(self.population_model,
-                self.snr_threshold) * self.T
+                self.snr_threshold, self.corr_const) * self.T
             # Compute the contribution to the likelihood.
             logL_rate = -Ns_up_tot + self.N * np.log(Ns_tot)
             # If we do not care about GWs, compute the rate density
@@ -361,10 +384,19 @@ class CosmologicalModel(cpnest.model.Model):
         # We assume the catalog is complete and no correction
         # is necessary.
         else:
-            logL_GW += np.sum([lk.logLikelihood_single_event(
-                            self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                            x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
-                                for j, e in enumerate(self.data)])
+            # Multiply GW likelihood by 1/(Ns_tot) dR/dz.
+            if (self.rate == 1) or (self.gw_correction == 1):
+                logL_GW += np.sum([lk.logLikelihood_single_event(
+                        self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                        x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                        + np.log(self.population_model.pdf(x['z%d'%e.ID])
+                        / self.T) for j, e in enumerate(self.data)])
+            else:
+                logL_GW += np.sum([lk.logLikelihood_single_event(
+                        self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                        x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                        for j, e in enumerate(self.data)])
+
 
         self.O.DestroyCosmologicalParameters()
 
@@ -556,6 +588,15 @@ def main():
                                            truths['ol'],truths['w0'],
                                            truths['w1'])
 
+    if ("EMRI_SAMPLE_MODEL101" in config_par['data']):
+        corr_const = correction_constants["M1"]
+    elif ("EMRI_SAMPLE_MODEL105" in config_par['data']):
+        corr_const = correction_constants["M5"]
+    elif ("EMRI_SAMPLE_MODEL106" in config_par['data']):
+        corr_const = correction_constants["M6"]
+    else:
+        corr_const = correction_constants["M1"]
+
     ###################################################################
     ### Reading the catalog according to the user's options.
     ###################################################################
@@ -722,7 +763,8 @@ def main():
         event_class=config_par['event_class'],
         T=config_par['T'],
         m_threshold=config_par['m_threshold'],
-        SFRD=config_par['SFRD'])
+        SFRD=config_par['SFRD'],
+        corr_const=corr_const)
 
     # IMPROVEME: postprocess doesn't work when events are 
     # randomly selected, since 'events' in C are different 
@@ -751,7 +793,7 @@ def main():
 
         x = work.posterior_samples.ravel()
 
-        # Save git info
+        # Save git info.
         with open("{}/git_info.txt".format(outdir), 'w+') as fileout:
             subprocess.call(['git', 'diff'], stdout=fileout)
         # Save content of installed files.
@@ -815,7 +857,7 @@ def main():
         else:
             plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
                             outdir=outdir)
-        plots.rate_plots(x, cosmo_model=C, truths=truths,
+        plots.rate_plots(x, cosmo_model=C, truths=truths, corr=C.corr_const,
                          omega_true=omega_true, outdir=outdir)
 
     if ('Luminosity' in C.model):

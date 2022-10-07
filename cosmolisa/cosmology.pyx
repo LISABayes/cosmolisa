@@ -1,4 +1,3 @@
-from __future__ import division
 cimport cython
 
 cdef class CosmologicalParameters:

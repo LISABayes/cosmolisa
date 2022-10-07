@@ -23,7 +23,7 @@ labels_plot = {
                     r'$w_0$', r'$w_a$'],
     'DE': [r'$w_0$', r'$w_a$'],
     'RatePW': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$'],
-    'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$',
+    'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$\log_{10} p_1$',
              r'$p_2$', r'$p_3$'],
     'Luminosity': [r'$\phi^{*}/Mpc^{3}$', r'$a$', r'$M^{*}$', r'$b$',
                    r'$\alpha$', r'$c$'],
@@ -138,19 +138,19 @@ def corner_plot(x, **kwargs):
 
     elif (kwargs['model'] == 'RatePW'):
         corner_config(model=kwargs['model'], 
-                        samps_tuple=(x['h'], x['om'],
-                                    x['log10r0'], x['p1']),
-                        quantiles_plot=[0.05, 0.5, 0.95],
-                        SFRD='powerlaw',
-                        outdir=kwargs['outdir'],
-                        name="corner_plot_rate_90CI")
+                      samps_tuple=(x['h'], x['om'],
+                                   x['log10r0'], x['p1']),
+                      quantiles_plot=[0.05, 0.5, 0.95],
+                      SFRD='powerlaw',
+                      outdir=kwargs['outdir'],
+                      name="corner_plot_rate_90CI")
     elif (kwargs['model'] == 'Rate'):
         corner_config(model=kwargs['model'], 
-                        samps_tuple=(x['h'], x['om'], x['log10r0'], x['p1'],
-                                    x['p2'], x['p3']),
-                        quantiles_plot=[0.05, 0.5, 0.95], 
-                        outdir=kwargs['outdir'],
-                        name="corner_plot_rate_90CI")
+                      samps_tuple=(x['h'], x['om'], x['log10r0'],
+                                   x['log10p1'], x['p2'], x['p3']),
+                      quantiles_plot=[0.05, 0.5, 0.95],
+                      outdir=kwargs['outdir'],
+                      name="corner_plot_rate_90CI")
 
     elif (kwargs['model'] == 'Luminosity'):
         corner_config(model=kwargs['model'], 
@@ -416,14 +416,14 @@ def rate_plots(x, **kwargs):
                 density_model=kwargs['cosmo_model'].SFRD)
         else:    
             pop_model = astro.PopulationModel(
-                10**x['log10r0'][i], x['p1'][i], x['p2'][i], x['p3'][i], 0.0,
-                O, 1e-5, kwargs['cosmo_model'].z_threshold,
+                10**x['log10r0'][i], 10**x['log10p1'][i], x['p2'][i],
+                x['p3'][i], 0.0, O, 1e-5, kwargs['cosmo_model'].z_threshold,
                 density_model=kwargs['cosmo_model'].SFRD)
         Ns[i] = pop_model.integrated_rate()
         # Compute the fraction of detectable events: 
         # alpha = = Ns_up_tot / Ns_tot. 
         alpha[i] = lk.number_of_detectable_gw(
-            pop_model, kwargs['cosmo_model'].snr_threshold) / Ns[i]
+            pop_model, kwargs['cosmo_model'].snr_threshold, kwargs['corr']) / Ns[i]
         # Compute events redshift PDF, p(z)_i = (dR/dz)_i / Ns.
         u = np.array([pop_model.pdf(zi) for zi in z])
         # Compute CDF of p(z)_i.
@@ -445,7 +445,8 @@ def rate_plots(x, **kwargs):
             density_model=kwargs['cosmo_model'].SFRD)
     Ns_true = pop_model_true.integrated_rate() 
     alpha_true = lk.number_of_detectable_gw(
-        pop_model_true, kwargs['cosmo_model'].snr_threshold)/ Ns_true
+        pop_model_true, kwargs['cosmo_model'].snr_threshold,
+        kwargs['corr']) / Ns_true
     pdf_z_true = np.array([pop_model_true.pdf(zi) for zi in z])
     cdf_z_true = np.array([pop_model_true.cdf(zi) for zi in z])
     pdf_z = np.array(pdf_z) 

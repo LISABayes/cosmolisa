@@ -2,7 +2,6 @@
 # cython: profile=False
 # distutils: define_macros=CYTHON_TRACE_NOGIL=1
 """
-from __future__ import division
 import numpy as np
 cimport numpy as np
 from numpy cimport ndarray

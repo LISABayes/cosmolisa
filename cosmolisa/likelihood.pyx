@@ -2,7 +2,6 @@
 # cython: profile=False
 # distutils: define_macros=CYTHON_TRACE_NOGIL=1
 """
-from __future__ import division
 import numpy as np
 cimport numpy as np
 cimport cython
@@ -195,15 +194,18 @@ cdef double _logLikelihood_single_event_rate_only(double z,
 
 
 def number_of_detectable_gw(PopulationModel PopMod,
-                            const double SNR_threshold):
-    return _number_of_detectable_gw(PopMod, SNR_threshold)
+                            const double SNR_threshold,
+                            dict corr_const):
+    return _number_of_detectable_gw(PopMod, SNR_threshold, corr_const)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
 cdef double _number_of_detectable_gw(PopulationModel PopMod,
-                                     const double SNR_threshold):
+                                     const double SNR_threshold,
+                                     dict corr_const
+                                     ):
 
     cdef int i
     cdef int N = 64
@@ -212,10 +214,13 @@ cdef double _number_of_detectable_gw(PopulationModel PopMod,
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin + dz
     cdef double I = (0.5
-        * (_number_of_detectable_gw_integrand(zmin, PopMod, SNR_threshold)
-        + _number_of_detectable_gw_integrand(zmax, PopMod, SNR_threshold)))
+        * (_number_of_detectable_gw_integrand(zmin, PopMod,
+                                              SNR_threshold, corr_const)
+        + _number_of_detectable_gw_integrand(zmax, PopMod,
+                                             SNR_threshold, corr_const)))
     for i in range(1, N-1):
-        I += _number_of_detectable_gw_integrand(z, PopMod, SNR_threshold)
+        I += _number_of_detectable_gw_integrand(z, PopMod,
+                                                SNR_threshold, corr_const)
         z += dz
     return I*dz
 
@@ -228,41 +233,60 @@ cdef double _number_of_detectable_gw(PopulationModel PopMod,
 cdef double _number_of_detectable_gw_integrand(
         const double z,
         PopulationModel PopMod,
-        const double SNR_threshold):
+        const double SNR_threshold,
+        dict corr_const):
+
+    cdef double rho_dl_const = corr_const["rho_dl_const"]
+    cdef double rho_dl_exp = corr_const["rho_dl_exp"]
+    cdef double sigma_rho_const = corr_const["sigma_rho_const"]
+    cdef double sigma_rho_exp = corr_const["sigma_rho_exp"]
 
     cdef double dl = PopMod.omega._LuminosityDistance(z)
-    cdef double sigmadl = _distance_error_vs_snr(SNR_threshold)
+    cdef double sigmadl = _distance_error_vs_snr(SNR_threshold,
+                                                 sigma_rho_const,
+                                                 sigma_rho_exp)
     cdef double sigma_total = sqrt(_sigma_weak_lensing(z, dl)**2 + sigmadl**2)
-    # The following is the distance threshold
+    # The following quantity is the distance threshold
     # assuming a simple scaling law for the SNR.
-    cdef double D_threshold = _threshold_distance(SNR_threshold)
+    cdef double D_threshold = _threshold_distance(SNR_threshold,
+                                                  rho_dl_const,
+                                                  rho_dl_exp)
     cdef double dRdz = (PopMod._number_density(z))
     cdef double denominator = sqrt(2.0) * sigma_total
     cdef double integrand = 0.5 * dRdz * (erf(dl/denominator)
                                    - erf((dl-D_threshold)/denominator))
     return integrand
     
-def snr_vs_distance(double d):
-    return _snr_vs_distance(d)
+def snr_vs_distance(double d,
+                    double rho_dl_const,
+                    double rho_dl_exp):
+    return _snr_vs_distance(d, rho_dl_const, rho_dl_exp)
 
-cdef inline double _snr_vs_distance(double d) nogil:
-    """From a log-linear regression on M106."""
-    return 23299.606754 * d**(-0.741036)
+cdef inline double _snr_vs_distance(double d,
+                                    double rho_dl_const,
+                                    double rho_dl_exp) nogil:
+    return rho_dl_const * d**(rho_dl_exp)
 
-def distance_error_vs_snr(double snr):
-    return _distance_error_vs_snr(snr)
+def distance_error_vs_snr(double snr,
+                          double sigma_rho_const,
+                          double sigma_rho_exp):
+    return _distance_error_vs_snr(snr, sigma_rho_const, sigma_rho_exp)
     
-cdef inline double _distance_error_vs_snr(double snr) nogil:
-    """From a log-linear regression on M106."""
-    return 23912.196795 * snr**(-1.424880)
+cdef inline double _distance_error_vs_snr(double snr,
+                                          double sigma_rho_const,
+                                          double sigma_rho_exp) nogil:
+    return sigma_rho_const * snr**(sigma_rho_exp)
 
-def threshold_distance(double SNR_threshold):
-    return _threshold_distance(SNR_threshold)
+def threshold_distance(double SNR_threshold,
+                       double rho_dl_const,
+                       double rho_dl_exp):
+    return _threshold_distance(SNR_threshold, rho_dl_const, rho_dl_exp)
     
-cdef inline double _threshold_distance(double SNR_threshold) nogil:
-    # D0       = 1748.50, SNR0     = 87
-    return (SNR_threshold/23299.606754)**(-1./0.741036)
-    
+cdef inline double _threshold_distance(double SNR_threshold,
+                                       double rho_dl_const,
+                                       double rho_dl_exp) nogil:
+    return (SNR_threshold/rho_dl_const)**(1./rho_dl_exp)
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
