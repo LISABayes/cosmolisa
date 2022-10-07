@@ -421,7 +421,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
     'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
     'zhorizon'             Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
-    'SFRD'                 Default: ''.                                      Star Formation Rate Density model assumed for the event rate.
+    'SFRD'                 Default: ''.                                      Star Formation Rate Density model assumed for the event rate ['madau-porciani, madau-fragos, powerlaw'].
     'dl_cutoff'            Default: 0.0.                                     If > 0, select events with dL(omega_true,zmax) < dl_cutoff (in Mpc). This cutoff supersedes the zhorizon one.
     'z_event_sel'          Default: 0.                                       Select N events ordered by redshift. If positive (negative), choose the X nearest (farthest) events.
     'one_host_sel'         Default: 0.                                       For each event, associate only the nearest-in-redshift host (between z_gal and event z_true).
@@ -595,6 +595,7 @@ def main():
     elif ("EMRI_SAMPLE_MODEL106" in config_par['data']):
         corr_const = correction_constants["M6"]
     else:
+        print("WARNING: reading default correction constants (M1).")
         corr_const = correction_constants["M1"]
 
     ###################################################################
