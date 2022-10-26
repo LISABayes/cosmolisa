@@ -114,7 +114,8 @@ def corner_plot(x, **kwargs):
         corner_config(model=kwargs['model'], 
                       samps_tuple=(x['h'], x['om'], x['ol']),
                       quantiles_plot=[0.05, 0.5, 0.95],
-                      truths=[truths['h'],truths['om'], truths['ol']],
+                      truths=[kwargs['truths']['h'], kwargs['truths']['om'],
+                              kwargs['truths']['ol']],
                       outdir=kwargs['outdir'],
                       name="corner_plot_90CI")
 
@@ -123,8 +124,9 @@ def corner_plot(x, **kwargs):
                       samps_tuple=(x['h'], x['om'], x['ol'], x['w0'],
                                    x['w1']),
                       quantiles_plot=[0.05, 0.5, 0.95], 
-                      truths=[truths['h'], truths['om'], truths['ol'],
-                              truths['w0'], truths['w1']],
+                      truths=[kwargs['truths']['h'], kwargs['truths']['om'],
+                              kwargs['truths']['ol'], kwargs['truths']['w0'],
+                              kwargs['truths']['w1']],
                       outdir=kwargs['outdir'],
                       name="corner_plot_90CI")
 
@@ -132,7 +134,8 @@ def corner_plot(x, **kwargs):
         corner_config(model=kwargs['model'], 
                       samps_tuple=(x['w0'],x['w1']),
                       quantiles_plot=[0.05, 0.5, 0.95], 
-                      truths=[truths['w0'], truths['w1']],
+                      truths=[kwargs['truths']['w0'],
+                              kwargs['truths']['w1']],
                       outdir=kwargs['outdir'],
                       name="corner_plot_90CI")
 
