@@ -416,7 +416,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'data'                 Default: ''.                                      Data location.
     'outdir'               Default: './default_dir'.                         Directory for output.
     'event_class'          Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
-    'model'                Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW','Rate', 'Luminosity'] separated by a '+'.
+    'model'                Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW', 'Rate', 'Luminosity'] separated by a '+'.
     'truths'               Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
     'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
     'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
@@ -479,7 +479,7 @@ def main():
         'outdir': "./default_dir",
         'event_class': '',
         'model': '',
-        'truth_par': {'h': 0.673, 'om': 0.315, 'ol': 0.685},
+        'truth_par': {"h": 0.673, "om": 0.315, "ol": 0.685},
         'corrections': '',
         'random': 0,
         'zhorizon': "1000.0",
@@ -595,8 +595,10 @@ def main():
     elif ("EMRI_SAMPLE_MODEL106" in config_par['data']):
         corr_const = correction_constants["M6"]
     else:
-        print("WARNING: reading default correction constants (M1).")
         corr_const = correction_constants["M1"]
+        if ('Rate' in config_par['model'] or
+            'GW' in config_par['corrections']):
+            print("WARNING: reading default correction constants (M1).")
 
     ###################################################################
     ### Reading the catalog according to the user's options.
@@ -734,9 +736,9 @@ def main():
         events = sorted(events, key=lambda x: getattr(x, 'ID'))
         for e in events:
             print("ID: {}  |  ".format(str(e.ID).ljust(3))
-                  +"SNR: {}  |  ".format(str(e.snr).ljust(9))
+                  +"SNR: {} |  ".format(str(e.snr).ljust(9))
                   +"z_true: {} |  ".format(str(e.z_true).ljust(7))
-                  +"dl: {} Mpc  |  ".format(str(e.dl).ljust(7))
+                  +"dl: {} Mpc  |  ".format(str(e.dl).ljust(8))
                   +"sigmadl: {} Mpc  |  ".format(str(e.sigmadl)[:6].ljust(7))
                   +"hosts: {}".format(str(len(e.potential_galaxy_hosts))
                                          .ljust(4)))
