@@ -510,7 +510,7 @@ def main():
         'nhamiltonian': 0,
         'nnest': 1,
         'nlive': 1000,
-        'seed': 0,
+        'seed': 1234,
         'obj_store_mem': 2e9,
         'checkpoint_int': 10800,
         'resume': 0
