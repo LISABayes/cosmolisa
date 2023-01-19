@@ -462,7 +462,7 @@ def read_dark_siren_event(input_folder, event_number,
                       f"{str(len(e.potential_galaxy_hosts)).ljust(4)}")
 
         analysis_events = events
-
+        del events_list
     else:
         events_list.sort()
         analysis_events = []
