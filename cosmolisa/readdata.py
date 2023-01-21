@@ -60,100 +60,163 @@ class Event:
 
 def read_MBHB_event(input_folder, event_number=None):
     """Read MBHB data to be passed to CosmologicalModel class.
-    The file ID.dat has a single row containing:
+    #########################################################
+    If data is stored in two files:
+    The file ID.dat (no header) has a single row containing:
     1-event ID
     2-luminosity distance dL (Mpc) (scattered)
     3-relative error on luminosity distance delta{dL}/dL 
         (not including propagated z error)
-
-    The file ERRORBOX.dat contains:
+    The file ERRORBOX.dat (no header) contains:
     1-event redshift 
     2-absolute redshift error
+    #########################################################
+    If data is stored in a single file:
+    The file ID.dat (with header) contains:
+    1-z_true: the true binary redshift
+    2-z_shifted: shifted redshift because of the error in the 
+        EM measurement
+    3-error_z: redshift error	
+    4-d_LGpc: luminosity distance dL in Gpc
+    5-d_L_shiftedGpc: shifted dL because of noise,
+        lensing, and peculiar velocity errors
+    6-sigma_dl_posterior1sigmaGpc: error from the posterior
+        distribution
+    7-sigma_dl_fisherGpc: error coming from the Fisher
+    8-sigma_dl_pvGpc: error coming from the peculiar velocity
+    9-sigma_dl_lensingGpc: error coming from lensing
+    10-sigma_dl_combinedGpc: error obtained combining
+        sigma_dl_posterior, lensing, and peculiar velocity
+    11-string_index: source index
+    12-LSST_detected: (boolean variable) 1 if the source is observed
+        by LSST, 0 otherwise
+    13-SKA_detected: the same as above (SKA)
+    14-Athena_detected: the same as above (Athena)
     """
     all_files = os.listdir(input_folder)
     print(f"\nReading {input_folder}")
-    events_list = [f for f in all_files if ("EVENT" in f or "event" in f)]
-    
-    if (event_number is None):
+    events_list = [f for f in all_files if ("EVENT" in f)]
+    # Two-file format.
+    try:
+        if (event_number is None):
+            analysis_events = []
+            for k, ev in enumerate(events_list):
+                sys.stderr.write("Reading {0} out of {1} events\r".format(
+                    k+1, len(events_list)))
+                event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
+                event_id, dl, rel_sigmadl = event_file.readline().split(None)
+                ID = np.int(event_id)
+                dl = np.float64(dl)
+                sigmadl = np.float64(rel_sigmadl)*dl
+                event_file.close()      
+
+                try:
+                    redshift, d_redshift = np.loadtxt(input_folder
+                        +"/"+ev+"/ERRORBOX.dat", unpack=True)
+                    redshift = np.atleast_1d(redshift)
+                    d_redshift = np.atleast_1d(d_redshift)
+                    weights = np.ones(len(redshift))
+                    magnitudes = np.ones(len(redshift))
+                    zmin = np.float64(np.maximum(
+                        redshift - 5.0*d_redshift, 0.0))
+                    zmax = np.float64(redshift + 5.0*d_redshift)
+                    analysis_events.append(Event(ID,
+                                                dl,
+                                                sigmadl,
+                                                1.0,
+                                                1.0,
+                                                redshift,
+                                                d_redshift,
+                                                weights,
+                                                magnitudes,
+                                                zmin,
+                                                zmax,
+                                                -1,
+                                                -1,
+                                                -1,
+                                                [0]))
+                except:
+                    if (TypeError, NameError): 
+                        raise
+                    else: 
+                        sys.stderr.write("Event %s at a distance"%(event_id)
+                            +" %s (error %s) has no hosts,"%(dl, sigmadl)
+                            +" skipping\n")
+        else:
+            event_file = open(input_folder+"/"+events_list[event_number] 
+                            +"/ID.dat", 'r')
+            event_id, dl, sigmadl = event_file.readline().split(None)
+            ID = np.int(event_id)
+            dl = np.float64(dl)
+            sigmadl = np.float64(sigmadl)*dl
+            event_file.close()
+            try:
+                redshift, d_redshift = np.loadtxt(input_folder+"/" 
+                    +events_list[event_number]+"/ERRORBOX.dat", unpack=True)
+                redshift = np.atleast_1d(redshift)
+                d_redshift = np.atleast_1d(d_redshift)
+                weights = np.atleast_1d(len(redshift))
+                magnitudes = np.atleast_1d(len(redshift))
+                zmin = np.float64(np.maximum(
+                    redshift - 10.0*d_redshift, 0.0))
+                zmax = np.float64(redshift + 10.0*d_redshift)
+                analysis_events = [Event(ID,
+                                        dl,
+                                        sigmadl,
+                                        1.0,
+                                        1.0,
+                                        redshift,
+                                        d_redshift,
+                                        weights,
+                                        magnitudes,
+                                        zmin,
+                                        zmax,
+                                        -1,
+                                        -1,
+                                        -1,
+                                        [0])]
+                sys.stderr.write("Selecting event %s"%(event_id)
+                    +"at a distance %s (error %s), "%(dl, sigmadl)
+                    +"hosts %d\n"%(len(redshifts)))
+            except:
+                sys.stderr.write("Event %s at a distance"%(event_id)
+                    +"%s (error %s) has no hosts, skipping\n"%(dl, sigmadl))
+                exit()
+    # One-file format.
+    except:
         analysis_events = []
         for k, ev in enumerate(events_list):
             sys.stderr.write("Reading {0} out of {1} events\r".format(
                 k+1, len(events_list)))
-            event_file = open(input_folder+"/"+ev+"/ID.dat", 'r')
-            event_id, dl, rel_sigmadl = event_file.readline().split(None)
-            ID = np.int(event_id)
-            dl = np.float64(dl)
-            sigmadl = np.float64(rel_sigmadl)*dl
-            event_file.close()
-            
-            try:
-                redshift, d_redshift = np.loadtxt(input_folder
-                    +"/"+ev+"/ERRORBOX.dat", unpack=True)
-                redshift = np.atleast_1d(redshift)
-                d_redshift = np.atleast_1d(d_redshift)
-                weights = np.ones(len(redshift))
-                magnitudes = np.ones(len(redshift))
-                zmin = np.float64(np.maximum(redshift - 5.0*d_redshift, 0.0))
-                zmax = np.float64(redshift + 5.0*d_redshift)
-                analysis_events.append(Event(ID,
-                                             dl,
-                                             sigmadl,
-                                             1.0,
-                                             1.0,
-                                             redshift,
-                                             d_redshift,
-                                             weights,
-                                             magnitudes,
-                                             zmin,
-                                             zmax,
-                                             -1,
-                                             -1,
-                                             -1,
-                                             [0]))
-            except:
-                if (TypeError, NameError): 
-                    raise
-                else: 
-                    sys.stderr.write("Event %s at a distance"%(event_id) 
-                        +"%s (error %s) has no hosts, skipping\n"%(dl, sigmadl))
-    else:
-        event_file = open(input_folder+"/"+events_list[event_number] 
-                          +"/ID.dat", 'r')
-        event_id, dl, sigmadl = event_file.readline().split(None)
-        ID = np.int(event_id)
-        dl = np.float64(dl)
-        sigmadl = np.float64(sigmadl)*dl
-        event_file.close()
-        try:
-            redshift, d_redshift = np.loadtxt(input_folder+"/" 
-                +events_list[event_number]+"/ERRORBOX.dat", unpack=True)
-            redshift = np.atleast_1d(redshift)
-            d_redshift = np.atleast_1d(d_redshift)
-            weights = np.atleast_1d(len(redshift))
-            magnitudes = np.atleast_1d(len(redshift))
-            zmin = np.float64(np.maximum(redshift - 10.0*d_redshift, 0.0))
-            zmax = np.float64(redshift + 10.0*d_redshift)
-            analysis_events = [Event(ID,
-                                     dl,
-                                     sigmadl,
-                                     1.0,
-                                     1.0,
-                                     redshift,
-                                     d_redshift,
-                                     weights,
-                                     magnitudes,
-                                     zmin,
-                                     zmax,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     [0])]
-            sys.stderr.write("Selecting event %s at a distance"%(event_id)
-                +"%s (error %s), hosts %d\n"%(dl, sigmadl, len(redshifts)))
-        except:
-            sys.stderr.write("Event %s at a distance"%(event_id)
-                +"%s (error %s) has no hosts, skipping\n"%(dl, sigmadl))
-            exit()
+            params = np.genfromtxt(input_folder+"/"+ev+"/ID.dat",
+                                        names=True)
+            ID = np.int(params["ID"])
+            dl = np.float64(params["d_L_shiftedGpc"])*1e3  # in Mpc
+            sigmadl = np.float64(params["sigma_dl_fisherGpc"])*1e3  # in Mpc
+            redshift = np.atleast_1d(params["z_true"])
+            d_redshift = np.atleast_1d(params["error_z"])
+            snr = np.float64(params["SNR"])
+            weights = np.ones(len(redshift))
+            magnitudes = np.ones(len(redshift))
+            zmin = np.float64(np.maximum(
+                redshift - 5.0*d_redshift, 0.0))
+            zmax = np.float64(redshift + 5.0*d_redshift)
+            analysis_events.append(Event(ID,
+                                        dl,
+                                        sigmadl,
+                                        1.0,
+                                        1.0,
+                                        redshift,
+                                        d_redshift,
+                                        weights,
+                                        magnitudes,
+                                        zmin,
+                                        zmax,
+                                        snr,
+                                        -1,
+                                        -1,
+                                        [0]))
+        
     sys.stderr.write("\n%d MBHB events loaded\n"%len(analysis_events))
 
     return analysis_events
