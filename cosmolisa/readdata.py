@@ -8,12 +8,11 @@ class Galaxy:
     weight determined by its angular position relative to
     the detector posterior, and magnitude (if available).
     """
-    def __init__(self, redshift, dredshift, weight, dl, magnitude):
+    def __init__(self, redshift, dredshift, weight, magnitude):
         
         self.redshift = redshift
         self.dredshift = dredshift
         self.weight = weight
-        self.dl = dl
         self.magnitude = magnitude
 
 class Event:
@@ -39,9 +38,9 @@ class Event:
                  dl_host,
                  VC = None):
 
-        self.potential_galaxy_hosts = [Galaxy(r, dr, w, dl, m)
-            for r, dr, w, dl, m in zip(redshifts, dredshifts, weights,
-            dl_host, magnitudes)]
+        self.potential_galaxy_hosts = [Galaxy(r, dr, w, m)
+            for r, dr, w, m in zip(redshifts, dredshifts, weights,
+            magnitudes)]
         self.n_hosts = len(self.potential_galaxy_hosts)
         self.ID = ID
         self.dl = dl
