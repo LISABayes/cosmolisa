@@ -430,7 +430,7 @@ def read_dark_siren_event(input_folder, event_number,
             print("\nSelected {} events from dl={} to dl={} (Mpc)."
                 .format(len(events), events[0].dl, events[len(events)-1].dl))  
 
-        if (max_hosts is not None):
+        if not (max_hosts == 0):
             events = [e for e in events if e.n_hosts <= max_hosts]
             events = sorted(events, key=lambda x: getattr(x, 'n_hosts'))
             print(f"\nSelected {len(events)} events having hosts from"
