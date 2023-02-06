@@ -221,7 +221,7 @@ def read_MBHB_event(input_folder, event_number=None):
     return analysis_events
 
 def read_dark_siren_event(input_folder, event_number,
-                          max_hosts=None, one_host_selection=0,
+                          max_hosts=0, one_host_selection=0,
                           z_event_sel=None, snr_selection=None,
                           snr_threshold=0.0, sigma_pv=0.0023,
                           event_ID_list=None, zhorizon=None,
