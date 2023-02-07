@@ -435,7 +435,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'event_ID_list'        Default: ''.                                      String of specific ID events to be read (separated by commas and without single/double quotation marks).
     'max_hosts'            Default: 0.                                       Select events according to the allowed maximum number of hosts.
     'z_gal_cosmo'          Default: 0.                                       If set to 1, read and use the cosmological redshift of the galaxies instead of the observed one.
-    'snr_selection'        Default: 0.                                       Select in SNR the N loudest (N>0) or faintest (N<0) events, where N=snr_selection.
+    'snr_selection'        Default: 0.                                       Select in SNR the N loudest/faintest (N<0/N>0) events, where N=snr_selection.
     'snr_threshold'        Default: 0.0.                                     Impose an SNR detection threshold X>0 (X<0) and select the events above (belove) X.
     'sigma_pv'             Default: 0.0023.                                  Uncertainty associated to peculiar velocity value, equal to (vp / c), used in the computation of the GW redshift uncertainty (0.0015 in https://arxiv.org/abs/1703.01300).
     'split_data_num'       Default: 1.                                       Choose the number of parts into which to divide the list of events. Values: any integer number equal or greater than 2.
