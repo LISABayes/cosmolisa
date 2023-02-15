@@ -1,0 +1,6 @@
+[submodule "corner"]
+	path = corner
+	url = https://github.com/dfm/corner.py.git
+[submodule "cpnest"]
+	path = cpnest
+	url = https://github.com/johnveitch/cpnest
