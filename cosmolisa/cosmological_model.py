@@ -151,9 +151,7 @@ class CosmologicalModel(cpnest.model.Model):
 
         # If we are using GWs, add the relevant redshift parameters.
         if (self.gw == 1):
-            for e in self.data:
-                self.names.append('z%d'%e.ID)
-                self.bounds.append([e.zmin,e.zmax])
+            pass
         else:
             self.gw_redshifts = np.array([e.z_true for e in self.data])
         
@@ -396,7 +394,7 @@ class CosmologicalModel(cpnest.model.Model):
                 if (self.event_class == 'dark_siren'):
                     logL_GW += np.sum([lk.loglk_dark_single_event(
                             self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                            x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                            zmin=e.zmin, zmax=e.zmax)
                             for j, e in enumerate(self.data)])
                 elif (self.event_class == 'MBHB'):
                     logL_GW += np.sum([lk.loglk_bright_single_event(
@@ -848,15 +846,15 @@ def main():
         plots.corner_plot(x, model='DE', 
                             truths=truths, outdir=outdir)
 
-    if ((config_par['event_class'] == "dark_siren") and (C.gw == 1)):
-        for e in C.data:
-            plots.redshift_ev_plot(x, model=C.model, event=e, 
-                                   em_sel=config_par['em_selection'],
-                                   truths=truths, omega_true=omega_true,
-                                   outdir=outdir)    
-    elif (config_par['event_class'] == "MBHB"):
-        plots.MBHB_regression(x, model=C.model, data=C.data, truths=truths,
-                              omega_true=omega_true, outdir=outdir)
+    # if ((config_par['event_class'] == "dark_siren") and (C.gw == 1)):
+    #     for e in C.data:
+    #         plots.redshift_ev_plot(x, model=C.model, event=e, 
+    #                                em_sel=config_par['em_selection'],
+    #                                truths=truths, omega_true=omega_true,
+    #                                outdir=outdir)    
+    # elif (config_par['event_class'] == "MBHB"):
+    #     plots.MBHB_regression(x, model=C.model, data=C.data, truths=truths,
+    #                           omega_true=omega_true, outdir=outdir)
     
     if ('Rate' in C.model):
         if (C.SFRD == 'powerlaw'):

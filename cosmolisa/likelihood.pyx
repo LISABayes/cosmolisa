@@ -20,39 +20,43 @@ def loglk_dark_single_event(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
                             CosmologicalParameters omega,
-                            const double event_redshift,
-                            const double zmin=0.0,
-                            const double zmax=1.0):
-    """Likelihood function p( Di | O, M, I) for a single dark GW
-    event of data Di assuming cosmological model M and parameters O.
-    Following the formalism of <arXiv:2102.01708>.
-    Loops over all possible hosts to accumulate the likelihood.
-    Parameters:
-    ===============
-    hosts: :obj: 'numpy.array' with shape Nx4. The columns are
-        redshift, redshift_error, angular_weight, magnitude
-    meandl: :obj: 'numpy.double': mean of the luminosity distance dL
-    sigmadl: :obj: 'numpy.double': standard deviation of dL
-    omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
-        structure O
-    event_redshift: :obj: 'numpy.double': redshift for the GW event
-    zmin: :obj: 'numpy.double': minimum GW redshift
-    zmax: :obj: 'numpy.double': maximum GW redshift
-    """
+                            const double zmin,
+                            const double zmax):
     return _loglk_dark_single_event(hosts, meandl, sigmadl, omega,
-                                    event_redshift, zmin=zmin, zmax=zmax)
+                                    zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
 cdef double _loglk_dark_single_event(const double[:,::1] hosts,
+                            const double meandl,
+                            const double sigmadl,
+                            CosmologicalParameters omega,
+                            const double zmin,
+                            const double zmax):
+
+    cdef int i
+    cdef int N = 100
+    cdef double dz = (zmax-zmin)/N
+    cdef double z  = zmin + dz
+    cdef double I = (0.5
+        * (_loglk_dark_single_event_integrand(zmin, hosts, meandl, sigmadl, omega)
+        + _loglk_dark_single_event_integrand(zmax, hosts, meandl, sigmadl, omega)))
+    for i in range(1, N-1):
+        I += _loglk_dark_single_event_integrand(z, hosts, meandl, sigmadl, omega)
+        z += dz
+    return I*dz
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef double _loglk_dark_single_event_integrand(const double event_redshift,
+                                        const double[:,::1] hosts,
                                         const double meandl,
                                         const double sigmadl,
-                                        CosmologicalParameters omega,
-                                        const double event_redshift,
-                                        double zmin=0.0,
-                                        double zmax=1.0) nogil:
+                                        CosmologicalParameters omega) nogil:
 
     cdef unsigned int j
     cdef double dl
@@ -195,55 +199,55 @@ cdef double _em_selection_function(double dl) nogil:
     """Completeness function f(dL) currently used for plotting."""
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
-def logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
-                                       double meandl,
-                                       double sigmadl,
-                                       CosmologicalParameters omega,
-                                       GalaxyDistribution gal, 
-                                       double event_redshift,
-                                       double zmin=0.0,
-                                       double zmax=1.0):
+# def logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
+#                                        double meandl,
+#                                        double sigmadl,
+#                                        CosmologicalParameters omega,
+#                                        GalaxyDistribution gal, 
+#                                        double event_redshift,
+#                                        double zmin=0.0,
+#                                        double zmax=1.0):
 
-    return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl,
-                                               omega, gal, event_redshift,
-                                               zmin=zmin, zmax=zmax)
+#     return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl,
+#                                                omega, gal, event_redshift,
+#                                                zmin=zmin, zmax=zmax)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-@cython.cdivision(True)
-cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
-                                                double meandl,
-                                                double sigmadl,
-                                                CosmologicalParameters omega,
-                                                GalaxyDistribution gal,
-                                                double event_redshift,
-                                                double zmin=0.0,
-                                                double zmax=1.0) nogil:
-    """Single-event likelihood function enforcing the 
-    selection function.
-    Parameters:
-    ===============
-    hosts: :obj: 'numpy.array' with shape Nx4. The columns are
-        redshift, redshift_error, angular_weight, magnitude
-    meandl: :obj: 'numpy.double': mean of the luminosity distance dL
-    sigmadl: :obj: 'numpy.double': standard deviation of dL
-    omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
-        structure O
-    gal: :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution 
-        function 
-    event_redshift: :obj: 'numpy.double': redshift for the GW event
-    zmin: :obj: 'numpy.double': minimum GW redshift
-    zmax: :obj: 'numpy.double': maximum GW redshift
-    """
-    cdef double logL = -HUGE_VAL
-    cdef double p_out_cat = -HUGE_VAL
-    logL = _loglk_dark_single_event(hosts, meandl, sigmadl, omega, 
-                                       event_redshift, zmin, zmax)
-    p_out_cat = (gal._get_non_detected_normalisation(zmin, zmax)
-                 /gal._get_normalisation(zmin, zmax))
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+# @cython.nonecheck(False)
+# @cython.cdivision(True)
+# cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
+#                                                 double meandl,
+#                                                 double sigmadl,
+#                                                 CosmologicalParameters omega,
+#                                                 GalaxyDistribution gal,
+#                                                 double event_redshift,
+#                                                 double zmin=0.0,
+#                                                 double zmax=1.0) nogil:
+#     """Single-event likelihood function enforcing the 
+#     selection function.
+    # Parameters:
+    # ===============
+    # hosts: :obj: 'numpy.array' with shape Nx4. The columns are
+    #     redshift, redshift_error, angular_weight, magnitude
+    # meandl: :obj: 'numpy.double': mean of the luminosity distance dL
+    # sigmadl: :obj: 'numpy.double': standard deviation of dL
+    # omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
+    #     structure O
+    # gal: :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution 
+    #     function 
+    # event_redshift: :obj: 'numpy.double': redshift for the GW event
+    # zmin: :obj: 'numpy.double': minimum GW redshift
+    # zmax: :obj: 'numpy.double': maximum GW redshift
+    # """
+    # cdef double logL = -HUGE_VAL
+    # cdef double p_out_cat = -HUGE_VAL
+    # logL = _loglk_dark_single_event(hosts, meandl, sigmadl, omega, 
+    #                                    event_redshift, zmin, zmax)
+    # p_out_cat = (gal._get_non_detected_normalisation(zmin, zmax)
+    #              /gal._get_normalisation(zmin, zmax))
 
-    return logL + log1p(-p_out_cat)
+    # return logL + log1p(-p_out_cat)
 
 
 cpdef double find_redshift(CosmologicalParameters omega, double dl):
