@@ -9,17 +9,17 @@ from optparse import OptionParser
 
 if __name__=="__main__":
     parser=OptionParser()
-    parser.add_option('-o','--out',              action='store', type='string', default=None,        help='Output folder',                                                                                           dest='output')
-    parser.add_option('-d',                      action='store', type='string', default=None,        help='data folder',                                                                                             dest='data')
-    parser.add_option('-m',                      action='store', type='string', default='LambdaCDM', help='model (LambdaCDM, LambdaCDMDE, DE, CLambdaCDM)',                                                          dest='model', metavar='model')
-    parser.add_option('-c',                      action='store', type='string', default='EMRI',      help='source class (MBHB, EMRI)',                                                                               dest='source')
-    parser.add_option('-N',                      action='store', type='int',    default=256,         help='Number of bins for the grid sampling (only used for dpgmm)',                                              dest='N')
-    parser.add_option('--dpgmm',                 action='store', type='int',    default=False,       help='DPGMM average plot',                                                                                      dest='dpgmm')
-    parser.add_option('--cat_name',              action='store', type='string', default=False,       help='Catalog name',                                                                                            dest='cat_name')
-    parser.add_option('--corner_68',             action='store', type='int',    default=False,       help='Corner plot bugged (only showing 68%CI)',                                                                 dest='corner_68')
-    parser.add_option('--corner_90',             action='store', type='int',    default=False,       help='Corner plot without bug (90%CI)',                                                                         dest='corner_90')
-    parser.add_option('--split_catalog',         action='store', type='int',    default=False,       help='Read samples from analyses where the catalog has been split',                                             dest='split_catalog')
-    parser.add_option('--produce_averaged_post', action='store', type='int',    default=1,           help='Read different catalog realisations. If 0, read averaged posterior produced at the time of the analysis', dest='produce_averaged_post')
+    parser.add_option('-o','--out',              action='store', type='string', default=None,         help='Output folder',                                                                                           dest='output')
+    parser.add_option('-d',                      action='store', type='string', default=None,         help='data folder',                                                                                             dest='data')
+    parser.add_option('-m',                      action='store', type='string', default='LambdaCDM',  help='model (LambdaCDM, LambdaCDMDE, DE, CLambdaCDM)',                                                          dest='model', metavar='model')
+    parser.add_option('-c',                      action='store', type='string', default='dark_siren', help='source class (MBHB, dark_siren)',                                                                         dest='source')
+    parser.add_option('-N',                      action='store', type='int',    default=256,          help='Number of bins for the grid sampling (only used for dpgmm)',                                              dest='N')
+    parser.add_option('--dpgmm',                 action='store', type='int',    default=False,        help='DPGMM average plot',                                                                                      dest='dpgmm')
+    parser.add_option('--cat_name',              action='store', type='string', default=False,        help='Catalog name',                                                                                            dest='cat_name')
+    parser.add_option('--corner_68',             action='store', type='int',    default=False,        help='Corner plot bugged (only showing 68%CI)',                                                                 dest='corner_68')
+    parser.add_option('--corner_90',             action='store', type='int',    default=False,        help='Corner plot without bug (90%CI)',                                                                         dest='corner_90')
+    parser.add_option('--split_catalog',         action='store', type='int',    default=False,        help='Read samples from analyses where the catalog has been split',                                             dest='split_catalog')
+    parser.add_option('--produce_averaged_post', action='store', type='int',    default=1,            help='Read different catalog realisations. If 0, read averaged posterior produced at the time of the analysis', dest='produce_averaged_post')
     (options,args)=parser.parse_args()
 
     dpgmm_average         = options.dpgmm
@@ -36,7 +36,8 @@ if __name__=="__main__":
     else:
         reduced_string = ''
 
-    final_posterior_name = 'averaged_posterior_'+options.model+'_'+catalog_name+reduced_string+'.dat'
+    final_posterior_name = ('averaged_posterior_'+options.model
+                            +'_'+catalog_name+reduced_string+'.dat')
 
     os.system("mkdir -p %s"%out_folder)
 
@@ -46,23 +47,28 @@ if __name__=="__main__":
     # Average posteriors from different runs or read previously averaged posterior 
     if produce_averaged_post:
         if options.source == 'MBHB':
-            catalogs = [c for c in os.listdir(options.data) if ('cat' in c and 'averaged' not in c)]
-        elif options.source == 'EMRI':
-            catalogs = [c for c in os.listdir(options.data) if (catalog_name in c and 'averaged' not in c and 'matrix' not in c)]
+            catalogs = [c for c in os.listdir(options.data) 
+                        if ('cat' in c and 'averaged' not in c)]
+        elif options.source == 'dark_siren':
+            catalogs = [c for c in os.listdir(options.data)
+                        if (catalog_name in c and 'averaged' not in c and 'matrix' not in c)]
         print("Will read", len(catalogs), "catalogs")
 
         for i,c in enumerate(catalogs):
             print("\nprocessing", options.source, options.model, c)
             if (split_catalog):
-                posteriors = np.genfromtxt(os.path.join(options.data,c,"{}_joint/samples.dat".format(options.model)), names=True)
+                posteriors = np.genfromtxt(os.path.join(options.data,
+                                           c, "samples.dat"), names=True)
             else:
                 try:
-                    filename = os.path.join(options.data,c,'CPNest','cpnest.h5')
+                    filename = os.path.join(options.data, c, 
+                                            'CPNest', 'cpnest.h5')
                     h5_file = h5py.File(filename,'r')
                     posteriors = h5_file['combined'].get('posterior_samples')
                     print("Read .h5 file")
                 except:
-                    posteriors = np.genfromtxt(os.path.join(options.data,c+"/posterior.dat"), names=True)
+                    posteriors = np.genfromtxt(os.path.join(
+                                               options.data, c+"/posterior.dat"), names=True)
                     print("Read .dat file")
             if options.model == "LambdaCDM":
                 if i==0:
@@ -117,11 +123,11 @@ if __name__=="__main__":
 
     # Compute and save .05, .16, .5, .84, .95 quantiles.
     if options.model == "LambdaCDM":
-        p1_name, p2_name = 'h','om'
+        p1_name, p2_name = 'h', 'om'
     elif options.model == "CLambdaCDM":
-        p1_name, p2_name, p3_name = 'h','om', 'ol'
+        p1_name, p2_name, p3_name = 'h', 'om', 'ol'
     elif options.model == "DE":
-        p1_name, p2_name = 'w0','w1'
+        p1_name, p2_name = 'w0', 'w1'
 
     file_path = os.path.join(out_folder,'quantiles_{}_{}{}.txt'.format(options.model, catalog_name, reduced_string))
     print("Will save .5, .16, .50, .84, .95 quantiles in {}".format(file_path))
@@ -224,7 +230,7 @@ if __name__=="__main__":
     if dpgmm_average:
 
         COSMOLISA_PATH = os.getcwd()
-        sys.path.insert(1, os.path.join(COSMOLISA_PATH,'DPGMM'))
+        sys.path.insert(1, os.path.join(COSMOLISA_PATH, 'DPGMM'))
         from dpgmm import *
         sys.path.insert(1, COSMOLISA_PATH)
 
