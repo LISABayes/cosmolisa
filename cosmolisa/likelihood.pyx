@@ -6,7 +6,7 @@ import numpy as np
 cimport numpy as np
 cimport cython
 from libc.math cimport log, exp, sqrt, cos, fabs, sin, sinh, M_PI, \
-    erf, erfc, HUGE_VAL, log1p
+    erf, erfc, HUGE_VAL, log1p, M_SQRT1_2, M_2_SQRTPI
 from scipy.optimize import newton
 
 from cosmolisa.cosmology cimport CosmologicalParameters
@@ -16,20 +16,20 @@ from cosmolisa.galaxy cimport GalaxyDistribution
 cdef inline double log_add(double x, double y) nogil: 
     return x + log(1.0+exp(y-x)) if x >= y else y + log(1.0+exp(x-y))
 
-def loglk_dark_single_event(const double[:,::1] hosts,
+def lk_dark_single_event(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
                             CosmologicalParameters omega,
                             const double zmin,
                             const double zmax):
-    return _loglk_dark_single_event(hosts, meandl, sigmadl, omega,
+    return _lk_dark_single_event(hosts, meandl, sigmadl, omega,
                                     zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _loglk_dark_single_event(const double[:,::1] hosts,
+cdef double _lk_dark_single_event(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
                             CosmologicalParameters omega,
@@ -41,10 +41,10 @@ cdef double _loglk_dark_single_event(const double[:,::1] hosts,
     cdef double dz = (zmax-zmin)/N
     cdef double z  = zmin + dz
     cdef double I = (0.5
-        * (_loglk_dark_single_event_integrand(zmin, hosts, meandl, sigmadl, omega)
-        + _loglk_dark_single_event_integrand(zmax, hosts, meandl, sigmadl, omega)))
+        * (_lk_dark_single_event_integrand(zmin, hosts, meandl, sigmadl, omega)
+        + _lk_dark_single_event_integrand(zmax, hosts, meandl, sigmadl, omega)))
     for i in range(1, N-1):
-        I += _loglk_dark_single_event_integrand(z, hosts, meandl, sigmadl, omega)
+        I += _lk_dark_single_event_integrand(z, hosts, meandl, sigmadl, omega)
         z += dz
     return I*dz
 
@@ -52,7 +52,7 @@ cdef double _loglk_dark_single_event(const double[:,::1] hosts,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef double _loglk_dark_single_event_integrand(const double event_redshift,
+cdef double _lk_dark_single_event_integrand(const double event_redshift,
                                         const double[:,::1] hosts,
                                         const double meandl,
                                         const double sigmadl,
@@ -60,39 +60,36 @@ cdef double _loglk_dark_single_event_integrand(const double event_redshift,
 
     cdef unsigned int j
     cdef double dl
-    cdef double logL_galaxy
-    cdef double logL_detector
+    cdef double L_gal = 0.0
+    cdef double L_detector = 0.0
     cdef double sigma_z, score_z
     cdef double weak_lensing_error
     cdef unsigned int N = hosts.shape[0]
-    cdef double logTwoPiByTwo = 0.5*log(2.0*M_PI)
-    cdef double logL = -HUGE_VAL
+    cdef double OneSqrtTwoPi = M_SQRT1_2*0.5*M_2_SQRTPI
+    cdef double L_galaxy = 0.0
 
-    # Predict dL from the cosmology O and the redshift z_gw:
-    # d(O, z_GW).
     dl = omega._LuminosityDistance(event_redshift)
-    # sigma_WL and combined sigma entering the detector likelihood:
-    # p(Di | dL, z_gw, M, I).
     weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared = sigmadl**2 + weak_lensing_error**2
-    cdef double logSigmaByTwo = 0.5*log(SigmaSquared)
+    cdef double SigmaNorm = OneSqrtTwoPi * 1/sqrt(SigmaSquared)
     # 1/sqrt{2pi*SigmaSquared}*exp(-0.5*(dL-d(O, z_GW))^2/SigmaSquared)
-    logL_detector = (-0.5*(dl-meandl)*(dl-meandl)/SigmaSquared
-                     - logSigmaByTwo - logTwoPiByTwo)
+    L_detector = (SigmaNorm * exp(-0.5*(dl-meandl)*(dl-meandl)
+                  / SigmaSquared))
 
     # Sum over the observed-galaxy redshifts: p(z_GW | dL, O, M, I) =
     # sum_j^Ng (w_j/sqrt{2pi}*sig_z_j)*exp(-0.5*(z_j-z_GW)^2/sig_z_j^2)
     for j in range(N):
         # Estimate sig_z_j ~= (z_jobs-z_jcos) = (v_pec/c)*(1+z_j).
-        sigma_z = hosts[j,1] * (1+hosts[j,0])
+        sigma_z = hosts[j,1] * (1 + hosts[j,0])
         # Compute the full single-galaxy term to be summed over Ng.
         score_z = (event_redshift - hosts[j,0])/sigma_z
-        logL_galaxy = (log(hosts[j,2]) - log(sigma_z)
-                       - 0.5*score_z*score_z - logTwoPiByTwo)
-        logL = log_add(logL, logL_galaxy)
-        
+        L_gal = (OneSqrtTwoPi * (1/sigma_z) #* hosts[j,2]
+                 * exp(-0.5*score_z*score_z))
+        L_galaxy += L_gal
+    # L_galaxy /= N    
+    
     # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
-    return logL_detector + logL
+    return L_detector * L_galaxy
 
 
 def loglk_bright_single_event(const double[:,::1] hosts,
@@ -242,7 +239,7 @@ cdef double _em_selection_function(double dl) nogil:
     # """
     # cdef double logL = -HUGE_VAL
     # cdef double p_out_cat = -HUGE_VAL
-    # logL = _loglk_dark_single_event(hosts, meandl, sigmadl, omega, 
+    # logL = _lk_dark_single_event(hosts, meandl, sigmadl, omega, 
     #                                    event_redshift, zmin, zmax)
     # p_out_cat = (gal._get_non_detected_normalisation(zmin, zmax)
     #              /gal._get_normalisation(zmin, zmax))

@@ -385,16 +385,16 @@ class CosmologicalModel(cpnest.model.Model):
             # Multiply GW likelihood by 1/(Ns_tot) dR/dz.
             # Only compatible with dark sirens.
             if (self.rate == 1) or (self.gw_correction == 1):
-                logL_GW += np.sum([lk.loglk_dark_single_event(
+                logL_GW += np.sum([np.log(lk.lk_dark_single_event(
                         self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                        x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                        x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax))
                         + np.log(self.population_model.pdf(x['z%d'%e.ID])
                         / self.T) for j, e in enumerate(self.data)])
             else:
                 if (self.event_class == 'dark_siren'):
-                    logL_GW += np.sum([lk.loglk_dark_single_event(
+                    logL_GW += np.sum([np.log(lk.lk_dark_single_event(
                             self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                            zmin=e.zmin, zmax=e.zmax)
+                            zmin=e.zmin, zmax=e.zmax))
                             for j, e in enumerate(self.data)])
                 elif (self.event_class == 'MBHB'):
                     logL_GW += np.sum([lk.loglk_bright_single_event(
