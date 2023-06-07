@@ -77,7 +77,7 @@ if __name__=="__main__":
     parser=OptionParser()
     parser.add_option('-o','--outdir',     default=None,        type='string', metavar='DIR',    help='Directory for output')
     parser.add_option('-d','--data',       default=None,        type='string', metavar='data',   help='galaxy data location')
-    parser.add_option('-p','--posteriors', default=None,        type='string', metavar='DIR',    help='posterior location from cpnest')
+    parser.add_option('-p','--posteriors', default=None,        type='string', metavar='DIR',    help='posterior location from raynest')
     parser.add_option('-m','--model',      default='LAMBDACDM', type='string', metavar='model',  help='model (default: LAMBDACDM)')
     parser.add_option('-s','--source',     default=None,        type='string', metavar='source', help='source class')
     (opts,args)=parser.parse_args()
@@ -91,7 +91,7 @@ if __name__=="__main__":
     elif (opts.source == "EMRI" or opts.source == "sBH"):
         events = readdata.read_dark_siren_event(opts.source, opts.data, None, snr_threshold=100.0)
     # Read in the posterior samples
-    filename = os.path.join(opts.posteriors, 'CPNest', 'cpnest.h5')
+    filename = os.path.join(opts.posteriors, 'raynest', 'raynest.h5')
     print("\nReading {} averaged posterior stored in {}".format(opts.source, filename))
     h5_file = h5py.File(filename, 'r')
     posteriors = h5_file['combined'].get('posterior_samples')
