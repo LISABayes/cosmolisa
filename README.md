@@ -1,10 +1,10 @@
 # cosmolisa
 Source code for the inference of cosmological parameters with LISA observations
 
-Download this repository, including its submodules, with
+Download this repository, with
 
 ```
-git clone --recursive https://github.com/wdpozzo/cosmolisa.git
+git clone https://github.com/wdpozzo/cosmolisa.git
 ```
 
 ## How to install the code with Conda
@@ -15,7 +15,7 @@ Run the following lines from terminal:
 ```
 yes | conda env create -f environment.yml
 conda activate cosmolisa_env
-pip install ./corner
+pip install raynest==1.0.1
 export LAL_PREFIX=$HOME/.conda/envs/cosmolisa_env
 python setup.py install
 ```
