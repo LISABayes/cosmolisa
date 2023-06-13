@@ -38,26 +38,25 @@ cdef double _lk_dark_single_event(const double[:,::1] hosts,
                             const double zmin,
                             const double zmax):
 
-    cdef int limit = 64
-    cdef int minintervals = 32
+    cdef int limit = 100
+    cdef int minintervals = 2
     cdef double tol = 1e-5
-    cdef object Integrator = GKIntegrator(limit, minintervals, tol)
+    cdef GKIntegrator Integrator = GKIntegrator(limit, minintervals, tol)
 
     cdef double z
-    args = (hosts, meandl, sigmadl, omega)
+    cdef tuple args = (hosts, meandl, sigmadl, omega)
     cdef np.ndarray a = np.array([zmin])
     cdef np.ndarray b = np.array([zmax])
-
-    cdef double I = Integrator.integrate(_lk_dark_single_event_integrand,
+    cdef (double, double) result = Integrator.integrate(_lk_dark_single_event_integrand,
                                          args, a, b)
-    return I
+    return result[0]
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
 cdef double _lk_dark_single_event_integrand(const double event_redshift,
-                                            args): 
+                                            tuple args):
     cdef unsigned int j
     cdef double dl
     cdef double L_gal = 0.0
@@ -67,8 +66,8 @@ cdef double _lk_dark_single_event_integrand(const double event_redshift,
     cdef unsigned int N = args[0].shape[0]
     cdef double OneSqrtTwoPi = M_SQRT1_2*0.5*M_2_SQRTPI
     cdef double L_galaxy = 0.0
-
-    dl = args[3]._LuminosityDistance(event_redshift)
+    cdef CosmologicalParameters O = args[3]
+    dl = O._LuminosityDistance(event_redshift)
     weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared = args[2]**2 + weak_lensing_error**2
     cdef double SigmaNorm = OneSqrtTwoPi * 1/sqrt(SigmaSquared)
@@ -86,7 +85,6 @@ cdef double _lk_dark_single_event_integrand(const double event_redshift,
         L_gal = (OneSqrtTwoPi * (1/sigma_z) * args[0][j,2]
                  * exp(-0.5*score_z*score_z))
         L_galaxy += L_gal
-    
     # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
     return L_detector * L_galaxy
 
