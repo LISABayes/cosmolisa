@@ -64,6 +64,7 @@ class CosmologicalModel(raynest.model.Model):
         self.snr_threshold = kwargs['snr_threshold']
         self.T = kwargs['T']
         self.magnitude_threshold = kwargs['m_threshold']
+        self.trapezoid = kwargs['trapezoid']
         self.Mmin = -25.0
         self.Mmax = -15.0
         self.O = None
@@ -391,16 +392,31 @@ class CosmologicalModel(raynest.model.Model):
                         + np.log(self.population_model.pdf(x['z%d'%e.ID])
                         / self.T) for j, e in enumerate(self.data)])
             else:
-                if (self.event_class == 'dark_siren'):
-                    logL_GW += np.sum([np.log(lk.lk_dark_single_event(
-                            self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                            zmin=e.zmin, zmax=e.zmax))
-                            for j, e in enumerate(self.data)])
-                elif (self.event_class == 'MBHB'):
-                    logL_GW += np.sum([lk.loglk_bright_single_event(
-                            self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                            x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
-                            for j, e in enumerate(self.data)])
+                if (self.trapezoid == 1): 
+                    if (self.event_class == 'dark_siren'):
+                        logL_GW += np.sum([np.log(
+                                lk.lk_dark_single_event_trap(
+                                self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                                zmin=e.zmin, zmax=e.zmax))
+                                for j, e in enumerate(self.data)])
+                    elif (self.event_class == 'MBHB'):
+                        logL_GW += np.sum([lk.loglk_bright_single_event(
+                                self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                                x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                                for j, e in enumerate(self.data)])
+                else:
+                    if (self.event_class == 'dark_siren'):
+                        logL_GW += np.sum([np.log(lk.lk_dark_single_event(
+                                self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                                zmin=e.zmin, zmax=e.zmax))
+                                for j, e in enumerate(self.data)])
+                    elif (self.event_class == 'MBHB'):
+                        logL_GW += np.sum([lk.loglk_bright_single_event(
+                                self.hosts[e.ID], e.dl, e.sigmadl, self.O,
+                                x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                                for j, e in enumerate(self.data)])
+                    
+
         self.O.DestroyCosmologicalParameters()
 
         return logL_GW + logL_rate + logL_luminosity
@@ -408,7 +424,7 @@ class CosmologicalModel(raynest.model.Model):
 
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
-    IMPORTANT: This code requires the installation of the raynest branch 'massively_parallel': https://github.com/johnveitch/raynest/tree/massively_parallel
+    IMPORTANT: This code requires the installation of the 'raynest' package: https://github.com/wdpozzo/raynest
                See the instructions in cosmolisa/README.md.
     ######################################################################################################################################################
 
@@ -442,6 +458,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'reduced_catalog'      Default: 0.                                       Select randomly only a fraction of the catalog (4 yrs of observation, hardcoded).
     'm_threshold'          Default: 20.                                      Apparent magnitude threshold.
     'em_selection'         Default: 0.                                       Use an EM selection function in dark_siren plots.
+    'trapezoid'            Default: 1.                                       Integrate in redshift using the trapezoidal rule or the Gauss-Kronrod method (slower).
     'postprocess'          Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
     'screen_output'        Default: 0.                                       Print the output on screen or save it into a file.
 
@@ -504,6 +521,7 @@ def main():
         'reduced_catalog': 0,
         'm_threshold': 20,
         'em_selection': 0,
+        'trapezoid': 1,
         'postprocess': 0,
         'screen_output': 0,    
         'verbose': 2,
@@ -526,7 +544,8 @@ def main():
                 config_par[key] = json.loads(
                     Config.get('input parameters', '{}'.format(key)))
             else:
-                config_par[key] = keytype(Config.get('input parameters', key))
+                config_par[key] = keytype(Config.get('input parameters',
+                                                     key))
         except (KeyError, configparser.NoOptionError, TypeError):
             pass
 
@@ -769,6 +788,7 @@ def main():
         event_class=config_par['event_class'],
         T=config_par['T'],
         m_threshold=config_par['m_threshold'],
+        trapezoid=config_par['trapezoid'],
         SFRD=config_par['SFRD'],
         corr_const=corr_const)
 
@@ -858,7 +878,7 @@ def main():
     
     if ('Rate' in C.model):
         if (C.SFRD == 'powerlaw'):
-            plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths, 
+            plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths,
                             outdir=outdir)
         else:
             plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
@@ -867,8 +887,10 @@ def main():
                          omega_true=omega_true, outdir=outdir)
 
     if ('Luminosity' in C.model):
-        plots.corner_plot(x, model='Luminosity', truths=truths, outdir=outdir)
-        plots.luminosity_plots(x, cosmo_model=C, truths=truths, outdir=outdir)
+        plots.corner_plot(x, model='Luminosity', 
+                          truths=truths, outdir=outdir)
+        plots.luminosity_plots(x, cosmo_model=C, 
+                               truths=truths, outdir=outdir)
 
     # Compute the run-time.
     if (config_par['postprocess'] == 0):
