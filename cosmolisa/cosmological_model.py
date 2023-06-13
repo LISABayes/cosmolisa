@@ -17,7 +17,7 @@ from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
 from cosmolisa import astrophysics as astro
-import cpnest.model
+import raynest.model
 
 # Parameters used to compute GW corrections.
 # From log-linear regressions on the full catalogs.
@@ -42,12 +42,12 @@ correction_constants = {
         },
     }
 
-class CosmologicalModel(cpnest.model.Model):
+class CosmologicalModel(raynest.model.Model):
     """CosmologicalModel class:
     Data, likelihood, prior, and settings of the analysis
     are specified here. The abstract modules 'log_prior' and
     'log_likelihood', as well as the attributes 'names' and
-    'bounds', are inherited from cpnest.cpnest.Model and
+    'bounds', are inherited from raynest.raynest.Model and
     have to be explicitly defined inside this class.
     """
 
@@ -408,7 +408,7 @@ class CosmologicalModel(cpnest.model.Model):
 
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
-    IMPORTANT: This code requires the installation of the CPNest branch 'massively_parallel': https://github.com/johnveitch/cpnest/tree/massively_parallel
+    IMPORTANT: This code requires the installation of the raynest branch 'massively_parallel': https://github.com/johnveitch/raynest/tree/massively_parallel
                See the instructions in cosmolisa/README.md.
     ######################################################################################################################################################
 
@@ -536,12 +536,12 @@ def main():
         outdir = "default_dir"
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    os.system("mkdir -p {}/CPNest".format(outdir))
+    os.system("mkdir -p {}/raynest".format(outdir))
     os.system("mkdir -p {}/Plots".format(outdir))
     #FIXME: avoid cp command when reading the config file from the 
     # outdir directory to avoid the 'same file' cp error
     os.system("cp {} {}/.".format(opts.config_file, outdir))
-    output_sampler = os.path.join(outdir, "CPNest")
+    output_sampler = os.path.join(outdir, "raynest")
 
     if not(config_par['screen_output']):
         if not(config_par['postprocess']):
@@ -553,7 +553,7 @@ def main():
 
     print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
-    print(f"cpnest installation version: {cpnest.__version__}")
+    print(f"raynest installation version: {raynest.__version__}")
     print(f"cosmolisa likelihood version: {lk.__file__}")
     print("\n"+formatting_string)
 
@@ -747,7 +747,7 @@ def main():
                                          .ljust(4)))
 
     print(formatting_string+"\n")
-    print("CPNest will be initialised with:")
+    print("raynest will be initialised with:")
     print(f"verbose:                 {config_par['verbose']}")
     print(f"nensemble:               {config_par['nensemble']}")
     print(f"nslice:                  {config_par['nslice']}")
@@ -778,7 +778,7 @@ def main():
     if (config_par['postprocess'] == 0):
         # Each NS can be located in different processors, but all 
         # the subprocesses of each NS live on the same processor.
-        work = cpnest.CPNest(
+        work = raynest.raynest(
             C,
             verbose=config_par['verbose'],
             maxmcmc=config_par['maxmcmc'],
@@ -819,7 +819,7 @@ def main():
     else:
         print(f"Reading the .h5 file... from {outdir}")
         import h5py
-        filename = os.path.join(outdir,"CPNest","cpnest.h5")
+        filename = os.path.join(outdir,"raynest","raynest.h5")
         h5_file = h5py.File(filename,'r')
         x = h5_file['combined'].get('posterior_samples')
 
