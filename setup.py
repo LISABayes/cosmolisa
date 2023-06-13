@@ -48,7 +48,13 @@ ext_modules=[
               libraries=['m', "lal"],  # Unix-like specific
               library_dirs=[lal_libs],
               extra_compile_args=['-O3', '-ffast-math'],
-              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"])
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"]),
+    Extension("cosmolisa.GK_adaptive",
+              sources=["cosmolisa/GK_adaptive.pyx"],
+              libraries=['m', "lal"],  # Unix-like specific
+              library_dirs=[lal_libs],
+              extra_compile_args=['-O3', '-ffast-math'],
+              include_dirs=[numpy.get_include(), lal_includes, "cosmolisa"])              
     ]
 
 setup(name="cosmolisa",
