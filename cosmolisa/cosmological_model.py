@@ -225,33 +225,24 @@ class CosmologicalModel(raynest.model.Model):
         if np.isfinite(logP):    
             # Check for the cosmological model and
             # define the CosmologicalParameter object.
+            cosmo_par = [self.truths['h'], self.truths['om'],
+                         self.truths['ol'], self.truths['w0'],
+                         self.truths['w1']]
             if ('LambdaCDM_h' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    x['h'], self.truths['om'], self.truths['ol'],
-                    self.truths['w0'], self.truths['w1'])
+                cosmo_par[0] = x['h']
             elif ('LambdaCDM_om' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    self.truths['h'], x['om'], 1.0-x['om'],
-                    self.truths['w0'], self.truths['w1'])
+                cosmo_par[1:3] = x['om'], 1.0 - x['om']
             elif ('LambdaCDM' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    x['h'], x['om'], 1.0-x['om'], self.truths['w0'],
-                    self.truths['w1'])
+                cosmo_par[:3] = x['h'], x['om'], 1.0-x['om'] 
             elif ('CLambdaCDM' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    x['h'], x['om'], x['ol'], self.truths['w0'],
-                    self.truths['w1'])
+                cosmo_par[:3] = x['h'], x['om'], x['ol']
             elif ('LambdaCDMDE' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    x['h'], x['om'], x['ol'], x['w0'], x['w1'])
+                cosmo_par[:5] = x['h'], x['om'], x['ol'], x['w0'], x['w1']
             elif ('DE' in self.model):
-                self.O = cs.CosmologicalParameters(
-                    self.truths['h'], self.truths['om'], self.truths['ol'],
-                    x['w0'], x['w1'])
+                cosmo_par[-2:] = x['w0'], x['w1'] 
             else:
-                self.O = cs.CosmologicalParameters(
-                    self.truths['h'], self.truths['om'], self.truths['ol'],
-                    self.truths['w0'],self.truths['w1'])
+                pass                
+            self.O = cs.CosmologicalParameters(*cosmo_par)
 
             # Check for the rate model or GW corrections.
             if ('Rate' in self.model):
@@ -881,16 +872,6 @@ def main():
     elif ('DE' in C.model):
         plots.corner_plot(x, model='DE', 
                             truths=truths, outdir=outdir)
-
-    # if ((config_par['event_class'] == "dark_siren") and (C.gw == 1)):
-    #     for e in C.data:
-    #         plots.redshift_ev_plot(x, model=C.model, event=e, 
-    #                                em_sel=config_par['em_selection'],
-    #                                truths=truths, omega_true=omega_true,
-    #                                outdir=outdir)    
-    # elif (config_par['event_class'] == "MBHB"):
-    #     plots.MBHB_regression(x, model=C.model, data=C.data, truths=truths,
-    #                           omega_true=omega_true, outdir=outdir)
     
     if ('Rate' in C.model):
         if (C.SFRD == 'powerlaw'):
