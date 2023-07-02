@@ -77,28 +77,41 @@ class CosmologicalModel(raynest.model.Model):
 
         if ('LambdaCDM_h' in self.model):
             self.names = ['h']
-            self.bounds = [[0.6, 0.86]]
+            self.bounds = [kwargs['prior_bounds']['h']]
 
         if ('LambdaCDM_om' in self.model):
             self.names = ['om']
-            self.bounds = [[0.04, 0.5]]
+            self.bounds = [kwargs['prior_bounds']['om']]
 
         if ('LambdaCDM' in self.model):
             self.names = ['h', 'om']
-            self.bounds = [[0.6, 0.86], [0.04, 0.5]]
+            self.bounds = [kwargs['prior_bounds']['h'], 
+                           kwargs['prior_bounds']['om']]
 
         if ('CLambdaCDM' in self.model):
             self.names = ['h', 'om', 'ol']
-            self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0]]
+            self.bounds = [kwargs['prior_bounds']['h'], 
+                           kwargs['prior_bounds']['om'], 
+                           kwargs['prior_bounds']['ol']]
 
         if ('LambdaCDMDE' in self.model):
             self.names = ['h', 'om', 'ol', 'w0', 'w1']
-            self.bounds = [[0.6, 0.86], [0.04, 0.5], [0.0, 1.0],
-                [-3.0, -0.3], [-1.0, 1.0]]
+            self.bounds = [kwargs['prior_bounds']['h'],
+                           kwargs['prior_bounds']['om'],
+                           kwargs['prior_bounds']['ol'],
+                           kwargs['prior_bounds']['w0'],
+                           kwargs['prior_bounds']['wa']]
 
         if ('DE' in self.model):
             self.names = ['w0', 'w1']
-            self.bounds = [[-3.0, -0.3], [-1.0, 1.0]]
+            self.bounds = [kwargs['prior_bounds']['w0'],
+                           kwargs['prior_bounds']['h']]
+
+        for par in self.names:
+            assert kwargs['prior_bounds'][par][0] <= self.truths[par], (
+             f"{par}: your lower prior bound excludes the true value!")
+            assert kwargs['prior_bounds'][par][1] >= self.truths[par], (
+             f"{par}: your upper prior bound excludes the true value!")
 
         if ('GW' in self.model):
             self.gw = 1
@@ -437,6 +450,7 @@ usage="""\n\n %prog --config-file config.ini\n
     'event_class'          Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
     'model'                Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW', 'Rate', 'Luminosity'] separated by a '+'.
     'truths'               Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
+    'prior_bounds'         Default: {"h": [0.6, 0.86], "om": [0.04, 0.5]}.   Prior bounds specified by the user.
     'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
     'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
     'zhorizon'             Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
@@ -500,6 +514,7 @@ def main():
         'event_class': '',
         'model': '',
         'truth_par': {"h": 0.673, "om": 0.315, "ol": 0.685},
+        'prior_bounds': {"h": [0.6, 0.86], "om": [0.04, 0.5]},
         'corrections': '',
         'random': 0,
         'zhorizon': "1000.0",
@@ -540,7 +555,7 @@ def main():
     for key in config_par:
         keytype = type(config_par[key])
         try: 
-            if ('truth_par' in key):
+            if ('truth_par' in key) or ('prior_bounds' in key):
                 config_par[key] = json.loads(
                     Config.get('input parameters', '{}'.format(key)))
             else:
@@ -783,6 +798,7 @@ def main():
         data=events,
         corrections=config_par['corrections'],
         truths=truths,
+        prior_bounds=config_par['prior_bounds'],
         snr_threshold=config_par['snr_threshold'],
         z_threshold=float(config_par['zhorizon']),
         event_class=config_par['event_class'],
