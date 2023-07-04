@@ -2,12 +2,17 @@ cimport cython
 
 cdef class CosmologicalParameters:
 
-    def __cinit__(self, double h, double om, double ol, double w0, double w1):
+    def __cinit__(self, double h, double om, double ol, double w0, double w1,
+                  double Xi0, double n1, double b, double n2):
         self.h = h
         self.om = om
         self.ol = ol
         self.w0 = w0
         self.w1 = w1
+        self.Xi0 = Xi0
+        self.n1 = n1
+        self.b = b
+        self.n2 = n2
         self._LALCosmologicalParameters = XLALCreateCosmologicalParameters(
                 self.h, self.om, self.ol, self.w0, self.w1, 0.0)
 
@@ -16,6 +21,14 @@ cdef class CosmologicalParameters:
 
     cdef double _LuminosityDistance(self, double z) nogil:
         return XLALLuminosityDistance(self._LALCosmologicalParameters, z)
+
+    cdef double _LuminosityDistance_Xi0_n1(self, double z) nogil:
+        return ((self.Xi0 + (1.-self.Xi0)/(1.+z)**self.n1) *
+                XLALLuminosityDistance(self._LALCosmologicalParameters, z))
+
+    cdef double _LuminosityDistance_b_n2(self, double z) nogil:
+        return ((1. + self.b*(z/(1.+z))**self.n2) *
+                XLALLuminosityDistance(self._LALCosmologicalParameters, z))
 
     cdef double _HubbleDistance(self) nogil:
         return XLALHubbleDistance(self._LALCosmologicalParameters)
@@ -60,6 +73,12 @@ cdef class CosmologicalParameters:
 
     def LuminosityDistance(self, double z):
         return self._LuminosityDistance(z)
+
+    def LuminosityDistance_Xi0_n1(self, double z):
+        return self._LuminosityDistance_Xi0_n(z)
+
+    def LuminosityDistance_b_n2(self, double z):
+        return self._LuminosityDistance_b_m(z)
 
     def HubbleDistance(self):
         return self._HubbleDistance()

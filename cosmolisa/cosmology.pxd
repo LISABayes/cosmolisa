@@ -8,6 +8,10 @@ cdef extern from "lal/LALCosmologyCalculator.h" nogil:
         double w0;
         double w1;
         double w2;
+        double Xi0;
+        double n1;
+        double b;
+        double n2;
 
     cdef double XLALLuminosityDistance(
             LALCosmologicalParameters *omega,
@@ -77,8 +81,14 @@ cdef class CosmologicalParameters:
     cdef public double ol
     cdef public double w0
     cdef public double w1
+    cdef public double Xi0
+    cdef public double n1
+    cdef public double b
+    cdef public double n2
     cdef public double _HubbleParameter(self,double z) nogil
     cdef public double _LuminosityDistance(self, double z) nogil
+    cdef public double _LuminosityDistance_Xi0_n1(self, double z) nogil
+    cdef public double _LuminosityDistance_b_n2(self, double z) nogil
     cdef public double _ComovingDistance(self, double z) nogil
     cdef public double _ComovingTransverseDistance(self, double z) nogil
     cdef public double _HubbleDistance(self) nogil

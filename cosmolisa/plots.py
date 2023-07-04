@@ -15,13 +15,15 @@ truth_color = "#4682b4"
 
 # Mathematical labels used by the different models.
 labels_plot = {
-    'LambdaCDM_h': ['h'],
-    'LambdaCDM_om': ['\Omega_m'],
-    'LambdaCDM': [r'$h$', r'$\Omega_m$'],
-    'CLambdaCDM': [r'$h$', r'$\Omega_m$', r'$\Omega_\Lambda$'],
-    'LambdaCDMDE': [r'$h$', r'$\Omega_m$', r'$\Omega_\Lambda$', 
-                    r'$w_0$', r'$w_a$'],
-    'DE': [r'$w_0$', r'$w_a$'],
+    'h': r'$h$',
+    'om': r'$\Omega_m$',
+    'ol': r'$\Omega_\Lambda$',
+    'w0': r'$w_0$',
+    'wa': r'$w_a$',
+    'Xi0': r'$\Xi_0$',
+    'n1': r'$n1$',
+    'b': r'$b$',
+    'n2': r'$n2$',
     'RatePW': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$p_1$'],
     'Rate': [r'$h$', r'$\Omega_m$', r'$\log_{10} r_0$', r'$\log_{10} p_1$',
              r'$p_2$', r'$p_3$'],
@@ -30,7 +32,7 @@ labels_plot = {
     }
 
 
-def par_hist(model, samples, outdir, name, bins=20, truths=None):
+def hist_settings(par, samples, outdir, name, bins=20, truths=None):
     """Histogram for single-parameter inference."""
     fmt = "{{0:{0}}}".format('.3f').format
     fig = plt.figure()
@@ -44,33 +46,24 @@ def par_hist(model, samples, outdir, name, bins=20, truths=None):
     med, low, up = (quantiles[1], quantiles[0]-quantiles[1], 
                     quantiles[2]-quantiles[1])
     plt.title(r"${par} = {{{med}}}_{{{low}}}^{{+{up}}}$".format(
-        par=labels_plot[model][0], med=fmt(med),
+        par=labels_plot[par].strip('r$$'), med=fmt(med),
         low=fmt(low), up=fmt(up)), size=16)
-    plt.xlabel(r'${}$'.format(labels_plot[model][0]), fontsize=16)
+    plt.xlabel(labels_plot[par], fontsize=16)
     fig.savefig(os.path.join(outdir,'Plots', name+'.pdf'),
         bbox_inches='tight')
     fig.savefig(os.path.join(outdir,'Plots', name+'.png'),
         bbox_inches='tight')
 
-
 def histogram(x, **kwargs):
-    """Function to call par_hist with the appropriate model."""
-    if (kwargs['model'] == 'LambdaCDM_h'):
-        par_hist(model=kwargs['model'],
-                 samples=x['h'],
-                 truths=kwargs['truths']['h'],
-                 outdir=kwargs['outdir'],
-                 name="histogram_h_90CI")
-
-    elif (kwargs['model'] == 'LambdaCDM_om'):
-        par_hist(model=kwargs['model'],
-                 samples=x['om'],
-                 truths=kwargs['truths']['om'],
-                 outdir=kwargs['outdir'],
-                 name="histogram_om_90CI")
+    """Function to call hist_settings with the appropriate model."""
+    hist_settings(par=kwargs['par'],
+                  samples=x[kwargs['par']],
+                  truths=kwargs['truths'][kwargs['par']],
+                  outdir=kwargs['outdir'],
+                  name=f"histogram_{kwargs['par']}_90CI")
 
 
-def corner_config(model, samps_tuple, quantiles_plot, 
+def corner_config(labels, samps_tuple, quantiles_plot, 
                   outdir, name, truths=None, **kwargs):
     """Instructions used to make corner plots.
     'title_quantiles' is not specified, hence plotted quantiles
@@ -79,7 +72,7 @@ def corner_config(model, samps_tuple, quantiles_plot,
     """
     samps = np.column_stack(samps_tuple)
     fig = corner.corner(samps,
-                        labels=labels_plot[model],
+                        labels=labels,
                         quantiles=quantiles_plot,
                         show_titles=True, 
                         title_fmt='.3f',
@@ -92,203 +85,50 @@ def corner_config(model, samps_tuple, quantiles_plot,
     fig.savefig(os.path.join(outdir,"Plots", name+".png"),
                 bbox_inches='tight')
 
-
 def corner_plot(x, **kwargs):
-    """Function to call corner_config according to different models."""
-    print("Making corner plot...")
-    if (kwargs['model'] == 'LambdaCDM'):
-        corner_config(model=kwargs['model'],
-                      samps_tuple=(x['h'], x['om']),
-                      quantiles_plot=[0.16, 0.5, 0.84],
-                      truths=[kwargs['truths']['h'], kwargs['truths']['om']],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_68CI")
-        corner_config(model=kwargs['model'],
-                      samps_tuple=(x['h'] ,x['om']),
-                      quantiles_plot=[0.05, 0.5, 0.95],
-                      truths=[kwargs['truths']['h'], kwargs['truths']['om']],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_90CI")
+    """Function to call corner_config."""
+    print("Making corner plots...")
+    samps_tuple = tuple([x[p] for p in kwargs['pars']])
+    truths = [kwargs['truths'][p] for p in kwargs['pars']]
+    labels = [labels_plot[p] for p in kwargs['pars']]
+    corner_config(labels,
+                  samps_tuple=samps_tuple,
+                  quantiles_plot=[0.16, 0.5, 0.84],
+                  truths=truths,
+                  outdir=kwargs['outdir'],
+                  name="corner_plot_68CI")
+    corner_config(labels,
+                  samps_tuple=samps_tuple,
+                  quantiles_plot=[0.05, 0.5, 0.95],
+                  truths=truths,
+                  outdir=kwargs['outdir'],
+                  name="corner_plot_90CI")
 
-    elif (kwargs['model'] == 'CLambdaCDM'):
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'], x['ol']),
-                      quantiles_plot=[0.05, 0.5, 0.95],
-                      truths=[kwargs['truths']['h'], kwargs['truths']['om'],
-                              kwargs['truths']['ol']],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_90CI")
+    # if (kwargs['model'] == 'RatePW'):
+    #     corner_config(model=kwargs['model'], 
+    #                   samps_tuple=(x['h'], x['om'],
+    #                                x['log10r0'], x['p1']),
+    #                   quantiles_plot=[0.05, 0.5, 0.95],
+    #                   SFRD='powerlaw',
+    #                   outdir=kwargs['outdir'],
+    #                   name="corner_plot_rate_90CI")
+    # elif (kwargs['model'] == 'Rate'):
+    #     corner_config(model=kwargs['model'], 
+    #                   samps_tuple=(x['h'], x['om'], x['log10r0'],
+    #                                x['log10p1'], x['p2'], x['p3']),
+    #                   quantiles_plot=[0.05, 0.5, 0.95],
+    #                   outdir=kwargs['outdir'],
+    #                   name="corner_plot_rate_90CI")
 
-    elif (kwargs['model'] == 'LambdaCDMDE'):    
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'], x['ol'], x['w0'],
-                                   x['w1']),
-                      quantiles_plot=[0.05, 0.5, 0.95], 
-                      truths=[kwargs['truths']['h'], kwargs['truths']['om'],
-                              kwargs['truths']['ol'], kwargs['truths']['w0'],
-                              kwargs['truths']['w1']],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_90CI")
+    # elif (kwargs['model'] == 'Luminosity'):
+    #     corner_config(model=kwargs['model'], 
+    #                   samps_tuple=(x['phistar0'], x['phistar_exponent'],
+    #                                x['Mstar0'], x['Mstar_exponent'],
+    #                                x['alpha0'], x['alpha_exponent']),
+    #                   quantiles_plot=[0.05, 0.5, 0.95], 
+    #                   outdir=kwargs['outdir'],
+    #                   name="corner_plot_luminosity_90CI")         
 
-    elif (kwargs['model'] == 'DE'):
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['w0'],x['w1']),
-                      quantiles_plot=[0.05, 0.5, 0.95], 
-                      truths=[kwargs['truths']['w0'],
-                              kwargs['truths']['w1']],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_90CI")
-
-    elif (kwargs['model'] == 'RatePW'):
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'],
-                                   x['log10r0'], x['p1']),
-                      quantiles_plot=[0.05, 0.5, 0.95],
-                      SFRD='powerlaw',
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_rate_90CI")
-    elif (kwargs['model'] == 'Rate'):
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['h'], x['om'], x['log10r0'],
-                                   x['log10p1'], x['p2'], x['p3']),
-                      quantiles_plot=[0.05, 0.5, 0.95],
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_rate_90CI")
-
-    elif (kwargs['model'] == 'Luminosity'):
-        corner_config(model=kwargs['model'], 
-                      samps_tuple=(x['phistar0'], x['phistar_exponent'],
-                                   x['Mstar0'], x['Mstar_exponent'],
-                                   x['alpha0'], x['alpha_exponent']),
-                      quantiles_plot=[0.05, 0.5, 0.95], 
-                      outdir=kwargs['outdir'],
-                      name="corner_plot_luminosity_90CI")         
-
-
-# def redshift_ev_plot(x, **kwargs):
-#     """Plot single-event redshift posterior and 
-#     single-event likelihood."""
-#     fig = plt.figure()
-#     ax  = fig.add_subplot(111)
-#     z   = np.linspace(kwargs['event'].zmin, kwargs['event'].zmax, 100)
-
-#     #FIXME: Fix positions of colorbar and axes.
-#     if (kwargs['em_sel']):
-#         ax3 = ax.twinx()
-        
-#         if ("DE" in kwargs['model']):
-#             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['w0']),
-#                                                         vmax=np.max(x['w0']))
-#         else:
-#             normalisation = matplotlib.colors.Normalize(vmin=np.min(x['h']),
-#                                                         vmax=np.max(x['h']))
-#         # Choose a colormap.
-#         c_m = matplotlib.cm.cool
-#         # Create a ScalarMappable and initialize a data structure.
-#         s_m = matplotlib.cm.ScalarMappable(cmap=c_m, norm=normalisation)
-#         s_m.set_array([])
-#         for i in range(x.shape[0])[::10]:
-#             if ('LambdaCDM_h' in kwargs['model']):
-#                 O = cs.CosmologicalParameters(
-#                     x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'],
-#                     kwargs['truths']['w0'], kwargs['truths']['w1'])
-#             elif ('LambdaCDM_om' in kwargs['model']):
-#                 O = cs.CosmologicalParameters(
-#                     kwargs['truths']['h'], x['om'][i], kwargs['truths']['ol'],
-#                     kwargs['truths']['w0'], kwargs['truths']['w1'])
-#             elif ('LambdaCDM' in kwargs['model']): 
-#                 O = cs.CosmologicalParameters(
-#                     x['h'][i], x['om'][i], 1.0-x['om'][i],
-#                     kwargs['truths']['w0'], kwargs['truths']['w1'])
-#             elif ('CLambdaCDM' in kwargs['model']):
-#                 O = cs.CosmologicalParameters(
-#                     x['h'][i], x['om'][i], x['ol'][i],
-#                     kwargs['truths']['w0'], kwargs['truths']['w1'])
-#             elif ('LambdaCDMDE' in kwargs['model']):
-#                 O = cs.CosmologicalParameters(
-#                     x['h'][i], x['om'][i], x['ol'][i],
-#                     x['w0'][i], x['w1'][i])
-#             elif ('DE' in kwargs['model']):
-#                 O = cs.CosmologicalParameters(
-#                     kwargs['truths']['h'], kwargs['truths']['om'],
-#                     kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
-#             distances = np.array([O.LuminosityDistance(zi) for zi in z])
-
-#             if ('DE' in kwargs['model']):
-#                 ax3.plot(z, [lk.em_selection_function(d) for d in distances],
-#                          lw=0.15, color=s_m.to_rgba(x['w0'][i]), alpha=0.5)
-#             else:
-#                 ax3.plot(z, [lk.em_selection_function(d) for d in distances],
-#                          lw=0.15, color=s_m.to_rgba(x['h'][i]), alpha=0.5)
-#             O.DestroyCosmologicalParameters()
-#         CB = plt.colorbar(s_m, orientation='vertical', pad=0.15)
-#         if ("DE" in kwargs['model']): CB.set_label("w_0")
-#         else: CB.set_label("h")
-#         ax3.set_ylim(0.0, 1.0)
-#         ax3.set_ylabel("selection function")
-
-#     # Plot the likelihood.
-#     distance_likelihood = []
-#     print("Making redshift plot of event", kwargs['event'].ID)
-#     for i in range(x.shape[0])[::10]:
-#         if ('LambdaCDM_h' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 x['h'][i], kwargs['truths']['om'], kwargs['truths']['ol'],
-#                 kwargs['truths']['w0'], kwargs['truths']['w1'])
-#         elif ('LambdaCDM_om' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 kwargs['truths']['h'], x['om'][i], kwargs['truths']['ol'],
-#                 kwargs['truths']['w0'], kwargs['truths']['w1'])
-#         elif ('LambdaCDM' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 x['h'][i], x['om'][i], 1.0-x['om'][i],
-#                 kwargs['truths']['w0'], kwargs['truths']['w1'])
-#         elif ('CLambdaCDM' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 x['h'][i], x['om'][i], x['ol'][i],
-#                 kwargs['truths']['w0'], kwargs['truths']['w1'])
-#         elif ('LambdaCDMDE' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 x['h'][i], x['om'][i], x['ol'][i], x['w0'][i], x['w1'][i])
-#         elif ('DE' in kwargs['model']):
-#             O = cs.CosmologicalParameters(
-#                 kwargs['truths']['h'], kwargs['truths']['om'], 
-#                 kwargs['truths']['ol'], x['w0'][i], x['w1'][i])
-#         # distance_likelihood.append(np.array([lk.logLikelihood_single_event(
-#         #    C.hosts[kwargs['event'].ID], kwargs['event'].dl, 
-#         #    kwargs['event'].sigmadl, O, zi) for zi in z]))
-#         distance_likelihood.append(
-#             np.array([-0.5*((O.LuminosityDistance(zi) - kwargs['event'].dl)
-#             / kwargs['event'].sigmadl)**2 for zi in z]))
-#         O.DestroyCosmologicalParameters()
-#     distance_likelihood = np.exp(np.array(distance_likelihood))
-#     l, m, h = np.percentile(distance_likelihood,[5, 50, 95], axis=0)
-
-#     ax2 = ax.twinx()
-#     ax2.plot(z, m, linestyle='dashed', color='k', lw=0.75)
-#     ax2.fill_between(z, l, h,facecolor='magenta', alpha=0.5)
-#     ax2.plot(z, np.exp(np.array([-0.5*(
-#         (kwargs['omega_true'].LuminosityDistance(zi)-kwargs['event'].dl)
-#         /kwargs['event'].sigmadl)**2 for zi in z])),
-#         linestyle = 'dashed', color='gold', lw=1.5)
-#     ax.axvline(lk.find_redshift(kwargs['omega_true'], kwargs['event'].dl),
-#         linestyle='dotted', lw=0.8, color='red')
-#     ax.axvline(kwargs['event'].z_true, linestyle='dotted', lw=0.8, color='k')
-#     ax.hist(x['z%d'%kwargs['event'].ID],
-#         bins=z, density=True, alpha=0.5, facecolor='green')
-#     ax.hist(x['z%d'%kwargs['event'].ID],
-#         bins=z, density=True, alpha=0.5, histtype='step', edgecolor='k')
-
-#     for g in kwargs['event'].potential_galaxy_hosts:
-#         zg = np.linspace(g.redshift - 5*g.dredshift, 
-#             g.redshift+5*g.dredshift, 100)
-#         pg = norm.pdf(zg, g.redshift, g.dredshift*(1+g.redshift)) * g.weight
-#         ax.plot(zg, pg, lw=0.5, color='k')
-#     ax.set_xlabel('$z_{%d}$'%kwargs['event'].ID, fontsize=16)
-#     ax.set_ylabel('probability density', fontsize=16)
-#     plt.savefig(os.path.join(kwargs['outdir'], "Plots",
-#         "redshift_{}".format(kwargs['event'].ID)+".png"), bbox_inches='tight')
-#     plt.close()
 
 
 # def MBHB_regression(x, **kwargs):

@@ -57,6 +57,7 @@ class CosmologicalModel(raynest.model.Model):
         self.data = data
         self.N = len(self.data)
         self.event_class = kwargs['event_class']
+        self.model_str = model
         self.model = model.split("+")
         self.corrections = corrections.split("+")
         self.truths = kwargs['truths']
@@ -75,43 +76,56 @@ class CosmologicalModel(raynest.model.Model):
         self.SFRD = None
         self.corr_const = kwargs['corr_const']
 
-        if ('LambdaCDM_h' in self.model):
-            self.names = ['h']
-            self.bounds = [kwargs['prior_bounds']['h']]
+        self.names = []
+        self.bounds = []
 
-        if ('LambdaCDM_om' in self.model):
-            self.names = ['om']
-            self.bounds = [kwargs['prior_bounds']['om']]
+        if ('h' in self.model):
+            self.names.append('h')
+            self.bounds.append(kwargs['prior_bounds']['h'])
 
-        if ('LambdaCDM' in self.model):
-            self.names = ['h', 'om']
-            self.bounds = [kwargs['prior_bounds']['h'], 
-                           kwargs['prior_bounds']['om']]
+        if ('om' in self.model):
+            self.names.append('om')
+            self.bounds.append(kwargs['prior_bounds']['om'])
 
-        if ('CLambdaCDM' in self.model):
-            self.names = ['h', 'om', 'ol']
-            self.bounds = [kwargs['prior_bounds']['h'], 
-                           kwargs['prior_bounds']['om'], 
-                           kwargs['prior_bounds']['ol']]
+        if ('ol' in self.model):
+            self.names.append('ol')
+            self.bounds.append(kwargs['prior_bounds']['ol'])
 
-        if ('LambdaCDMDE' in self.model):
-            self.names = ['h', 'om', 'ol', 'w0', 'w1']
-            self.bounds = [kwargs['prior_bounds']['h'],
-                           kwargs['prior_bounds']['om'],
-                           kwargs['prior_bounds']['ol'],
-                           kwargs['prior_bounds']['w0'],
-                           kwargs['prior_bounds']['wa']]
+        if ('w0' in self.model):
+            self.names.append('w0')
+            self.bounds.append(kwargs['prior_bounds']['w0'])
 
-        if ('DE' in self.model):
-            self.names = ['w0', 'w1']
-            self.bounds = [kwargs['prior_bounds']['w0'],
-                           kwargs['prior_bounds']['h']]
+        if ('w1' in self.model):
+            self.names.append('w1')
+            self.bounds.append(kwargs['prior_bounds']['w1'])
 
+        if ('Xi0' in self.model):
+            self.names.append('Xi0')
+            self.bounds.append(kwargs['prior_bounds']['Xi0'])
+
+        if ('n1' in self.model):
+            self.names.append('n1')
+            self.bounds.append(kwargs['prior_bounds']['n1'])
+
+        if ('b' in self.model):
+            self.names.append('b')
+            self.bounds.append(kwargs['prior_bounds']['b'])
+
+        if ('n2' in self.model):
+            self.names.append('n2')
+            self.bounds.append(kwargs['prior_bounds']['n2'])
+
+        # Some consistency checks.
         for par in self.names:
             assert kwargs['prior_bounds'][par][0] <= self.truths[par], (
              f"{par}: your lower prior bound excludes the true value!")
             assert kwargs['prior_bounds'][par][1] >= self.truths[par], (
              f"{par}: your upper prior bound excludes the true value!")
+        if 'Xi0' in self.names or 'n1' in self.names:
+            if 'b' in self.names or 'n2' in self.names:
+                print("The chosen beyondGR parameters are not consistent. "
+                      "Exiting.")
+                exit() 
 
         if ('GW' in self.model):
             self.gw = 1
@@ -162,6 +176,9 @@ class CosmologicalModel(raynest.model.Model):
             self.bounds.append([-2.0, -1.0])
             self.names.append('alpha_exponent')
             self.bounds.append([-0.1, 0.1])
+
+        assert len(self.names) != 0, ("Undefined parameter space!"
+        "Please check that the model exists.")
 
         # If we are using GWs, add the relevant redshift parameters.
         if (self.gw == 1):
@@ -227,19 +244,29 @@ class CosmologicalModel(raynest.model.Model):
             # define the CosmologicalParameter object.
             cosmo_par = [self.truths['h'], self.truths['om'],
                          self.truths['ol'], self.truths['w0'],
-                         self.truths['w1']]
-            if ('LambdaCDM_h' in self.model):
+                         self.truths['w1'], self.truths['Xi0'],
+                         self.truths['n1'], self.truths['b'],
+                         self.truths['n2']]
+            if ('h' in self.model):
                 cosmo_par[0] = x['h']
-            elif ('LambdaCDM_om' in self.model):
+            # TODO: check that sampling only om or
+            # om + the constraints 1-om is the same thing 
+            if ('om' in self.model):
                 cosmo_par[1:3] = x['om'], 1.0 - x['om']
-            elif ('LambdaCDM' in self.model):
-                cosmo_par[:3] = x['h'], x['om'], 1.0-x['om'] 
-            elif ('CLambdaCDM' in self.model):
-                cosmo_par[:3] = x['h'], x['om'], x['ol']
-            elif ('LambdaCDMDE' in self.model):
-                cosmo_par[:5] = x['h'], x['om'], x['ol'], x['w0'], x['w1']
-            elif ('DE' in self.model):
-                cosmo_par[-2:] = x['w0'], x['w1'] 
+            if ('ol' in self.model):
+                cosmo_par[2] = x['ol']
+            if ('w0' in self.model):
+                cosmo_par[3] = x['w0']
+            if ('w1' in self.model):
+                cosmo_par[4] = x['w1']
+            if ('Xi0' in self.model):
+                cosmo_par[5] = x['Xi0']
+            if ('n1' in self.model):
+                cosmo_par[6] = x['n1']
+            if ('b' in self.model):
+                cosmo_par[7] = x['b']                
+            if ('n2' in self.model):
+                cosmo_par[8] = x['n2']                
             else:
                 pass                
             self.O = cs.CosmologicalParameters(*cosmo_par)
@@ -401,7 +428,7 @@ class CosmologicalModel(raynest.model.Model):
                         logL_GW += np.sum([np.log(
                                 lk.lk_dark_single_event_trap(
                                 self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                                zmin=e.zmin, zmax=e.zmax))
+                                self.model_str, zmin=e.zmin, zmax=e.zmax))
                                 for j, e in enumerate(self.data)])
                     elif (self.event_class == 'MBHB'):
                         logL_GW += np.sum([lk.loglk_bright_single_event(
@@ -439,10 +466,10 @@ usage="""\n\n %prog --config-file config.ini\n
     'data'                 Default: ''.                                      Data location.
     'outdir'               Default: './default_dir'.                         Directory for output.
     'event_class'          Default: ''.                                      Class of the event(s) ['dark_siren', 'MBHB'].
-    'model'                Default: ''.                                      Specify the cosmological model to assume for the analysis ['LambdaCDM', 'LambdaCDM_h', LambdaCDM_om, 'CLambdaCDM', 'LambdaCDMDE', 'DE'] and the type of analysis ['GW', 'Rate', 'Luminosity'] separated by a '+'.
-    'truths'               Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values.
-    'prior_bounds'         Default: {"h": [0.6, 0.86], "om": [0.04, 0.5]}.   Prior bounds specified by the user.
-    'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'
+    'model'                Default: ''.                                      Specify the cosmological parameters to sample over ['h', 'om', 'ol', 'w0', 'wa', 'Xi0', 'n1', 'b', 'n2'] and the type of analysis ['GW', 'Rate', 'Luminosity'] separated by a '+'.
+    'truths'               Default: {"h": 0.673, "om": 0.315, "ol": 0.685}.  Cosmology truths values. If not specified, default values are used.
+    'prior_bounds'         Default: {"h": [0.6, 0.86], "om": [0.04, 0.5]}.   Prior bounds specified by the user. Must contain all the parameters specified in 'model'.
+    'corrections'          Default: ''.                                      Family of corrections ('GW', 'EM') separated by a '+'.
     'random'               Default: 0.                                       Run a joint analysis with N events, randomly selected.
     'zhorizon'             Default: '1000.0'.                                Impose low-high cutoffs in redshift. It can be a single number (upper limit) or a string with z_min and z_max separated by a comma.
     'SFRD'                 Default: ''.                                      Star Formation Rate Density model assumed for the event rate ['madau-porciani, madau-fragos, powerlaw'].
@@ -588,11 +615,15 @@ def main():
                                          value=config_par[key])))
 
     truths = {
-        'h': config_par['truth_par']['h'],
-        'om': config_par['truth_par']['om'],
-        'ol': config_par['truth_par']['ol'],
+        'h': 0.673,
+        'om': 0.315,
+        'ol': 0.685,
         'w0': -1.0,
         'w1': 0.0,
+        'Xi0': 1.0,
+        'n1': 1.5,
+        'b': 0.0,
+        'n2': 1.0,
         'r0': 5e-10,
         'p1': 41.0,
         'p2': 2.4,
@@ -606,6 +637,10 @@ def main():
         'alpha_exponent': 0.0
         }
 
+    for par in truths.keys():
+        if par in config_par['truth_par'].keys():
+            truths[par] = config_par['truth_par'][par]
+
     print("\n"+formatting_string+"\nTruths:")
     for key in truths:
         print(("{name} : {value}".format(name=key.ljust(max_len_keyword),
@@ -614,7 +649,9 @@ def main():
 
     omega_true = cs.CosmologicalParameters(truths['h'], truths['om'],
                                            truths['ol'], truths['w0'],
-                                           truths['w1'])
+                                           truths['w1'], truths['Xi0'],
+                                           truths['n1'], truths['b'],
+                                           truths['n2'])
 
     if ("EMRI_SAMPLE_MODEL101" in config_par['data']):
         corr_const = correction_constants["M1"]
@@ -854,40 +891,31 @@ def main():
     ###################          MAKE PLOTS         ###################
     ###################################################################
 
-    if ('LambdaCDM_h' in C.model):
-        plots.histogram(x, model='LambdaCDM_h',
-                        truths=truths, outdir=outdir)
-    elif ('LambdaCDM_om' in C.model):
-        plots.histogram(x, model='LambdaCDM_om',
-                        truths=truths, outdir=outdir)
-    elif ('LambdaCDM' in C.model):
-        plots.corner_plot(x, model='LambdaCDM',
-                            truths=truths, outdir=outdir)
-    elif ('CLambdaCDM' in C.model):
-        plots.corner_plot(x, model='CLambdaCDM',
-                            truths=truths, outdir=outdir)
-    elif ('LambdaCDMDE' in C.model):
-        plots.corner_plot(x, model='LambdaCDMDE',
-                            truths=truths, outdir=outdir)
-    elif ('DE' in C.model):
-        plots.corner_plot(x, model='DE', 
-                            truths=truths, outdir=outdir)
-    
-    if ('Rate' in C.model):
-        if (C.SFRD == 'powerlaw'):
-            plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths,
-                            outdir=outdir)
-        else:
-            plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
-                            outdir=outdir)
-        plots.rate_plots(x, cosmo_model=C, truths=truths, corr=C.corr_const,
-                         omega_true=omega_true, outdir=outdir)
+    params = [m for m in C.model if m not in ['GW', 'Rate', 'Luminosity']]
 
-    if ('Luminosity' in C.model):
-        plots.corner_plot(x, model='Luminosity', 
+    if (len(params) == 1):
+        plots.histogram(x, par=params[0],
+                        truths=truths, outdir=outdir)
+    else:
+        plots.corner_plot(x, pars=params,
                           truths=truths, outdir=outdir)
-        plots.luminosity_plots(x, cosmo_model=C, 
-                               truths=truths, outdir=outdir)
+
+    # TODO: fix plots for Rate and Luminosity
+    # if ('Rate' in C.model):
+    #     if (C.SFRD == 'powerlaw'):
+    #         plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths,
+    #                         outdir=outdir)
+    #     else:
+    #         plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
+    #                         outdir=outdir)
+    #     plots.rate_plots(x, cosmo_model=C, truths=truths, corr=C.corr_const,
+    #                      omega_true=omega_true, outdir=outdir)
+
+    # if ('Luminosity' in C.model):
+    #     plots.corner_plot(x, model='Luminosity', 
+    #                       truths=truths, outdir=outdir)
+    #     plots.luminosity_plots(x, cosmo_model=C, 
+    #                            truths=truths, outdir=outdir)
 
     # Compute the run-time.
     if (config_par['postprocess'] == 0):

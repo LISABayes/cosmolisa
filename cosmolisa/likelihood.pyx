@@ -25,10 +25,11 @@ def lk_dark_single_event_trap(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
                             CosmologicalParameters omega,
+                            str model,
                             const double zmin,
                             const double zmax):
     return _lk_dark_single_event_trap(hosts, meandl, sigmadl, omega,
-                                    zmin, zmax)
+                                      model, zmin, zmax)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -38,6 +39,7 @@ cdef double _lk_dark_single_event_trap(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
                             CosmologicalParameters omega,
+                            str model,
                             const double zmin,
                             const double zmax):
 
@@ -47,12 +49,12 @@ cdef double _lk_dark_single_event_trap(const double[:,::1] hosts,
     cdef double z  = zmin + dz
     cdef double I = (0.5
         * (_lk_dark_single_event_integrand_trap(zmin, hosts, meandl,
-                                                sigmadl, omega)
+                                                sigmadl, omega, model)
         + _lk_dark_single_event_integrand_trap(zmax, hosts, meandl,
-                                               sigmadl, omega)))
+                                               sigmadl, omega, model)))
     for i in range(1, N-1):
         I += _lk_dark_single_event_integrand_trap(z, hosts, meandl,
-                                                  sigmadl, omega)
+                                                  sigmadl, omega, model)
         z += dz
     return I*dz
 
@@ -64,16 +66,23 @@ cdef double _lk_dark_single_event_integrand_trap(const double event_redshift,
                                         const double[:,::1] hosts,
                                         const double meandl,
                                         const double sigmadl,
-                                        CosmologicalParameters omega) nogil:
+                                        CosmologicalParameters omega,
+                                        str model) nogil:
 
     cdef unsigned int j
+    cdef double dl
     cdef double L_gal = 0.0
     cdef double L_detector = 0.0
     cdef double sigma_z, score_z
     cdef unsigned int N = hosts.shape[0]
     cdef double OneSqrtTwoPi = M_SQRT1_2*0.5*M_2_SQRTPI
     cdef double L_galaxy = 0.0
-    cdef double dl = omega._LuminosityDistance(event_redshift)
+    if ('Xi0' in model) or ('n1' in model):
+        dl = omega._LuminosityDistance_Xi0_n1(event_redshift)
+    elif ('b' in model) or ('n2' in model):
+        dl = omega._LuminosityDistance_b_n2(event_redshift)
+    else:     
+        dl = omega._LuminosityDistance(event_redshift)
     cdef double weak_lensing_error = _sigma_weak_lensing(event_redshift, dl)
     cdef double SigmaSquared = sigmadl**2 + weak_lensing_error**2
     cdef double SigmaNorm = OneSqrtTwoPi * 1/sqrt(SigmaSquared)
