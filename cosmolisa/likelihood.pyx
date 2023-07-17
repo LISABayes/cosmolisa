@@ -52,7 +52,7 @@ cdef double _lk_dark_single_event_trap(const double[:,::1] hosts,
                                                 sigmadl, omega, model)
         + _lk_dark_single_event_integrand_trap(zmax, hosts, meandl,
                                                sigmadl, omega, model)))
-    for i in range(1, N-1):
+    for i in range(1, N):
         I += _lk_dark_single_event_integrand_trap(z, hosts, meandl,
                                                   sigmadl, omega, model)
         z += dz
@@ -379,7 +379,7 @@ cdef double _number_of_detectable_gw(PopulationModel PopMod,
                                               SNR_threshold, corr_const)
         + _number_of_detectable_gw_integrand(zmax, PopMod,
                                              SNR_threshold, corr_const)))
-    for i in range(1, N-1):
+    for i in range(1, N):
         I += _number_of_detectable_gw_integrand(z, PopMod,
                                                 SNR_threshold, corr_const)
         z += dz

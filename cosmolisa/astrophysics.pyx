@@ -89,7 +89,7 @@ cdef class PopulationModel:
         cdef double result = 0.5 * (self._number_density(zmin)
                                     + self._number_density(zmax))
 
-        for i in range(1, n-1):
+        for i in range(1, n):
             result += self._number_density(z)
             z += h
 
