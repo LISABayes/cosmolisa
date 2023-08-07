@@ -470,8 +470,8 @@ def read_dark_siren_event(input_folder, event_number,
                         if (selected_event.snr > snr_threshold):
                             print("Selected: ID="
                                 +"{0}".format(str(selected_event.ID).ljust(3))
-                                +" - SNR={1:.2f}".format(selected_event.snr)
-                                +" > {2:.2f}".format(snr_threshold))
+                                +" - SNR={0:.2f}".format(selected_event.snr)
+                                +" > {0:.2f}".format(snr_threshold))
                             selected_events.append(selected_event)
                         else: pass
                         k += 1
@@ -479,8 +479,8 @@ def read_dark_siren_event(input_folder, event_number,
                         if (selected_event.snr < abs(snr_threshold)):
                             print("Selected: ID="
                                 +"{0}".format(str(selected_event.ID).ljust(3))
-                                +" - SNR={1:.2f}".format(selected_event.snr)
-                                +" < {2:.2f}".format(snr_threshold))
+                                +" - SNR={0:.2f}".format(selected_event.snr)
+                                +" < {0:.2f}".format(snr_threshold))
                             selected_events.append(selected_event)
                         else: pass
                         k += 1
