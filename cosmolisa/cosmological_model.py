@@ -431,11 +431,13 @@ class CosmologicalModel(raynest.model.Model):
                                 self.model_str, zmin=e.zmin, zmax=e.zmax))
                                 for j, e in enumerate(self.data)])
                     elif (self.event_class == 'MBHB'):
-                        logL_GW += np.sum([lk.loglk_bright_single_event(
+                        logL_GW += np.sum([np.log(
+                                lk.lk_bright_single_event_trap(
                                 self.hosts[e.ID], e.dl, e.sigmadl, self.O,
-                                x['z%d'%e.ID], zmin=e.zmin, zmax=e.zmax)
+                                self.model_str, zmin=e.zmin, zmax=e.zmax))
                                 for j, e in enumerate(self.data)])
                 else:
+                    #FIXME: fix Gauss-Kronrod (not used for now).
                     if (self.event_class == 'dark_siren'):
                         logL_GW += np.sum([np.log(lk.lk_dark_single_event(
                                 self.hosts[e.ID], e.dl, e.sigmadl, self.O,
