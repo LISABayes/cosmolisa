@@ -4,7 +4,7 @@ Source code for the inference of cosmological parameters with LISA observations
 Download this repository, with
 
 ```
-git clone https://github.com/LISABayes/cosmoLISA.git
+git clone https://github.com/LISABayes/cosmolisa.git
 ```
 
 ## How to install the code with Conda
