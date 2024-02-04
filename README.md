@@ -34,3 +34,5 @@ To run the EMRI example:
 ```
 cosmoLISA --config-file config_EMRI.ini
 ```
+
+Authors: Walter Del Pozzo, Danny Laghi
