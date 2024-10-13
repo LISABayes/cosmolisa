@@ -57,6 +57,7 @@ class Event:
         self.z_cosmo_true_host = z_cosmo_true_host
         if (self.dmin < 0.0): self.dmin = 0.0
 
+
 def read_MBHB_event(input_folder, event_number=None):
     """Read MBHB data to be passed to CosmologicalModel class.
     #########################################################
@@ -219,6 +220,7 @@ def read_MBHB_event(input_folder, event_number=None):
     sys.stderr.write("\n%d MBHB events loaded\n"%len(analysis_events))
 
     return analysis_events
+
 
 def read_dark_siren_event(input_folder, event_number,
                           max_hosts=0, one_host_selection=0,
@@ -557,6 +559,7 @@ def read_dark_siren_event(input_folder, event_number,
                              f"{sigmadl}) has no EM counterpart, skipping\n")
 
     return analysis_events
+
 
 def pick_random_events(events, number):
     print(f"\nSelecting {number} random events for joint analysis.")

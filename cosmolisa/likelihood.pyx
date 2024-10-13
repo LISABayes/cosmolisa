@@ -18,9 +18,9 @@ from cosmolisa.GK_adaptive cimport GKIntegrator # import integrator
 cdef inline double log_add(double x, double y) nogil: 
     return x + log(1.0+exp(y-x)) if x >= y else y + log(1.0+exp(x-y))
 
-###########################################################
-# Block to compute the integral using the trapezoidal rule
-###########################################################
+#####################################################################
+#     Dark siren case
+#####################################################################
 def lk_dark_single_event_trap(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
@@ -104,6 +104,10 @@ cdef double _lk_dark_single_event_integrand_trap(const double event_redshift,
     # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
     return L_detector * L_galaxy
 
+
+#####################################################################
+#     Bright siren case
+#####################################################################
 def lk_bright_single_event_trap(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
@@ -184,9 +188,9 @@ cdef double _lk_bright_single_event_integrand_trap(
     return L_detector * L_EM
 
 
-###############################################################
-# Block to compute the integral using the Gauss-Kronrod method
-###############################################################
+###################################################################
+# Block to compute the dark integral using the Gauss-Kronrod method
+###################################################################
 def lk_dark_single_event(const double[:,::1] hosts,
                             const double meandl,
                             const double sigmadl,
@@ -258,6 +262,10 @@ cdef double _lk_dark_single_event_integrand(const double event_redshift,
     return L_detector * L_galaxy
 
 
+###################################################################
+# Old bright siren lk, only called when using Gauss-Kronrod.
+# IT CAN BE IGNORED.
+###################################################################
 def loglk_bright_single_event(const double[:,::1] hosts,
                               const double meandl,
                               const double sigmadl,
@@ -331,6 +339,11 @@ cdef double _loglk_bright_single_event(const double[:,::1] hosts,
     # p(Di | d(O, z_GW), z_GW, O, M, I) * p(z_GW | dL, O, M, I)
     return logL_detector + logL
 
+
+###################################################################
+# Other functions
+###################################################################
+
 def sigma_weak_lensing(const double z, const double dl):
     return _sigma_weak_lensing(z, dl)
 
@@ -346,10 +359,18 @@ cdef inline double _sigma_weak_lensing(const double z, const double dl) nogil:
     return 0.5*0.066*dl*((1.0-(1.0+z)**(-0.25))/0.25)**1.8
 
 
+cpdef double find_redshift(CosmologicalParameters omega, double dl):
+    return newton(objective, 1.0, args=(omega,dl))
+
+cdef double objective(double z, CosmologicalParameters omega, double dl):
+    return dl - omega._LuminosityDistance(z)
+
+
+
 ##########################################################
 #                                                        #
 #                       Corrections                      #
-#                                                        #
+#                    IT CAN BE IGNORED.                  #
 ##########################################################
 
 
@@ -362,63 +383,9 @@ cdef double _em_selection_function(double dl) nogil:
     """Completeness function f(dL) currently used for plotting."""
     return (1.0-dl/12000.)/(1.0+(dl/3700.0)**7)**1.35
 
-# def logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
-#                                        double meandl,
-#                                        double sigmadl,
-#                                        CosmologicalParameters omega,
-#                                        GalaxyDistribution gal, 
-#                                        double event_redshift,
-#                                        double zmin=0.0,
-#                                        double zmax=1.0):
-
-#     return _logLikelihood_single_event_sel_fun(hosts, meandl, sigmadl,
-#                                                omega, gal, event_redshift,
-#                                                zmin=zmin, zmax=zmax)
-
-# @cython.boundscheck(False)
-# @cython.wraparound(False)
-# @cython.nonecheck(False)
-# @cython.cdivision(True)
-# cdef double _logLikelihood_single_event_sel_fun(const double[:,::1] hosts,
-#                                                 double meandl,
-#                                                 double sigmadl,
-#                                                 CosmologicalParameters omega,
-#                                                 GalaxyDistribution gal,
-#                                                 double event_redshift,
-#                                                 double zmin=0.0,
-#                                                 double zmax=1.0) nogil:
-#     """Single-event likelihood function enforcing the 
-#     selection function.
-    # Parameters:
-    # ===============
-    # hosts: :obj: 'numpy.array' with shape Nx4. The columns are
-    #     redshift, redshift_error, angular_weight, magnitude
-    # meandl: :obj: 'numpy.double': mean of the luminosity distance dL
-    # sigmadl: :obj: 'numpy.double': standard deviation of dL
-    # omega: :obj: 'lal.CosmologicalParameter': cosmological parameter
-    #     structure O
-    # gal: :obj: 'galaxy.GalaxyDistribution'. Galaxy distribution 
-    #     function 
-    # event_redshift: :obj: 'numpy.double': redshift for the GW event
-    # zmin: :obj: 'numpy.double': minimum GW redshift
-    # zmax: :obj: 'numpy.double': maximum GW redshift
-    # """
-    # cdef double logL = -HUGE_VAL
-    # cdef double p_out_cat = -HUGE_VAL
-    # logL = _lk_dark_single_event(hosts, meandl, sigmadl, omega, 
-    #                                    event_redshift, zmin, zmax)
-    # p_out_cat = (gal._get_non_detected_normalisation(zmin, zmax)
-    #              /gal._get_normalisation(zmin, zmax))
-
-    # return logL + log1p(-p_out_cat)
-
-
-cpdef double find_redshift(CosmologicalParameters omega, double dl):
-    return newton(objective, 1.0, args=(omega,dl))
-
-cdef double objective(double z, CosmologicalParameters omega, double dl):
-    return dl - omega._LuminosityDistance(z)
-
+#######################################
+# THE FOLLOWING CAN BE IGNORED.
+#######################################
 def logLikelihood_single_event_rate_only(double z,
                                          PopulationModel PopMod,
                                          double N):

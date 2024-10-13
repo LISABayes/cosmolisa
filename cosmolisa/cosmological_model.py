@@ -23,6 +23,7 @@ from nessai.flowsampler import FlowSampler
 
 # Parameters used to compute GW corrections.
 # From log-linear regressions on the full catalogs.
+# IT CAN BE IGNORED.
 correction_constants = {
     "M1": {
         "rho_dl_const": 5924.963574709556,
@@ -135,6 +136,8 @@ class CosmologicalModel(Model):
         else:
             self.gw = 0
         
+        # FIXME: Rate not working with nessai. Adapt to nessai.
+        # IT CAN BE IGNORED.
         if ('Rate' in self.model):
             self.SFRD = kwargs['SFRD']
             self.rate = 1
@@ -164,6 +167,8 @@ class CosmologicalModel(Model):
                 self.names.append('p1')
                 self.bounds.append([-15.0, 15.0])
 
+        # FIXME: Luminosity not working with nessai. Adapt to nessai.
+        # IT CAN BE IGNORED.
         if ('Luminosity' in self.model):
             self.luminosity = 1
             self.em_correction = 1
@@ -244,6 +249,7 @@ class CosmologicalModel(Model):
 
             # FIXME: this block probably must go into log_likelihood.
             # Check for the rate model or GW corrections.
+            # IT CAN BE IGNORED.
             if ('Rate' in self.model):
                 if (self.SFRD == 'powerlaw'):
                     self.population_model = astro.PopulationModel(
@@ -267,6 +273,7 @@ class CosmologicalModel(Model):
                     density_model=self.SFRD)
 
             # Check for the luminosity model or EM corrections.
+            # IT CAN BE IGNORED.
             if ('Luminosity' in self.model):
                 self.phistar0 = x['phistar0']
                 self.phistar_exponent = x['phistar_exponent']
@@ -321,6 +328,8 @@ class CosmologicalModel(Model):
         self.O = cs.CosmologicalParameters(*cosmo_par)
 
         # If we are looking at the luminosity function only, go here.
+        # FIXME: Adapt to nessai.
+        # IT CAN BE IGNORED.        
         if ((self.luminosity == 1) and (self.gw == 0)):
             for e in self.data:
                 Schecter = gal.GalaxyDistribution(self.O,
@@ -349,7 +358,9 @@ class CosmologicalModel(Model):
                                     self.hosts[e.ID][:,0].copy(order='C')))
 
             return logL_luminosity
-        
+
+        # FIXME: Adapt to nessai.
+        # IT CAN BE IGNORED.        
         # If we are estimating the rate or we are correcting for 
         # GW selection effects, we need this part.
         if (self.rate == 1) or (self.gw_correction == 1):
@@ -422,6 +433,7 @@ class CosmologicalModel(Model):
                         + np.log(self.population_model.pdf(x['z%d'%e.ID])
                         / self.T) for j, e in enumerate(self.data)])
             else:
+                # This is hthe block currently used
                 if (self.trapezoid == 1): 
                     if (self.event_class == 'dark_siren'):
                         logL_GW += np.sum([np.log(
@@ -749,6 +761,7 @@ def main():
     ### Modifying the event properties according to the user's options.
     ###################################################################
 
+    # The following can be ignored if not using galaxy catalog
     if ((config_par['single_z_from_GW'] != 0) 
             and (config_par['one_host_sel'] == 1)):
         print("\nSimulating a single potential host with redshift"
@@ -879,23 +892,6 @@ def main():
     else:
         plots.corner_plot(x, pars=params,
                           truths=truths, outdir=outdir)
-
-    # TODO: fix plots for Rate and Luminosity
-    # if ('Rate' in C.model):
-    #     if (C.SFRD == 'powerlaw'):
-    #         plots.corner_plot(x, model='RatePW', SFRD=C.SFRD, truths=truths,
-    #                         outdir=outdir)
-    #     else:
-    #         plots.corner_plot(x, model='Rate', SFRD=C.SFRD, truths=truths, 
-    #                         outdir=outdir)
-    #     plots.rate_plots(x, cosmo_model=C, truths=truths, corr=C.corr_const,
-    #                      omega_true=omega_true, outdir=outdir)
-
-    # if ('Luminosity' in C.model):
-    #     plots.corner_plot(x, model='Luminosity', 
-    #                       truths=truths, outdir=outdir)
-    #     plots.luminosity_plots(x, cosmo_model=C, 
-    #                            truths=truths, outdir=outdir)
 
     # Compute the run-time.
     if (config_par['postprocess'] == 0):
