@@ -9,7 +9,7 @@ git clone https://github.com/LISABayes/cosmolisa.git
 
 ## How to install the code with Conda
 
-Use the environment file `environment.yml` to create the conda environment for cosmoLISA.
+Use the environment file `environment.yml` to create the conda environment for cosmoLISA. To speed up the creation of the environment, you may want to try 'mamba' instead of 'conda'.
 Run the following lines from terminal:
 
 ```
