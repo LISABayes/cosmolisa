@@ -19,7 +19,7 @@ labels_plot = {
     'om': r'$\Omega_m$',
     'ol': r'$\Omega_\Lambda$',
     'w0': r'$w_0$',
-    'wa': r'$w_a$',
+    'w1': r'$w_1$',
     'Xi0': r'$\Xi_0$',
     'n1': r'$n1$',
     'b': r'$b$',

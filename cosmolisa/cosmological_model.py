@@ -17,7 +17,9 @@ from cosmolisa import cosmology as cs
 from cosmolisa import likelihood as lk
 from cosmolisa import galaxy as gal
 from cosmolisa import astrophysics as astro
-import raynest.model
+# import nessai
+from nessai.model import Model
+from nessai.flowsampler import FlowSampler
 
 # Parameters used to compute GW corrections.
 # From log-linear regressions on the full catalogs.
@@ -42,18 +44,17 @@ correction_constants = {
         },
     }
 
-class CosmologicalModel(raynest.model.Model):
+class CosmologicalModel(Model):
     """CosmologicalModel class:
     Data, likelihood, prior, and settings of the analysis
     are specified here. The abstract modules 'log_prior' and
     'log_likelihood', as well as the attributes 'names' and
-    'bounds', are inherited from raynest.raynest.Model and
+    'bounds', are inherited from nessai.model.Model and
     have to be explicitly defined inside this class.
     """
 
     def __init__(self, model, data, corrections, *args, **kwargs):
 
-        super(CosmologicalModel, self).__init__()
         self.data = data
         self.N = len(self.data)
         self.event_class = kwargs['event_class']
@@ -76,56 +77,58 @@ class CosmologicalModel(raynest.model.Model):
         self.SFRD = None
         self.corr_const = kwargs['corr_const']
 
-        self.names = []
-        self.bounds = []
+        self.names_list = []
+        self.bounds_dict = dict()
 
         if ('h' in self.model):
-            self.names.append('h')
-            self.bounds.append(kwargs['prior_bounds']['h'])
+            self.names_list.append('h')
+            self.bounds_dict['h'] = kwargs['prior_bounds']['h']
 
         if ('om' in self.model):
-            self.names.append('om')
-            self.bounds.append(kwargs['prior_bounds']['om'])
+            self.names_list.append('om')
+            self.bounds_dict['om'] = kwargs['prior_bounds']['om']
 
         if ('ol' in self.model):
-            self.names.append('ol')
-            self.bounds.append(kwargs['prior_bounds']['ol'])
+            self.names_list.append('ol')
+            self.bounds_dict['ol'] = kwargs['prior_bounds']['ol']
 
         if ('w0' in self.model):
-            self.names.append('w0')
-            self.bounds.append(kwargs['prior_bounds']['w0'])
+            self.names_list.append('w0')
+            self.bounds_dict['w0'] = kwargs['prior_bounds']['w0']
 
         if ('w1' in self.model):
-            self.names.append('w1')
-            self.bounds.append(kwargs['prior_bounds']['w1'])
+            self.names_list.append('w1')
+            self.bounds_dict['w1'] = kwargs['prior_bounds']['w1']
 
         if ('Xi0' in self.model):
-            self.names.append('Xi0')
-            self.bounds.append(kwargs['prior_bounds']['Xi0'])
+            self.names_list.append('Xi0')
+            self.bounds_dict['Xi0'] = kwargs['prior_bounds']['Xi0']
 
         if ('n1' in self.model):
-            self.names.append('n1')
-            self.bounds.append(kwargs['prior_bounds']['n1'])
+            self.names_list.append('n1')
+            self.bounds_dict['n1'] = kwargs['prior_bounds']['n1']
 
         if ('b' in self.model):
-            self.names.append('b')
-            self.bounds.append(kwargs['prior_bounds']['b'])
+            self.names_list.append('b')
+            self.bounds_dict['b'] = kwargs['prior_bounds']['b']
 
         if ('n2' in self.model):
-            self.names.append('n2')
-            self.bounds.append(kwargs['prior_bounds']['n2'])
-
+            self.names_list.append('n2')
+            self.bounds_dict['n2'] = kwargs['prior_bounds']['n2']
         # Some consistency checks.
-        for par in self.names:
+        for par in self.names_list:
             assert kwargs['prior_bounds'][par][0] <= self.truths[par], (
              f"{par}: your lower prior bound excludes the true value!")
             assert kwargs['prior_bounds'][par][1] >= self.truths[par], (
              f"{par}: your upper prior bound excludes the true value!")
-        if 'Xi0' in self.names or 'n1' in self.names:
-            if 'b' in self.names or 'n2' in self.names:
+        if 'Xi0' in self.names_list or 'n1' in self.names_list:
+            if 'b' in self.names_list or 'n2' in self.names_list:
                 print("The chosen beyondGR parameters are not consistent. "
                       "Exiting.")
                 exit() 
+
+        self.names = self.names_list
+        self.bounds = self.bounds_dict
 
         if ('GW' in self.model):
             self.gw = 1
@@ -213,8 +216,8 @@ class CosmologicalModel(raynest.model.Model):
         print(f"Free parameters: {self.names}")
         print("\n"+5*"===================="+"\n")
         print("Prior bounds:")
-        for name, bound in zip(self.names, self.bounds):
-            print(f"{str(name).ljust(17)}: {bound}")
+        for name in self.names:
+            print(f"{str(name).ljust(17)}: {self.bounds[name]}")
         print("\n"+5*"===================="+"\n")
 
     def _initialise_galaxy_hosts(self):
@@ -231,46 +234,15 @@ class CosmologicalModel(raynest.model.Model):
             }
         
     def log_prior(self, x):
-        """Natural-log-prior assumed in the inference. 
-        It is currently inherited from the sampler class
-        (uniform priors for all the parameters thst are defined
-        in the list 'names' with ranges specified in 'bounds').
-        It also defines objects used in other class modules.
         """
-        logP = super(CosmologicalModel, self).log_prior(x)
-        
-        if np.isfinite(logP):    
-            # Check for the cosmological model and
-            # define the CosmologicalParameter object.
-            cosmo_par = [self.truths['h'], self.truths['om'],
-                         self.truths['ol'], self.truths['w0'],
-                         self.truths['w1'], self.truths['Xi0'],
-                         self.truths['n1'], self.truths['b'],
-                         self.truths['n2']]
-            if ('h' in self.model):
-                cosmo_par[0] = x['h']
-            # TODO: check that sampling only om or
-            # om + the constraints 1-om is the same thing 
-            if ('om' in self.model):
-                cosmo_par[1:3] = x['om'], 1.0 - x['om']
-            if ('ol' in self.model):
-                cosmo_par[2] = x['ol']
-            if ('w0' in self.model):
-                cosmo_par[3] = x['w0']
-            if ('w1' in self.model):
-                cosmo_par[4] = x['w1']
-            if ('Xi0' in self.model):
-                cosmo_par[5] = x['Xi0']
-            if ('n1' in self.model):
-                cosmo_par[6] = x['n1']
-            if ('b' in self.model):
-                cosmo_par[7] = x['b']                
-            if ('n2' in self.model):
-                cosmo_par[8] = x['n2']                
-            else:
-                pass                
-            self.O = cs.CosmologicalParameters(*cosmo_par)
+        Returns natural-log of prior given a live point assuming
+        uniform priors on each parameter.        
+        """
+        logP = np.log(self.in_bounds(x), dtype="float")
+        for n in self.names:
+            logP -= np.log(self.bounds[n][1] - self.bounds[n][0])
 
+            # FIXME: this block probably must go into log_likelihood.
             # Check for the rate model or GW corrections.
             if ('Rate' in self.model):
                 if (self.SFRD == 'powerlaw'):
@@ -309,7 +281,7 @@ class CosmologicalModel(raynest.model.Model):
                 self.Mstar_exponent = self.truths['Mstar_exponent']
                 self.alpha0 = self.truths['alpha0']
                 self.alpha_exponent = self.truths['alpha_exponent']
-        
+
         return logP
 
     def log_likelihood(self, x):
@@ -317,10 +289,37 @@ class CosmologicalModel(raynest.model.Model):
         It implements the inference model settings according
         to the options specified by the user.
         """
-        logL_GW = 0.0
-        logL_rate = 0.0
-        logL_luminosity = 0.0
-        
+        logL_GW = np.zeros(x.size)
+        logL_rate = np.zeros(x.size)
+        logL_luminosity = np.zeros(x.size)
+
+        cosmo_par = [self.truths['h'], self.truths['om'],
+                     self.truths['ol'], self.truths['w0'],
+                     self.truths['w1'], self.truths['Xi0'],
+                     self.truths['n1'], self.truths['b'],
+                     self.truths['n2']]
+        if ('h' in self.model):
+            cosmo_par[0] = x['h']
+        if ('om' in self.model):
+            cosmo_par[1:3] = x['om'], 1.0 - x['om']
+        if ('ol' in self.model):
+            cosmo_par[2] = x['ol']
+        if ('w0' in self.model):
+            cosmo_par[3] = x['w0']
+        if ('w1' in self.model):
+            cosmo_par[4] = x['w1']
+        if ('Xi0' in self.model):
+            cosmo_par[5] = x['Xi0']
+        if ('n1' in self.model):
+            cosmo_par[6] = x['n1']
+        if ('b' in self.model):
+            cosmo_par[7] = x['b']                
+        if ('n2' in self.model):
+            cosmo_par[8] = x['n2']                
+        else:
+            pass                
+        self.O = cs.CosmologicalParameters(*cosmo_par)
+
         # If we are looking at the luminosity function only, go here.
         if ((self.luminosity == 1) and (self.gw == 0)):
             for e in self.data:
@@ -457,7 +456,7 @@ class CosmologicalModel(raynest.model.Model):
 
 usage="""\n\n %prog --config-file config.ini\n
     ######################################################################################################################################################
-    IMPORTANT: This code requires the installation of the 'raynest' package: https://github.com/wdpozzo/raynest
+    IMPORTANT: This code requires the installation of the 'nessai' package: https://github.com/mj-will/nessai
                See the instructions in cosmolisa/README.md.
     ######################################################################################################################################################
 
@@ -496,17 +495,11 @@ usage="""\n\n %prog --config-file config.ini\n
     'postprocess'          Default: 0.                                       Run only the postprocessing. It works only with reduced_catalog=0.
     'screen_output'        Default: 0.                                       Print the output on screen or save it into a file.
 
-    'verbose'              Default: 2.                                       Sampler verbose.
-    'maxmcmc'              Default: 5000.                                    Maximum MCMC steps for MHS sampling chains.
-    'nensemble'            Default: 1.                                       Number of sampler threads using an ensemble sampler. Equal to the number of LP evolved at each NS step. It must be a positive multiple of nnest.
-    'nslice'               Default: 0.                                       Number of sampler threads using a slice sampler.
-    'nhamiltonian'         Default: 0.                                       Number of sampler threads using a hamiltonian sampler.
-    'nnest'                Default: 1.                                       Number of parallel independent nested samplers.
     'nlive'                Default: 1000.                                    Number of live points.
     'seed'                 Default: 0.                                       Random seed initialisation.
-    'obj_store_mem'        Default: 2e9.                                     Amount of memory reserved for ray object store. Default: 2GB.
+    'pytorch_threads'      Default: 1.                                       Number of threads that pytorch can use.
+    'n_pool'               Default: None.                                    Threads for evaluating the likelihood.
     'checkpoint_int'       Default: 21600.                                   Time interval between sampler periodic checkpoint in seconds. Defaut: 21600 (6h).
-    'resume'               Default: 0.                                       If set to 1, resume a run reading the checkpoint files, otherwise run from scratch. Default: 0.
 
 """
 
@@ -559,17 +552,11 @@ def main():
         'trapezoid': 1,
         'postprocess': 0,
         'screen_output': 0,    
-        'verbose': 2,
-        'maxmcmc': 5000,
-        'nensemble': 1,
-        'nslice': 0,
-        'nhamiltonian': 0,
-        'nnest': 1,
         'nlive': 1000,
         'seed': 1234,
-        'obj_store_mem': 2e9,
+        'pytorch_threads': 1,
+        'n_pool': 1,
         'checkpoint_int': 10800,
-        'resume': 0
         }
 
     for key in config_par:
@@ -590,12 +577,12 @@ def main():
         outdir = "default_dir"
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    os.system("mkdir -p {}/raynest".format(outdir))
+    os.system("mkdir -p {}/nessai".format(outdir))
     os.system("mkdir -p {}/Plots".format(outdir))
     #FIXME: avoid cp command when reading the config file from the 
     # outdir directory to avoid the 'same file' cp error
     os.system("cp {} {}/.".format(opts.config_file, outdir))
-    output_sampler = os.path.join(outdir, "raynest")
+    output_sampler = os.path.join(outdir, "nessai")
 
     if not(config_par['screen_output']):
         if not(config_par['postprocess']):
@@ -607,7 +594,10 @@ def main():
 
     print("\n"+formatting_string)
     print("\n"+"Running cosmoLISA")
-    print(f"raynest installation version: {raynest.__version__}")
+    # FIXME
+    # The code doesn't like the following line:
+    # NameError: name 'nessai' is not defined
+    # print(f"nessai installation version: {nessai.__version__}")
     print(f"cosmolisa likelihood version: {lk.__file__}")
     print("\n"+formatting_string)
 
@@ -811,17 +801,11 @@ def main():
                                          .ljust(4)))
 
     print(formatting_string+"\n")
-    print("raynest will be initialised with:")
-    print(f"verbose:                 {config_par['verbose']}")
-    print(f"nensemble:               {config_par['nensemble']}")
-    print(f"nslice:                  {config_par['nslice']}")
-    print(f"nhamiltonian:            {config_par['nhamiltonian']}")
-    print(f"nnest:                   {config_par['nnest']}")
+    print("nessai will be initialised with:")
     print(f"nlive:                   {config_par['nlive']}")
-    print(f"maxmcmc:                 {config_par['maxmcmc']}")
-    print(f"object_store_memory:     {config_par['obj_store_mem']}")
+    print(f"pytorch_threads:         {config_par['pytorch_threads']}")
+    print(f"n_pool:                  {config_par['n_pool']}")
     print(f"periodic_checkpoint_int: {config_par['checkpoint_int']}")
-    print(f"resume:                  {config_par['resume']}")
 
     C = CosmologicalModel(
         model=config_par['model'],
@@ -838,32 +822,26 @@ def main():
         SFRD=config_par['SFRD'],
         corr_const=corr_const)
 
+    # FIXME: add all the settings options of nessai.
     # IMPROVEME: postprocess doesn't work when events are 
     # randomly selected, since 'events' in C are different 
     # from the ones read from chain.txt.
     if (config_par['postprocess'] == 0):
-        # Each NS can be located in different processors, but all 
-        # the subprocesses of each NS live on the same processor.
-        work = raynest.raynest(
+        sampler = FlowSampler(
             C,
-            verbose=config_par['verbose'],
-            maxmcmc=config_par['maxmcmc'],
-            nensemble=config_par['nensemble'],
-            nslice=config_par['nslice'],
-            nhamiltonian=config_par['nhamiltonian'],
-            nnest=config_par['nnest'],   
             nlive=config_par['nlive'],
+            pytorch_threads=config_par['pytorch_threads'],
+            n_pool=config_par['n_pool'],
             seed=config_par['seed'],
-            object_store_memory=config_par['obj_store_mem'],
             output=output_sampler,
-            periodic_checkpoint_interval=config_par['checkpoint_int'],
-            resume=config_par['resume'])
+            checkpoint_interval=config_par['checkpoint_int'],
+            )
 
-        work.run()
-        print(f"log Evidence = {work.logZ}")
+        sampler.run()
+        # print(f"log Evidence = {sampler.logZ}")
         print("\n"+formatting_string+"\n")
 
-        x = work.posterior_samples.ravel()
+        x = sampler.posterior_samples.ravel()
 
         # Save git info.
         with open("{}/git_info.txt".format(outdir), 'w+') as fileout:
@@ -885,7 +863,7 @@ def main():
     else:
         print(f"Reading the .h5 file... from {outdir}")
         import h5py
-        filename = os.path.join(outdir,"raynest","raynest.h5")
+        filename = os.path.join(outdir,"raynest","results.json")
         h5_file = h5py.File(filename,'r')
         x = h5_file['combined'].get('posterior_samples')
 
